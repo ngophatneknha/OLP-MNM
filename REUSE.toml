@@ -1,8 +1,11 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+
 version = 1
 
 # Các tệp không thể chứa chú thích SPDX trực tiếp (hoặc công cụ reuse không đọc được).
 [[annotations]]
-path = ["infra/keycloak/realm/**.json", ".gitignore", "LICENSE", "README.md"]
+path = ["infra/keycloak/realm/**.json", ".gitignore", "LICENSE", "README.md", "REUSE.toml"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 DX-Lab Project Hub contributors"
 SPDX-License-Identifier = "Apache-2.0"
