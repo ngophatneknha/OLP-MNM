@@ -93,14 +93,19 @@ def cmd_progress(args):
         print("\nĐã cập nhật bảng tiến độ trong", BACKLOG.name)
 
 
+ERRORS = 0
+
+
 def gh(*cmd, apply):
+    global ERRORS
     shown = "gh " + " ".join(cmd)
     if not apply:
-        print("[dry-run]", shown[:200])
+        print("[dry-run]", shown[:200].replace("\n", " "))
         return ""
     res = subprocess.run(["gh", *cmd], capture_output=True, text=True, encoding="utf-8")
-    if res.returncode != 0:
-        print("LỖI:", shown[:120], "\n", res.stderr.strip(), file=sys.stderr)
+    if res.returncode != 0 and "already_exists" not in res.stdout + res.stderr:
+        ERRORS += 1
+        print("LỖI:", shown[:120].replace("\n", " "), "\n", res.stderr.strip(), file=sys.stderr)
     return res.stdout
 
 
@@ -109,6 +114,11 @@ def cmd_issues(args):
     apply = args.apply
     existing = set()
     if apply:
+        check = subprocess.run(["gh", "repo", "view", "--json", "nameWithOwner"],
+                               capture_output=True, text=True, encoding="utf-8")
+        if check.returncode != 0:
+            sys.exit("Không truy cập được repo bằng gh (đăng nhập sai tài khoản/token thiếu quyền?):\n"
+                     + check.stderr.strip())
         out = gh("issue", "list", "--state", "all", "--limit", "500", "--json", "title", apply=True)
         existing = {i["title"] for i in json.loads(out or "[]")}
 
@@ -141,7 +151,10 @@ def cmd_issues(args):
         if it["epic"] == "POF":
             cmd += ["--label", "pof"]
         gh(*cmd, apply=apply)
-    print(f"\n{'Đã tạo' if apply else 'Sẽ tạo'} tối đa {len(items)} issue (bỏ qua issue trùng tiêu đề).")
+    if apply:
+        print(f"\nHoàn tất với {ERRORS} lỗi (issue trùng tiêu đề được bỏ qua).")
+    else:
+        print(f"\nChạy thử: sẽ xử lý tối đa {len(items)} issue (bỏ qua issue trùng tiêu đề).")
 
 
 def main():
