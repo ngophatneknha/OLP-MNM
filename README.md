@@ -5,6 +5,9 @@ SPDX-License-Identifier: Apache-2.0
 
 # DX-Lab Project Hub (DX-OS Open-Core)
 
+[![CI](https://github.com/ngophatneknha/OLP-M-Ngu-n-M-/actions/workflows/ci.yml/badge.svg)](https://github.com/ngophatneknha/OLP-M-Ngu-n-M-/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 Sản phẩm dự thi **OLP Phần mềm nguồn mở 2026** – chủ đề *Xây dựng Hệ điều hành Doanh nghiệp số (DX-OS)*.
 
 > Trạng thái: **khung dự án (v0.0.1 – chưa phát hành)**. Xem [CHANGELOG.md](CHANGELOG.md).
