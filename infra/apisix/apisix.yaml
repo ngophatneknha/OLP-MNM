@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Route khung. Xác thực JWT (openid-connect/jwt-auth với Keycloak) sẽ thêm ở Tuần 2.
+
+routes:
+  - id: graphql
+    uri: /v1/graphql
+    upstream:
+      type: roundrobin
+      nodes:
+        "hasura:8080": 1
+  - id: auth
+    uris: ["/auth/*"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "keycloak:8080": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/auth/(.*)", "/$1"]
+#END

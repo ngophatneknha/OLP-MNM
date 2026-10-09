@@ -1,0 +1,11 @@
+{
+  "realm": "dxlab",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      { "name": "staff", "description": "Nhân viên" },
+      { "name": "manager", "description": "Quản lý – phê duyệt yêu cầu" },
+      { "name": "admin", "description": "Quản trị hệ thống" }
+    ]
+  }
+}
