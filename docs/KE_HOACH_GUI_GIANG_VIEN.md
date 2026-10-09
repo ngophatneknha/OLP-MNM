@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 **Kính gửi:** Thầy/Cô Cố vấn & Giảng viên Hướng dẫn Đội tuyển  
 **Đơn vị:** Khoa Công nghệ Thông tin / Trường Đại học  
 **Đề tài:** DX-Lab Project Hub – Hệ điều hành Doanh nghiệp số Lõi mở (DX-OS Open-Core)  
-**Kho mã nguồn chính thức:** [https://github.com/ngophatneknha/OLP-M-Ngu-n-M-](https://github.com/ngophatneknha/OLP-M-Ngu-n-M-)  
+**Kho mã nguồn chính thức:** [https://github.com/ngophatneknha/OLP-MNM](https://github.com/ngophatneknha/OLP-MNM)  
 **Trạng thái hệ thống:** Đã khởi tạo hạ tầng mã nguồn mở, tích hợp CI tự động kiểm định bản quyền đạt chuẩn REUSE Specification 3.3.
 
 ---
