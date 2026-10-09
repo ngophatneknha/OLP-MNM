@@ -1,15 +1,8 @@
 version = 1
 
-# Các tệp không thể chứa chú thích SPDX trực tiếp.
+# Các tệp không thể chứa chú thích SPDX trực tiếp (hoặc công cụ reuse không đọc được).
 [[annotations]]
-path = ["infra/keycloak/realm/**.json", ".gitignore", "LICENSE"]
+path = ["infra/keycloak/realm/**.json", ".gitignore", "LICENSE", "README.md"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 DX-Lab Project Hub contributors"
 SPDX-License-Identifier = "Apache-2.0"
-
-# Tài liệu của Ban tổ chức (không thuộc mã nguồn dự án): không phân phối lại trong release.
-[[annotations]]
-path = ["*.pdf"]
-precedence = "aggregate"
-SPDX-FileCopyrightText = "Ban tổ chức OLP PMNM 2026 (Hội Tin học Việt Nam, CLB VFOSSA)"
-SPDX-License-Identifier = "LicenseRef-OLP-Reference"
