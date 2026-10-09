@@ -36,6 +36,10 @@ docker compose up -d
 
 Dừng và xóa dữ liệu: `docker compose down -v`.
 
+## Kế hoạch & tiến độ
+
+Danh sách đầu việc chi tiết (85 mục, chia theo nhóm, người phụ trách, tuần, ưu tiên MVP/Stretch) và bảng tiến độ: [docs/BACKLOG.md](docs/BACKLOG.md). Trạng thái theo dõi trên tab **Issues** / **Projects**.
+
 ## Giấy phép
 
 Mã nguồn tự viết phát hành theo [Apache License 2.0](LICENSE). Mỗi tệp mã chứa tiêu đề SPDX; kiểm tra bằng `reuse lint`. Danh sách thành phần bên thứ ba: [THIRD_PARTY.md](THIRD_PARTY.md).
