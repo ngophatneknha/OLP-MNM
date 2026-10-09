@@ -1,0 +1,9 @@
+.env
+node_modules/
+.nuxt/
+.output/
+*.log
+.DS_Store
+
+# Tài liệu của BTC (chỉ để tham khảo, không phải mã nguồn)
+*.pdf
