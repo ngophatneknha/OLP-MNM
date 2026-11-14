@@ -42,7 +42,9 @@ Kết quả:
           {"key":"giam_doc","name":"Giám đốc duyệt","role":"director","type":"approve","when":{"field":"so_ngay","op":">=","value":3}}],
  "questions":["Quản lý vắng mặt thì ai duyệt thay?"]}`
 
-async function chat(messages) {
+export const aiConfigured = () => Boolean(AI_BASE_URL && AI_MODEL)
+
+export async function chat(messages) {
   const res = await fetch(`${AI_BASE_URL.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
     headers: { authorization: `Bearer ${AI_API_KEY}`, 'content-type': 'application/json' },

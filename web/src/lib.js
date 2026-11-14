@@ -8,6 +8,14 @@ import Keycloak from 'keycloak-js'
 import { reactive } from 'vue'
 
 export const ROLE_LABEL = { staff: 'Nhân viên', manager: 'Trưởng phòng', director: 'Giám đốc', accountant: 'Kế toán' }
+/** Bốn nấc tự chủ của trợ lý AI ở một bước duyệt (nấc 0 để chỉ số khớp với mã nấc 1..4). */
+export const AUTONOMY = [
+  null,
+  { name: 'Người làm', help: 'Trợ lý đứng ngoài, người duyệt như bình thường.' },
+  { name: 'Trợ lý chạy bóng', help: 'Trợ lý âm thầm cho ý kiến để so với quyết định của người; người duyệt chưa thấy ý kiến đó.' },
+  { name: 'Trợ lý gợi ý', help: 'Người duyệt thấy gợi ý của trợ lý kèm lý do, và vẫn là người bấm duyệt hay từ chối.' },
+  { name: 'Trợ lý tự duyệt', help: 'Hồ sơ hợp lệ được trợ lý duyệt luôn; từ chối thì không bao giờ tự làm, hồ sơ luôn trở về cho người quyết định.' },
+]
 export const CATEGORIES = ['Tài chính', 'Nhân sự', 'Mua sắm', 'Hành chính', 'Khác']
 
 export const auth = reactive({ name: '', userId: '', role: 'staff', roles: [] })
@@ -82,7 +90,11 @@ export const SUBMISSION_FIELDS = `id no data status current_step waiting_role su
   app { key name category }
   version { spec }
   events(order_by: {id: asc}) { step_key action note actor_name created_at }
-  attachments(order_by: {created_at: asc}) { id name size uploader_name created_at }`
+  attachments(order_by: {created_at: asc}) { id name size uploader_name created_at }
+  opinions { decision reason level }`
+
+/** Gợi ý của trợ lý cho hồ sơ đang chờ tôi (chỉ từ nấc 3; nấc 2 là chạy bóng nên chưa được thấy). */
+export const suggestion = (s) => (waitsOnMe(s) ? s.opinions?.find((o) => o.level >= 3) : null)
 
 export const stepOf = (s) => s.version.spec.steps.find((x) => x.key === s.current_step)
 export const waitsOnMe = (s) => s.status === 'running' && s.waiting_role === auth.role && s.submitter_id !== auth.userId

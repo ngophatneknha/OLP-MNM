@@ -29,14 +29,14 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 | ID — Tầng 1: Định danh & Cổng API (Keycloak, APISIX) | 4/9 | 4/7 | ████░░░░░░ 44% |
 | DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS) | 6/9 | 6/8 | ███████░░░ 66% |
 | WF — Tầng 1: Workflow (Flowable) | 4/6 | 4/5 | ███████░░░ 66% |
-| GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo) | 11/15 | 11/14 | ███████░░░ 73% |
+| GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo) | 12/15 | 12/14 | ████████░░ 80% |
 | UI — Tầng 2: Ứng dụng H-P-D-I (Vue 3) | 5/11 | 5/10 | █████░░░░░ 45% |
 | BI — Không gian [D]: Dashboard & tìm kiếm | 3/4 | 3/3 | ████████░░ 75% |
 | AI — Không gian [I]: Trí tuệ nhân tạo (Stretch) | 0/5 | 0/0 | ░░░░░░░░░░ 0% |
 | OPS — Hạ tầng & vận hành | 0/4 | 0/2 | ░░░░░░░░░░ 0% |
 | DOC — Tài liệu & trình diễn | 1/8 | 1/8 | █░░░░░░░░░ 12% |
 | RISK — Rủi ro cần theo dõi | 0/5 | 0/5 | ░░░░░░░░░░ 0% |
-| **Tổng** | **42/100** | **42/86** | ████░░░░░░ 42% |
+| **Tổng** | **43/100** | **43/86** | ████░░░░░░ 43% |
 <!-- progress:end -->
 
 ## Mốc thời gian
@@ -192,7 +192,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: mọi vai trò gửi và xem được, quản lý đánh dấu đã xử lý.
 - [x] **GEN-14** Kho quy trình mẫu `library/`: fork trong giao diện, xuất JSON để đóng góp lại — `ALL` · Tuần 6 · MVP
   - Hoàn thành khi: có kiểm thử cho mọi tệp trong kho; README hướng dẫn đóng góp.
-- [ ] **GEN-15** AI thử việc: chạy bóng ở bước duyệt, tỷ lệ khớp, nấc tự chủ, nâng nấc qua đề xuất — `ALL` · Tuần 7 · MVP
+- [x] **GEN-15** AI thử việc: chạy bóng ở bước duyệt, tỷ lệ khớp, nấc tự chủ, nâng nấc qua đề xuất — `ALL` · Tuần 7 · MVP
   - Hoàn thành khi: nấc tự chủ chỉ tăng khi có số liệu và có người duyệt.
 - [ ] **GEN-08** Sơ đồ quy trình sáng theo thời gian thực khi hồ sơ di chuyển — `ALL` · Tuần 6 · MVP
   - Hoàn thành khi: hai trình duyệt cạnh nhau thấy trạng thái đổi không cần tải lại.

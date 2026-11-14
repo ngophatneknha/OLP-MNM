@@ -39,6 +39,17 @@ Nội dung tệp nằm trong kho S3 (SeaweedFS); bảng `attachment` giữ tên,
 
 Giới hạn hiện tại: mỗi tệp tối đa 10 MB, chưa quét mã độc (backlog ID-09).
 
+## Trợ lý AI thử việc
+
+Bảng `step_autonomy` giữ nấc tự chủ (1 đến 4) của từng bước duyệt; bảng `ai_opinion` giữ ý kiến của AI và quyết định thật của người để đo độ khớp.
+
+1. Khi một hồ sơ vào bước duyệt có nấc ≥ 2, `workflow-bridge` (ở nền, không làm chậm luồng của người) gửi cho AI hồ sơ, tên bước và tối đa 6 quyết định gần đây của người ở đúng bước đó; AI trả `{decision, reason}`. Câu trả lời sai khuôn bị bỏ, không đoán. Dịch vụ AI giới hạn tần suất thì thử lại vài lần rồi thôi.
+2. Người quyết định xong thì trigger `ai_opinion_settle` ghi `human_action` và `matched`.
+3. Nấc 2: ý kiến chỉ giám đốc xem được. Nấc 3 trở lên: người duyệt thấy gợi ý cho hồ sơ đang chờ chính họ. Nấc 4: nếu ý kiến là duyệt, bridge ghi sự kiện duyệt với người thực hiện "Trợ lý AI"; nếu là từ chối, không làm gì, hồ sơ vẫn chờ người.
+4. Trigger `autonomy_guard` chặn nâng nấc thiếu bằng chứng (kể cả khi gọi thẳng vào cơ sở dữ liệu): chỉ vai trò giám đốc, từng nấc một, và từ nấc 2 lên cần ≥ 10 ý kiến đã có người quyết ở nấc hiện tại với ≥ 90% khớp, không tính dữ liệu mẫu hay lần AI tự duyệt.
+
+AI lỗi hoặc chưa cấu hình thì mọi thứ chạy như nấc 1.
+
 ## Bảo mật khi triển khai
 
 - Chỉ ba cổng mở ra máy chủ: ứng dụng web, cổng API, trang đăng nhập Keycloak. Cơ sở dữ liệu, Hasura, Flowable, kho S3 chỉ nằm trong mạng nội bộ.

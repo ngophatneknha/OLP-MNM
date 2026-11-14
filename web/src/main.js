@@ -16,6 +16,7 @@ import Apps from './pages/Apps.vue'
 import Submission from './pages/Submission.vue'
 import Documents from './pages/Documents.vue'
 import Stats from './pages/Stats.vue'
+import Assistant from './pages/Assistant.vue'
 import Builder from './pages/Builder.vue'
 import Processes from './pages/Processes.vue'
 
@@ -30,6 +31,7 @@ login().then(() => {
       { path: '/ho-so/:id', component: Submission },
       { path: '/tai-lieu', component: Documents },
       { path: '/so-lieu', component: Stats },
+      { path: '/tro-ly', component: Assistant },
       { path: '/soan', component: Builder },
       { path: '/quy-trinh', component: Processes },
       { path: '/:rest(.*)', redirect: '/' },

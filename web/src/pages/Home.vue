@@ -7,7 +7,7 @@ Bàn làm việc: việc đang chờ tôi đứng đầu, sau đó là hồ sơ 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ChevronRight, CircleCheck } from 'lucide-vue-next'
-import { auth, gql, ago, givenName, initials, headline, whereIs, waitsOnMe, stepOf, routeText, SUBMISSION_FIELDS } from '../lib.js'
+import { auth, gql, ago, givenName, initials, headline, whereIs, waitsOnMe, stepOf, routeText, suggestion, SUBMISSION_FIELDS } from '../lib.js'
 import DecisionBar from '../components/DecisionBar.vue'
 import CategoryIcon from '../components/CategoryIcon.vue'
 
@@ -72,6 +72,7 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
               <RouterLink :to="`/ho-so/${s.id}`" class="font-medium hover:text-pen hover:underline">{{ s.app.name }}, hồ sơ số {{ s.no }}</RouterLink>
               <p class="text-sm text-pencil">{{ s.submitter_name }} gửi {{ ago(s.created_at) }}. Cần bạn {{ stepOf(s)?.type === 'task' ? 'thực hiện' : 'duyệt' }} ở bước “{{ stepOf(s)?.name }}”.</p>
               <p class="num mt-1 text-sm font-medium">{{ headline(s) }}</p>
+              <p v-if="suggestion(s)" class="sticky-note mt-2">Trợ lý gợi ý <strong>{{ suggestion(s).decision === 'approve' ? 'duyệt' : 'từ chối' }}</strong>: {{ suggestion(s).reason }}</p>
             </div>
             <DecisionBar :submission="s" @done="load" />
           </li>

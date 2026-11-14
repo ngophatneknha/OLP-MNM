@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: node --test services/workflow-bridge/compile.test.js web/src/metrics.test.js
+      - run: node --test services/workflow-bridge/compile.test.js services/workflow-bridge/probation.test.js web/src/metrics.test.js
       - run: npm ci --no-audit --no-fund && npm run build
         working-directory: web
       - run: sh scripts/smoke.sh

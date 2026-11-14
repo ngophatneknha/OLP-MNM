@@ -22,6 +22,7 @@ async function token(user) {
     })
     if (!res.ok) throw new Error(`Không đăng nhập được ${user}: ${res.status}`)
     tokens[user] = (await res.json()).access_token
+    setTimeout(() => delete tokens[user], 240000) // token sống 5 phút; làm mới trước khi hết hạn
   }
   return tokens[user]
 }
@@ -120,5 +121,30 @@ if (existing.length > 0 && !force) {
       UPDATE submission s SET created_at = s.created_at, finished_at = (SELECT max(created_at) FROM submission_event WHERE submission_id = s.id)
       WHERE id IN (${ids}) AND status <> 'running';` } }),
   })
+}
+
+// --ai-demo: cho trợ lý chạy bóng ở bước trưởng phòng của "Xin tạm ứng" trên 12 hồ sơ có người quyết định thật,
+// để có bằng chứng thật (không phải số giả) về độ khớp. Cần trợ lý AI đã cấu hình; mỗi hồ sơ gọi AI một lần.
+if (process.argv.includes('--ai-demo')) {
+  const KEY = 'tam_ung', STEP = 'truong_phong'
+  await gql('director1', `mutation { update_step_autonomy_by_pk(pk_columns: {app_key: "${KEY}", step_key: "${STEP}"}, _set: {level: 2}) { level } }`)
+  const CASES = [
+    [3000000, 'Công tác Hà Nội 2 ngày'], [1500000, 'Mua văn phòng phẩm quý 4'], [4900000, 'abc', 'Lý do chưa rõ'], [4000000, 'Đặt cọc phòng họp khách hàng'],
+    [2000000, 'Chi phí đi lại gặp đối tác'], [3000000, '.', 'Lý do chưa rõ'], [3500000, 'Tạm ứng công tác phí Đà Nẵng'], [1000000, 'Mua tem bưu điện gửi hồ sơ'],
+    [2000000, 'không có', 'Lý do chưa rõ'], [2500000, 'Sửa máy in phòng kế toán'], [4000000, 'cần gấp', 'Lý do chưa rõ'], [4500000, 'Vé máy bay công tác TP.HCM'],
+  ]
+  let hits = 0
+  for (const [so_tien, ly_do, rejectNote] of CASES) {
+    const id = (await gql('staff1', 'mutation($d: jsonb!) { insert_submission_one(object: {app_key: "tam_ung", data: $d}) { id } }', { d: { so_tien, ly_do } })).insert_submission_one.id
+    await until('hồ sơ vào bước trưởng phòng', async () => (await gql('manager1', 'query($id: uuid!) { submission_by_pk(id: $id) { current_step } }', { id })).submission_by_pk.current_step === STEP)
+    // Chờ trợ lý cho ý kiến (quá 60 giây thì thôi: người vẫn quyết định bình thường, chỉ là lần này không có ý kiến để so).
+    await until('ý kiến của trợ lý', async () => (await gql('director1', 'query($id: uuid!) { ai_opinion(where: {submission_id: {_eq: $id}}) { id } }', { id })).ai_opinion.length > 0).catch(() => {})
+    await gql('manager1', 'mutation($o: submission_event_insert_input!) { insert_submission_event_one(object: $o) { id } }',
+      { o: { submission_id: id, step_key: STEP, action: rejectNote ? 'reject' : 'approve', note: rejectNote ?? null } })
+    const op = (await gql('director1', 'query($id: uuid!) { ai_opinion(where: {submission_id: {_eq: $id}}) { decision matched } }', { id })).ai_opinion[0]
+    if (op?.matched) hits++
+    console.log(`Hồ sơ ${ly_do}: người ${rejectNote ? 'từ chối' : 'duyệt'}, trợ lý ${op ? (op.decision === 'approve' ? 'duyệt' : 'từ chối') : 'không có ý kiến'}${op ? (op.matched ? ' (khớp)' : ' (lệch)') : ''}`)
+  }
+  console.log(`Độ khớp chạy bóng: ${hits}/${CASES.length}`)
 }
 console.log('Xong.')
