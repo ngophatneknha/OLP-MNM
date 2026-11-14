@@ -9,6 +9,25 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-15
+
+Bản kiểm thử theo tiêu chuẩn: thay smoke test bằng bộ kiểm thử đối chiếu trực tiếp với đề thi và thể lệ, và vá các lỗi mà bộ kiểm thử tìm ra.
+
+### Added
+- Bộ kiểm thử `tests/` chạy trên hệ thống thật: Tầng 1 (SSO, cổng API, headless, dữ liệu cấu trúc và phi cấu trúc, luồng BPMN), không gian H-P-D-I (kể cả tấn công vào bộ sinh ứng dụng và gọi AI thật) và sáu tiêu chí PoF của thể lệ (kho, giấy phép, bản phát hành, dựng từ bản phát hành, thư viện đính kèm, tài liệu). Báo cáo: `docs/KIEM_THU.md`.
+- **Trạm kiểm dịch mã độc ClamAV**: mọi tệp tải lên được quét trước khi lưu; tệp nhiễm bị từ chối (422), trạm hỏng thì từ chối luôn (503) thay vì cho qua.
+- Chống dò mật khẩu ở Keycloak (khóa tạm thời sau 8 lần sai).
+- Tiêu đề bảo mật cho ứng dụng web (CSP, chống nhúng khung, nosniff, Referrer-Policy, Permissions-Policy).
+- Mẫu pull request, mẫu đề xuất tính năng, `CODE_OF_CONDUCT.md`.
+
+### Security
+- Nhật ký hành động trên hồ sơ **bất biến ở tầng cơ sở dữ liệu**: không UPDATE, DELETE hay TRUNCATE được, kể cả bằng quyền chủ sở hữu.
+- Từ chối hồ sơ bắt buộc có lý do ở cơ sở dữ liệu, không chỉ ở giao diện (trước đây gọi thẳng API vẫn từ chối được không lý do).
+
+### Changed
+- CI chạy bộ kiểm thử thật thay cho smoke test; `scripts/smoke.sh` bị xóa.
+- Kiểm tra phiên bản phát hành chấp nhận phiên bản mới hơn trên nhánh đang làm (thẻ được gắn sau khi gộp).
+
 ## [1.0.0] - 2026-11-15
 
 Bản ổn định đầu tiên: quy trình như mã nguồn mở, giao diện làm lại, tệp đính kèm, số liệu và trợ lý AI "thử việc".

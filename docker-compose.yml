@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 # SPDX-License-Identifier: Apache-2.0
 #
-# Tầng 1 (headless core). Kiểm thử bằng scripts/smoke.sh (chạy trong CI).
+# Tầng 1 (headless core). Kiểm thử bằng tests/ (chạy trong CI).
 # Phiên bản image cố định để build tái lập được; cập nhật có chủ đích.
 
 services:
@@ -111,6 +111,7 @@ services:
       FLOWABLE_PASSWORD: ${FLOWABLE_PASSWORD}
       HASURA_URL: http://hasura:8080
       S3_URL: http://seaweedfs:8333
+      CLAMAV_HOST: clamav
       HASURA_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
       # Trợ lý AI (tùy chọn): mọi máy chủ tương thích OpenAI /chat/completions (Ollama, vLLM, Mistral...).
       AI_BASE_URL: ${AI_BASE_URL:-}
@@ -127,6 +128,22 @@ services:
     command: server -dir=/data -s3
     volumes:
       - s3data:/data
+
+  # Trạm kiểm dịch mã độc (ClamAV, GPL-2.0, chạy tách riêng, không sửa). Mọi tệp tải lên phải qua đây.
+  # Lần đầu khởi động tải cơ sở dữ liệu mẫu nhận dạng (vài phút); cần khoảng 1,5 GB RAM.
+  clamav:
+    image: clamav/clamav:1.4.3
+    restart: unless-stopped
+    environment:
+      CLAMD_STARTUP_TIMEOUT: 600
+    volumes:
+      - clamdb:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
 
   apisix:
     image: apache/apisix:3.9.1-debian
@@ -156,3 +173,4 @@ services:
 volumes:
   pgdata:
   s3data:
+  clamdb:

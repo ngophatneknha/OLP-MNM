@@ -117,8 +117,18 @@ CREATE TABLE submission_event (
   note          text,
   actor_id      text NOT NULL,
   actor_name    text,
-  created_at    timestamptz NOT NULL DEFAULT now()
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  -- Từ chối phải nêu lý do: người gửi cần biết sửa gì. Ràng buộc ở CSDL để không phụ thuộc vào giao diện.
+  CONSTRAINT reject_needs_note CHECK (action <> 'reject' OR length(btrim(coalesce(note, ''))) > 0)
 );
+
+-- Nhật ký kiểm toán bất biến: không ai (kể cả chủ sở hữu CSDL qua câu lệnh thường) sửa hoặc xóa được dòng nào.
+CREATE FUNCTION forbid_change() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'Nhật ký chỉ được thêm, không được sửa hoặc xóa';
+END $$;
+CREATE TRIGGER submission_event_immutable BEFORE UPDATE OR DELETE ON submission_event FOR EACH ROW EXECUTE FUNCTION forbid_change();
+CREATE TRIGGER submission_event_no_truncate BEFORE TRUNCATE ON submission_event FOR EACH STATEMENT EXECUTE FUNCTION forbid_change();
 
 -- Rào chắn dữ liệu đầu vào (poka-yoke): hồ sơ phải khớp các trường khai báo trong spec của ứng dụng.
 CREATE FUNCTION check_submission_data() RETURNS trigger LANGUAGE plpgsql AS $$

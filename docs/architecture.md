@@ -54,7 +54,7 @@ AI lỗi hoặc chưa cấu hình thì mọi thứ chạy như nấc 1.
 
 - Chỉ ba cổng mở ra máy chủ: ứng dụng web, cổng API, trang đăng nhập Keycloak. Cơ sở dữ liệu, Hasura, Flowable, kho S3 chỉ nằm trong mạng nội bộ.
 - Console Hasura tắt; Keycloak chạy chế độ production (`start`).
-- Ứng dụng web chỉ đăng nhập bằng luồng chuyển hướng có PKCE. Đăng nhập bằng mật khẩu trực tiếp chỉ bật cho client `dxlab-cli` (smoke test và nạp dữ liệu mẫu); smoke test kiểm tra điều này.
+- Ứng dụng web chỉ đăng nhập bằng luồng chuyển hướng có PKCE. Đăng nhập bằng mật khẩu trực tiếp chỉ bật cho client `dxlab-cli` (kiểm thử và nạp dữ liệu mẫu); smoke test kiểm tra điều này.
 - Chưa có: TLS (đặt reverse proxy phía trước), xác thực hai yếu tố, quét mã độc, đổi mật khẩu tài khoản mẫu. Đây là việc phải làm trước khi đưa lên Internet.
 
 ## Bộ sinh ứng dụng

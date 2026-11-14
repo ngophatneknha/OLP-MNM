@@ -25,7 +25,7 @@ SPDX-License-Identifier: Apache-2.0
 Mỗi lần đẩy thay đổi vào `main` đi kèm một phiên bản mới theo [SemVer](https://semver.org/lang/vi/): sửa lỗi tăng số cuối, tính năng mới tăng số giữa, thay đổi phá vỡ tăng số đầu. Mỗi phiên bản cần: (1) mục mới trong `CHANGELOG.md`, (2) cập nhật `version` trong `web/package.json` và `web/package-lock.json`, (3) thẻ `vX.Y.Z` và bản phát hành GitHub kèm `dxlab-project-hub-X.Y.Z.tar.gz` (`git archive --format=tar.gz --prefix=dxlab-project-hub-X.Y.Z/ vX.Y.Z`).
 
 ## Definition of Done
-Code + tiêu đề SPDX + tài liệu ngắn + chạy được bằng `docker compose up` + được review.
+Code + tiêu đề SPDX + tài liệu ngắn + chạy được bằng `docker compose up` + `node --test tests/*.test.js` đạt + được review.
 
 ## Đóng góp một quy trình vào kho mẫu
 
