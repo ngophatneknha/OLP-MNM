@@ -104,14 +104,18 @@ if (existing.length > 0 && !force) {
   const run = await fetch(`${HASURA}`.replace('/v1/graphql', '/v2/query'), {
     method: 'POST',
     headers: { 'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    // Nhật ký bất biến chặn UPDATE; riêng dữ liệu mẫu do chính lệnh này tạo ra mới được dàn lại thời gian, trong một giao dịch
+    // (trigger được bật lại trước khi giao dịch kết thúc, nên không có khoảng hở cho dữ liệu thật).
     body: JSON.stringify({ type: 'run_sql', args: { source: 'default', sql: `
+      ALTER TABLE submission_event DISABLE TRIGGER submission_event_immutable;
       WITH s AS (SELECT id, row_number() OVER (ORDER BY no) AS rn FROM submission WHERE id IN (${ids})),
       e AS (SELECT se.id, s.id AS sid, s.rn, row_number() OVER (PARTITION BY s.id ORDER BY se.id) AS ord
             FROM submission_event se JOIN s ON s.id = se.submission_id)
       , u1 AS (UPDATE submission SET created_at = now() - interval '1 hour' * (60 + s.rn * 7) FROM s WHERE submission.id = s.id RETURNING 1)
       , u2 AS (UPDATE submission_event SET created_at = now() - interval '1 hour' * (60 + e.rn * 7)
                  + interval '1 hour' * (e.ord * (2 + (e.rn % 5) * 3)) FROM e WHERE submission_event.id = e.id RETURNING 1)
-      SELECT 1;` } }),
+      SELECT 1;
+      ALTER TABLE submission_event ENABLE TRIGGER submission_event_immutable;` } }),
   })
   if (!run.ok) throw new Error(`Không dàn được thời gian dữ liệu mẫu: ${await run.text()}`)
   await fetch(`${HASURA}`.replace('/v1/graphql', '/v2/query'), {

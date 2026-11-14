@@ -1,6 +1,12 @@
 {
   "realm": "dxlab",
   "enabled": true,
+  "bruteForceProtected": true,
+  "failureFactor": 8,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "permanentLockout": false,
   "roles": {
     "realm": [
       {
@@ -44,7 +50,7 @@
     },
     {
       "clientId": "dxlab-cli",
-      "name": "Công cụ dòng lệnh (smoke test, nạp dữ liệu mẫu)",
+      "name": "Công cụ dòng lệnh (kiểm thử, nạp dữ liệu mẫu)",
       "publicClient": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": true,

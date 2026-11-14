@@ -16,14 +16,30 @@ jobs:
       - uses: actions/checkout@v4
       - uses: fsfe/reuse-action@v4
 
-  smoke:
-    name: Dựng hệ thống từ đầu và smoke test
+  kiem-thu:
+    name: Kiểm thử đối chiếu đề thi trên hệ thống thật
     runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - run: node --test services/workflow-bridge/compile.test.js services/workflow-bridge/probation.test.js web/src/metrics.test.js
+        with:
+          fetch-depth: 0 # kiểm thử PoF cần lịch sử commit và thẻ phiên bản đầy đủ
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pip install reuse
+      - name: Kiểm thử đơn vị
+        run: node --test services/workflow-bridge/*.test.js web/src/metrics.test.js
       - run: npm ci --no-audit --no-fund && npm run build
         working-directory: web
-      - run: sh scripts/smoke.sh
+      - name: Dựng hệ thống từ đầu
+        run: |
+          cp .env.example .env
+          docker compose up -d --build
+          node tests/wait-ready.js 900
+      - name: Kiểm thử Tầng 1, H-P-D-I và PoF
+        run: node --test --test-reporter=spec tests/*.test.js
       - if: failure()
         run: docker compose ps -a && docker compose logs --tail=80

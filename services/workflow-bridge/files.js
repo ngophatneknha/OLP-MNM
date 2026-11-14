@@ -9,6 +9,7 @@
 // Kho S3 không mở ra ngoài: không ai tới được tệp mà không qua đây.
 
 import { randomUUID } from 'node:crypto'
+import { scan } from './scan.js'
 
 const { HASURA_URL, HASURA_ADMIN_SECRET, S3_URL = 'http://seaweedfs:8333' } = process.env
 const BUCKET = 'dxlab'
@@ -65,6 +66,13 @@ async function upload(req, res) {
   if (!UUID.test(submissionId ?? '')) throw new HttpError(400, 'Thiếu mã hồ sơ')
   const name = safeName(decodeURIComponent(req.headers['x-file-name'] ?? ''))
   const body = await readBody(req)
+  // Kiểm dịch trước mọi thứ khác: tệp nhiễm không để lại dấu vết nào trong cơ sở dữ liệu hay kho lưu trữ.
+  let verdict
+  try { verdict = await scan(body) } catch (err) {
+    console.error('Trạm kiểm dịch lỗi:', err.message)
+    throw new HttpError(503, 'Trạm kiểm dịch mã độc chưa sẵn sàng, tệp chưa được nhận. Hãy thử lại sau ít phút')
+  }
+  if (!verdict.clean) throw new HttpError(422, `Tệp bị từ chối: phát hiện mã độc (${verdict.signature})`)
   const key = `${submissionId}/${randomUUID()}`
   // Ghi dòng dữ liệu trước bằng quyền của người dùng: bị từ chối thì chưa có gì nằm trong kho.
   const { insert_attachment_one: row } = await asUser(req,

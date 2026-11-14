@@ -178,12 +178,21 @@ Mọi cấu hình nằm trong tệp `.env` (mẫu: [`.env.example`](.env.example
 
 ## Kiểm thử
 
+Kiểm thử đối chiếu trực tiếp với tài liệu của Ban tổ chức (đề thi và thể lệ), chạy trên hệ thống thật, không giả lập:
+
 ```bash
-node --test services/workflow-bridge/compile.test.js   # bộ biên dịch quy trình (cần Node.js 22)
-sh scripts/smoke.sh                                     # toàn hệ thống, từ đăng nhập tới phát hành phiên bản mới
+docker compose up -d --build && node tests/wait-ready.js   # dựng hệ thống và chờ sẵn sàng (cần Node.js 22)
+node --test --test-reporter=spec tests/*.test.js          # toàn bộ kiểm thử đối chiếu (khoảng 4 phút)
+node --test services/workflow-bridge/*.test.js web/src/metrics.test.js   # kiểm thử đơn vị (không cần hệ thống chạy)
 ```
 
-Smoke test dựng cả hệ thống rồi đóng vai năm người dùng: định nghĩa một ứng dụng, chạy ba nhánh quy trình, thử các hành vi phải bị chặn (tự duyệt hồ sơ của mình, duyệt thay bước của người khác, tự chấp nhận đề xuất của mình) và phát hành một phiên bản quy trình mới. CI chạy cả hai lệnh trên mỗi pull request.
+| Tệp | Đối chiếu với | Nội dung |
+|---|---|---|
+| `tests/tang1.test.js` | Đề thi mục 3-4: Tầng 1 | SSO/OIDC, cổng API (giả mạo token, CORS, giới hạn tần suất), headless, dữ liệu cấu trúc, kho tệp, kiểm dịch mã độc, luồng BPMN, tải đồng thời |
+| `tests/hpdi.test.js` | Đề thi mục 3: ứng dụng H-P-D-I | Bộ sinh quy trình (kể cả tiêm mã), đề xuất thay đổi, số liệu đối chiếu SQL, AI thật, nấc tự chủ |
+| `tests/pof.test.js` | Thể lệ: 6 tiêu chí PoF | Kho công khai, giấy phép từng tệp, bản phát hành `.tar.gz`, dựng từ bản phát hành, thư viện đính kèm, tài liệu, bug tracker |
+
+Kết quả và các điểm chưa làm: [docs/KIEM_THU.md](docs/KIEM_THU.md). Các điểm chưa làm khai báo bằng `todo` nên báo cáo không tô hồng. CI chạy toàn bộ trên mỗi pull request.
 
 ## Cấu trúc kho mã
 
@@ -193,7 +202,8 @@ infra/                      cấu hình Keycloak, APISIX, Hasura, PostgreSQL
 services/workflow-bridge/   bộ biên dịch quy trình, cầu nối Hasura–Flowable, trợ lý AI
 web/                        ứng dụng web (Vue 3)
 library/                    kho quy trình mẫu, mỗi quy trình một tệp JSON
-scripts/                    smoke test và công cụ theo dõi tiến độ
+tests/                      kiểm thử đối chiếu đề thi và thể lệ
+scripts/                    công cụ theo dõi tiến độ
 docs/                       kiến trúc và kế hoạch
 ```
 

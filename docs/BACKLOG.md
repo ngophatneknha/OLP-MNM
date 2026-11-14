@@ -254,7 +254,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 
 - [ ] **OPS-01** CI: build và lint frontend — `A` · Tuần 2 · MVP
   - Hoàn thành khi: PR bị chặn nếu build lỗi.
-- [ ] **OPS-02** CI: smoke test `docker compose up` + healthcheck — `A` · Tuần 3 · MVP
+- [ ] **OPS-02** CI: kiểm thử `docker compose up` + healthcheck + bộ kiểm thử đối chiếu đề thi — `A` · Tuần 3 · MVP
   - Hoàn thành khi: mỗi PR chứng minh hệ thống khởi động được từ đầu.
 - [ ] **OPS-03** Giám sát Prometheus/Grafana — `A` · Tuần 6 · Stretch
   - Hoàn thành khi: dashboard sức khỏe các dịch vụ.
