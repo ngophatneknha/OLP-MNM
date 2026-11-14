@@ -1,20 +1,104 @@
 /*
  * SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Ngôn ngữ thiết kế lấy từ bàn giấy văn phòng Việt Nam: mực bút bi xanh để ký, con dấu đỏ để xác nhận.
+ * Khung và các nút là thứ ai cũng quen; điểm nhấn riêng duy nhất là hàng ô ký có đóng dấu (SignatureRow.vue).
  */
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-serif: "Noto Serif", "Times New Roman", serif;
+
+  --color-ground: #f2f4f8;      /* nền bàn làm việc */
+  --color-surface: #ffffff;     /* mặt giấy */
+  --color-line: #d7dde6;        /* đường kẻ */
+  --color-ink: #131a26;         /* mực đen */
+  --color-pencil: #556070;      /* chữ phụ, 6.4:1 trên nền trắng */
+  --color-pen: #1b3a8f;         /* mực bút bi xanh: hành động chính, thanh điều hướng */
+  --color-pen-deep: #132a69;
+  --color-pen-wash: #e8edfa;
+  --color-seal: #c4122f;        /* đỏ con dấu: chỉ dùng cho dấu duyệt và hành động từ chối */
+  --color-seal-wash: #fdecef;
+  --color-done: #18794e;
+  --color-done-wash: #e6f4ed;
+  --color-wait: #8a5a00;
+  --color-wait-wash: #fdf3d6;
+  --color-note: #fff1a8;        /* giấy nhớ: lời nhắn của trợ lý AI */
+}
+
+@layer base {
+  html { color: var(--color-ink); background: var(--color-ground); font-family: var(--font-sans); }
+  body { font-size: 0.9375rem; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  ::selection { background: var(--color-pen); color: #fff; }
+  input, textarea, select { caret-color: var(--color-pen); }
+  :focus-visible { outline: 2px solid var(--color-pen); outline-offset: 2px; border-radius: 4px; }
+  h1, h2, h3 { text-wrap: balance; }
+  dialog::backdrop { background: rgb(19 26 38 / 0.45); }
+}
+
 @layer components {
-  .card { @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm; }
-  .btn-primary, .btn-ghost, .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+  .page-title { @apply text-2xl font-semibold tracking-tight; }
+  .page-lead { @apply mt-1 max-w-[65ch] text-pencil; }
+  .section-title { @apply text-base font-semibold; }
+
+  /* Một khối nội dung: danh sách có đường kẻ, không phải lưới thẻ. */
+  .panel { @apply rounded-lg border border-line bg-surface; }
+  .panel-row { @apply flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line px-4 py-3 first:border-t-0; }
+  a.panel-row, button.panel-row { @apply w-full text-left transition-colors hover:bg-pen-wash/50; }
+
+  .btn, .btn-primary, .btn-quiet, .btn-danger {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
-  .btn-primary { @apply bg-indigo-600 text-white hover:bg-indigo-700; }
-  .btn-ghost { @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50; }
-  .btn-danger { @apply border border-rose-300 bg-white text-rose-700 hover:bg-rose-50; }
-  .input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200; }
-  .label { @apply mb-1 block text-sm font-medium text-slate-700; }
-  .chip { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
-  .page-title { @apply text-xl font-semibold; }
-  .page-hint { @apply mt-1 text-sm text-slate-500; }
+  .btn-primary { @apply bg-pen text-white hover:bg-pen-deep; }
+  .btn-quiet { @apply border border-line bg-surface text-ink hover:bg-ground; }
+  .btn-danger { @apply border border-seal/40 bg-surface text-seal hover:bg-seal-wash; }
+  .btn-icon { @apply inline-grid h-9 w-9 place-items-center rounded-md text-pencil transition-colors hover:bg-ground hover:text-ink disabled:opacity-30; }
+
+  .label { @apply mb-1.5 block text-sm font-medium; }
+  .hint { @apply mt-1 text-sm text-pencil; }
+  .input { @apply min-h-10 w-full rounded-md border border-line bg-surface px-3 py-2 text-[0.9375rem] placeholder:text-pencil/80 focus:border-pen focus:outline-2 focus:outline-offset-0 focus:outline-pen/25; }
+
+  .pill { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .pill-wait { @apply bg-wait-wash text-wait; }
+  .pill-done { @apply bg-done-wash text-done; }
+  .pill-stop { @apply bg-seal-wash text-seal; }
+  .pill-plain { @apply bg-ground text-pencil; }
+
+  .num { font-variant-numeric: tabular-nums; }
+
+  .avatar { @apply inline-grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pen-wash text-xs font-semibold text-pen; }
+  .tile-icon { @apply inline-grid h-10 w-10 shrink-0 place-items-center rounded-md bg-pen-wash text-pen; }
+
+  /* Giấy nhớ: cách trợ lý AI "dán" lời nhắn, để người dùng thấy đây là gợi ý chứ không phải dữ liệu. */
+  .sticky-note { @apply rounded-sm bg-note px-4 py-3 text-sm text-ink shadow-[0_2px_6px_rgb(19_26_38_/_0.12)]; }
+
+  /* Con dấu: điểm nhấn riêng của sản phẩm. */
+  .stamp {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border: 2px solid currentColor;
+    outline: 1px solid currentColor;
+    outline-offset: 2px;
+    border-radius: 0.4rem;
+    color: var(--color-seal);
+    font-family: var(--font-serif);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    transform: rotate(-4deg);
+  }
+  .stamp-refused { color: var(--color-ink); }
+  .stamp-fresh { animation: stamp-press 420ms cubic-bezier(0.16, 1, 0.3, 1); }
+}
+
+@keyframes stamp-press {
+  from { opacity: 0; transform: rotate(-11deg) scale(1.9); filter: blur(2px); }
+  to { opacity: 1; transform: rotate(-4deg) scale(1); filter: blur(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stamp-fresh { animation: none; }
+  * { transition-duration: 0.01ms !important; }
 }

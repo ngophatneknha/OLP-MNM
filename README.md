@@ -13,7 +13,7 @@ SPDX-License-Identifier: Apache-2.0
 
 Sản phẩm dự thi **OLP Phần mềm nguồn mở 2026**, chủ đề *Xây dựng Hệ điều hành Chuyển đổi số bằng công nghệ lõi nguồn mở (DX-OS Open-Core)*.
 
-![Trợ lý AI phác thảo ứng dụng từ một đoạn mô tả bằng tiếng Việt](docs/images/tao-ung-dung.jpg)
+![Bàn làm việc: việc đang chờ bạn ký duyệt và hồ sơ bạn đã gửi](docs/images/ban-lam-viec.jpg)
 
 ## Vấn đề
 
@@ -36,7 +36,9 @@ Người quản lý viết một câu như *"Nhân viên xin tạm ứng, trư�
 
 Không dùng AI vẫn làm được mọi thứ: tự khai báo trên form, hoặc lấy một quy trình trong [kho mẫu](library).
 
-![Hồ sơ đã gửi kèm sơ đồ: bước đang chờ, bước đã qua, bước bị bỏ qua, bước bị từ chối](docs/images/viec-cua-toi.jpg)
+![Hàng ô ký: ai đã ký có dấu đỏ kèm tên và giờ, ô đang chờ sáng lên](docs/images/chu-ky.jpg)
+
+![Soạn quy trình: sửa từng ô thông tin và từng bước, hồ sơ sẽ trông thế nào hiện ngay bên dưới](docs/images/tao-ung-dung.jpg)
 
 ### 2. Quy trình là mã nguồn mở
 

@@ -503,6 +503,8 @@
                     "columns": [
                       "key",
                       "name",
+                      "description",
+                      "category",
                       "spec"
                     ],
                     "set": {

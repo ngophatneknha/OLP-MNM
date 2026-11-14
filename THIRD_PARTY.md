@@ -33,6 +33,9 @@ Cài bằng `npm ci` theo `web/package-lock.json` khi build; không sao chép m�
 | keycloak-js | 26.2 | Apache-2.0 | ☐ |
 | Vite, @vitejs/plugin-vue (công cụ build) | 8.3 / 6.0 | MIT | ☐ |
 | Tailwind CSS (công cụ build) | 4.3 | MIT | ☐ |
+| Lucide (biểu tượng, `lucide-vue-next`) | 1.0 | ISC | ☐ |
+| Be Vietnam Pro (phông chữ, `@fontsource`) | 5.3 | OFL-1.1 | ☐ |
+| Noto Serif (phông chữ, `@fontsource`) | 5.3 | OFL-1.1 | ☐ |
 | nginx (image phục vụ tệp tĩnh) | 1.28.0 | BSD-2-Clause | ☐ |
 
 Trợ lý AI là **tùy chọn** và không đính kèm mô hình hay thư viện nào: hệ thống chỉ gọi một địa chỉ HTTP tương thích OpenAI do người triển khai cấu hình (khuyến nghị Ollama – MIT – với mô hình trọng số mở chạy nội bộ).
