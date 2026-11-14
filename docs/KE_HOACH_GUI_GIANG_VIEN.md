@@ -5,6 +5,13 @@ SPDX-License-Identifier: Apache-2.0
 
 # KẾ HOẠCH TRIỂN KHAI DỰ ÁN DỰ THI OLP PHẦN MỀM NGUỒN MỞ 2026
 
+> **Cập nhật 15/11/2026 – đọc trước.** Tài liệu này là kế hoạch ban đầu. Sản phẩm thực tế khác ở các điểm sau, và các bảng công nghệ bên dưới đã được sửa cho khớp:
+>
+> - Kho đối tượng là **SeaweedFS** (Apache-2.0), không còn MinIO; báo cáo số liệu viết ngay trong ứng dụng web thay cho Metabase; giao diện là **Vue 3**, không dùng Nuxt.
+> - Điểm sáng tạo là **bộ sinh ứng dụng quy trình** (mô tả quy trình → quy trình chạy được) và **quản lý quy trình như mã nguồn mở** (phiên bản, đề xuất thay đổi, chạy thử trên hồ sơ cũ, kho quy trình mẫu).
+> - Phân công 3 thành viên ở mục 4 và lịch tuần ở mục 5 chưa phản ánh thực tế làm việc; tiến độ thực tế theo dõi trong [BACKLOG.md](BACKLOG.md).
+
+
 **Kính gửi:** Thầy/Cô Cố vấn & Giảng viên Hướng dẫn Đội tuyển  
 **Đơn vị:** Khoa Công nghệ Thông tin / Trường Đại học  
 **Đề tài:** DX-Lab Project Hub – Hệ điều hành Doanh nghiệp số Lõi mở (DX-OS Open-Core)  
@@ -50,8 +57,8 @@ Thực tế chuyển đổi số hiện nay tại đa số các tổ chức/doan
 flowchart TB
   subgraph T2["TẦNG 2: ỨNG DỤNG MINH HỌA H-P-D-I (Giao diện người dùng)"]
     direction LR
-    UI["Web App (Nuxt 3 / Vue 3 + Tailwind CSS)\n[H] Kanban & Tài liệu | [P] Luồng Phê duyệt | [I] Trợ lý AI"]
-    BI["Metabase Community\n[D] Trung tâm Điều hành Báo cáo Dữ liệu"]
+    UI["Web App (Vue 3 + Tailwind CSS)
+[H] Tài liệu | [P] Hồ sơ, Quy trình | [D] Số liệu | [I] Trợ lý AI"]
   end
 
   subgraph T1["TẦNG 1: NỀN TẢNG DỊCH VỤ LÕI CHẠY NGẦM (Headless Open-Core PaaS)"]
@@ -59,7 +66,8 @@ flowchart TB
     KC["Identity Provider: Keycloak 26\n(OIDC, Single Sign-On, MFA, RBAC: staff / manager / admin)"]
     HS["Data API: Hasura GraphQL Engine\n(Auto-generated GraphQL APIs, Row-level Security)"]
     PG[("RDBMS: PostgreSQL 16\n(OLTP, Giao dịch nhất quán)")]
-    MIN[("Object Storage: MinIO\n(Tài liệu phi cấu trúc, S3 Compatible)")]
+    MIN[("Object Storage: SeaweedFS
+(Tệp đính kèm, S3 Compatible)")]
     FL["Workflow Engine: Flowable BPMN\n(Điều phối luồng công việc tự động)"]
   end
 
@@ -89,10 +97,10 @@ Một tiêu chí tiên quyết trong thang điểm OLP PMNM là **sản phẩm p
 | **API Gateway** | Apache APISIX | Apache-2.0 | **Đạt chuẩn** | Hiệu năng cao, kiến trúc đám mây của Apache Software Foundation. |
 | **Hệ quản trị CSDL** | PostgreSQL 16 | PostgreSQL License | **Đạt chuẩn** | Giấy phép tương tự MIT/BSD, hoàn toàn mở. |
 | **Data Engine** | Hasura CE | Apache-2.0 (Core) | **Đạt chuẩn** | Khai thác bản Community thuần mã nguồn mở. |
-| **Object Storage** | MinIO | AGPL-3.0 | **Đạt chuẩn** | Đóng gói container biệt lập qua network socket, không vi phạm liên kết mã nguồn. |
+| **Object Storage** | SeaweedFS | Apache-2.0 | **Đạt chuẩn** | Thay MinIO (AGPL-3.0): image cộng đồng của MinIO không còn trên Docker Hub; SeaweedFS cùng chuẩn S3, giấy phép Apache-2.0. |
 | **Workflow Engine** | Flowable BPMN | Apache-2.0 | **Đạt chuẩn** | *Thay thế n8n* vì n8n dùng license nguồn đóng/phi OSI (Sustainable Use License). |
-| **Business Intelligence** | Metabase | AGPL-3.0 | **Đạt chuẩn** | Bản mã nguồn mở cộng đồng, chạy container riêng biệt. |
-| **Giao diện người dùng** | Nuxt 3 / Vue 3 / Tailwind | MIT | **Đạt chuẩn** | Giấy phép tự do linh hoạt nhất hiện nay. |
+| **Báo cáo, số liệu** | Tự viết trong ứng dụng web | Apache-2.0 | **Đạt chuẩn** | Thay Metabase: số liệu tính trực tiếp từ hồ sơ và nhật ký, nhẹ hơn và không thêm thành phần AGPL. |
+| **Giao diện người dùng** | Vue 3 / Vue Router / Tailwind | MIT | **Đạt chuẩn** | Mọi màn hình nằm sau đăng nhập nên không cần dựng phía máy chủ như Nuxt. |
 | **Mở rộng AI (nếu kịp)** | Ollama & Qdrant | MIT / Apache-2.0 | **Đạt chuẩn** | Tự vận hành mô hình mở cục bộ, bảo vệ toàn vẹn dữ liệu bí mật. |
 
 > **Cảnh báo công nghệ đã bị đội tuyển loại trừ để bảo toàn điểm số:** Loại trừ **n8n** (không đạt OSI), **Directus** (chuyển sang BSL), **Redpanda** (BSL) và **HashiCorp Vault bản mới** (BSL - nếu cần sẽ thay bằng OpenBao).
@@ -145,10 +153,10 @@ Quy chế OLP PMNM 2026 chia làm 2 phần chấm độc lập (mỗi phần 50 
 |---|:---:|:---:|:---:|:---:|
 | 1. Khảo sát & Chốt kiến trúc công nghệ lõi mở | **A / R** | R | C | **C / I** |
 | 2. Thiết lập hạ tầng Lõi Tầng 1 (SSO, Gateway, PaaS) | **A / R** | C | I | I |
-| 3. Xây dựng dịch vụ Dữ liệu (Postgres, Hasura, MinIO) | C | **A / R** | I | I |
+| 3. Xây dựng dịch vụ Dữ liệu (Postgres, Hasura, SeaweedFS) | C | **A / R** | I | I |
 | 4. Thiết lập luồng tự động hóa quy trình (Flowable) | C | **A / R** | C | I |
 | 5. Phát triển ứng dụng Web minh họa H-P-D-I | I | C | **A / R** | I |
-| 6. Xây dựng trung tâm điều hành dữ liệu Metabase | I | **A / R** | C | I |
+| 6. Xây dựng trung tâm điều hành dữ liệu trang Số liệu | I | **A / R** | C | I |
 | 7. Kiểm định giấy phép REUSE & Tuân thủ PoF | C | R | **A / R** | **C** |
 | 8. Đóng gói Container & Kiểm thử Build sạch | **A / R** | C | C | I |
 | 9. Báo cáo định kỳ (Gate Review mỗi 2 tuần) | R | R | **A / R** | **A (Chủ trì)** |

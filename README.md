@@ -55,6 +55,12 @@ Những gì cộng đồng nguồn mở dùng để quản lý mã, ở đây d�
 
 ![Một đề xuất thay đổi: phần khác biệt viết bằng lời thường và kết quả chạy thử trên hồ sơ cũ](docs/images/de-xuat-thay-doi.jpg)
 
+### 3. Điều hành bằng số liệu thật
+
+Trưởng phòng và giám đốc có trang **Số liệu**: bao nhiêu hồ sơ đang chờ, mất bao lâu để xử lý xong, và **bước nào làm hồ sơ chờ lâu nhất**. Mọi con số tính từ chính hồ sơ và nhật ký ký duyệt bằng mã có kiểm thử, và dòng nào cũng bấm vào được hồ sơ gốc. Tệp đính kèm (báo giá, hóa đơn) lưu trong kho S3 và chỉ ai được xem hồ sơ mới tải được.
+
+![Trang Số liệu: thời gian xử lý trung bình, bước chậm nhất và hồ sơ đang chờ lâu](docs/images/so-lieu.jpg)
+
 ## Kiến trúc
 
 Hệ thống theo đúng mô hình DX-OS: tầng lõi chạy ngầm không có giao diện, tầng ứng dụng chỉ nói chuyện với lõi qua cổng API.
@@ -115,9 +121,9 @@ Mở **http://localhost:3000** và đăng nhập.
 
 | Tài khoản | Vai trò | Làm được gì |
 |---|---|---|
-| `staff1`, `staff2` | Nhân viên | Gửi hồ sơ, theo dõi hồ sơ của mình, góp ý quy trình |
-| `manager1` | Trưởng phòng | Duyệt hồ sơ, tạo ứng dụng, mở đề xuất thay đổi |
-| `director1` | Giám đốc | Duyệt hồ sơ, chấp nhận hoặc từ chối đề xuất thay đổi |
+| `staff1`, `staff2` | Nhân viên | Gửi hồ sơ kèm tệp, theo dõi hồ sơ của mình, góp ý quy trình |
+| `manager1` | Trưởng phòng | Duyệt hồ sơ, xem số liệu, soạn quy trình, mở đề xuất thay đổi |
+| `director1` | Giám đốc | Duyệt hồ sơ, xem số liệu, chấp nhận hoặc từ chối đề xuất thay đổi |
 | `accountant1` | Kế toán | Xử lý các bước chi tiền, đặt hàng, kiểm tra chứng từ |
 
 Mật khẩu dùng chung cho các tài khoản mẫu nằm trong [`infra/keycloak/realm/dxlab-realm.json`](infra/keycloak/realm/dxlab-realm.json). Chúng chỉ dành cho chạy thử; đổi trước khi dùng thật.
@@ -135,11 +141,10 @@ Mật khẩu dùng chung cho các tài khoản mẫu nằm trong [`infra/keycloa
 | Dịch vụ | Địa chỉ | Ghi chú |
 |---|---|---|
 | Ứng dụng web | http://localhost:3000 | |
-| Cổng API | http://localhost:9080 | Cổng vào duy nhất của ứng dụng |
-| Keycloak | http://localhost:8081 | Tài khoản quản trị trong `.env` |
-| Hasura | http://localhost:8082 | Chỉ mở khi phát triển |
-| Flowable REST | http://localhost:8083/flowable-rest | Chỉ mở khi phát triển |
+| Cổng API | http://localhost:9080 | Cổng vào duy nhất tới dữ liệu, quy trình và tệp |
+| Keycloak | http://localhost:8081 | Trang đăng nhập; tài khoản quản trị trong `.env` |
 
+Chỉ ba cổng trên được mở ra máy chủ. PostgreSQL, Hasura, Flowable, kho S3 và `workflow-bridge` chỉ nằm trong mạng nội bộ của Docker; mọi truy cập đều đi qua cổng API, nơi token được kiểm tra trước.
 Dừng hệ thống: `docker compose down`. Dừng và xóa toàn bộ dữ liệu: `docker compose down -v`.
 
 ## Cấu hình
@@ -177,13 +182,13 @@ docs/                       kiến trúc và kế hoạch
 
 ## Hiện trạng và hướng phát triển
 
-Đã chạy được, có kiểm thử: nền tảng lõi, bộ sinh ứng dụng, trợ lý AI phác thảo, quản lý phiên bản và đề xuất thay đổi quy trình, ứng dụng web.
+Đã chạy được, có kiểm thử: nền tảng lõi, bộ sinh ứng dụng, trợ lý AI phác thảo, quản lý phiên bản và đề xuất thay đổi quy trình, tệp đính kèm qua kho S3, trang Tài liệu, trang Số liệu (thời gian xử lý, điểm nghẽn), ứng dụng web.
 
-Đang làm tiếp:
+Còn lại, theo thứ tự:
 
 - **AI phải "thử việc"**: AI chạy song song với người ở từng bước duyệt, chỉ được giao thêm quyền khi tỷ lệ khớp với quyết định của con người đủ cao.
-- Tệp đính kèm trong hồ sơ, lưu qua kho S3.
-- Bảng điều hành: thời gian xử lý, điểm nghẽn, mức trưởng thành H-P-D-I của tổ chức.
+- Xác thực hai yếu tố cho trưởng phòng và giám đốc; quét mã độc tệp tải lên; TLS khi triển khai trên Internet.
+- Bảng công việc dạng cột (Kanban) cho không gian [H].
 
 Danh sách đầu việc và tiến độ: [docs/BACKLOG.md](docs/BACKLOG.md). Lịch sử thay đổi: [CHANGELOG.md](CHANGELOG.md).
 

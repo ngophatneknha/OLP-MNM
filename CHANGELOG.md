@@ -9,6 +9,24 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+### Added
+- **Tệp đính kèm hồ sơ** lưu trong kho S3 (SeaweedFS), đi qua cổng API; quyền xem/đính kèm theo đúng quyền của hồ sơ; tải về luôn dạng tệp đính kèm. Chọn tệp ngay trong form gửi hồ sơ hoặc thêm ở trang hồ sơ (tối đa 10 MB).
+- Trang **Tài liệu** (không gian [H]): mọi tệp tôi được xem, có tìm kiếm.
+- Trang **Số liệu** (không gian [D]) cho trưởng phòng và giám đốc: số hồ sơ, thời gian xử lý trung bình, tỷ lệ duyệt, bước chậm nhất, hồ sơ chờ lâu nhất; tính từ dữ liệu thật bằng mã có kiểm thử.
+- Dữ liệu mẫu có thời gian dàn ra nhiều ngày để số liệu có ý nghĩa.
+
+### Security
+- Chỉ còn ba cổng mở ra máy chủ (web, cổng API, đăng nhập); Hasura, Flowable, kho S3 chỉ trong mạng nội bộ; tắt console Hasura; Keycloak chạy chế độ production.
+- Ứng dụng web không còn được đăng nhập bằng mật khẩu trực tiếp; việc đó chuyển sang client riêng `dxlab-cli` cho smoke test và nạp dữ liệu mẫu.
+- Quản lý và giám đốc xem được mọi hồ sơ để điều hành; các vai trò khác vẫn chỉ thấy hồ sơ liên quan tới mình.
+
+### Changed
+- Giấy phép các thành phần được đối chiếu với kho chính thức và đánh dấu đã xác minh trong `THIRD_PARTY.md`, kèm kết luận về tương thích.
+- Tài liệu gửi giảng viên được cập nhật cho khớp công nghệ thực tế.
+
+### Removed
+- Các bảng `project`, `task`, `document` chưa được dùng (tệp đính kèm thay cho `document`).
+
 ### Changed
 - **Làm lại toàn bộ giao diện theo hướng "bàn giấy văn phòng"**: màu mực bút bi xanh, con dấu đỏ khi duyệt, giấy nhớ cho lời nhắn của trợ lý; Be Vietnam Pro cho chữ, Noto Serif cho tên văn bản và chữ ký; biểu tượng Lucide.
 - Trang chủ "Bàn làm việc" có lời chào, tóm tắt việc hôm nay, việc chờ bạn xử lý (duyệt ngay tại chỗ) và lối tắt gửi hồ sơ.

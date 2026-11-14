@@ -18,7 +18,7 @@ async function token(user) {
   if (!tokens[user]) {
     const res = await fetch(KEYCLOAK, {
       method: 'POST',
-      body: new URLSearchParams({ grant_type: 'password', client_id: 'dxlab-app', username: user, password: PASSWORD }),
+      body: new URLSearchParams({ grant_type: 'password', client_id: 'dxlab-cli', username: user, password: PASSWORD }),
     })
     if (!res.ok) throw new Error(`Không đăng nhập được ${user}: ${res.status}`)
     tokens[user] = (await res.json()).access_token
@@ -81,6 +81,7 @@ const SUBMISSIONS = [
 if (existing.length > 0 && !force) {
   console.log('Đã có hồ sơ trong hệ thống, bỏ qua bước tạo hồ sơ mẫu (thêm --force để vẫn tạo).')
 } else {
+  const created = []
   for (const [user, app, data, actions] of SUBMISSIONS) {
     const id = (await gql(user,
       'mutation($a: String!, $d: jsonb!) { insert_submission_one(object: {app_key: $a, data: $d}) { id } }', { a: app, d: data })).insert_submission_one.id
@@ -93,7 +94,31 @@ if (existing.length > 0 && !force) {
       const before = current.current_step
       current = await until(`hồ sơ ${app} rời bước ${before}`, async () => { const s = await state(); return (s.status !== 'running' || s.current_step !== before) && s })
     }
+    created.push(id)
     console.log(`Hồ sơ ${app} của ${user}: ${current.status}${current.waiting_role ? `, chờ ${current.waiting_role}` : ''}`)
   }
+  // Dàn thời gian của dữ liệu mẫu ra vài ngày với độ chờ khác nhau ở từng bước, để bảng số liệu có chuyện để kể.
+  // Chỉ ghi lên đúng các hồ sơ vừa tạo ở trên; giá trị tự sinh, không có dữ liệu ngoài đi vào câu SQL.
+  const ids = created.map((id) => `'${id}'`).join(',')
+  const run = await fetch(`${HASURA}`.replace('/v1/graphql', '/v2/query'), {
+    method: 'POST',
+    headers: { 'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    body: JSON.stringify({ type: 'run_sql', args: { source: 'default', sql: `
+      WITH s AS (SELECT id, row_number() OVER (ORDER BY no) AS rn FROM submission WHERE id IN (${ids})),
+      e AS (SELECT se.id, s.id AS sid, s.rn, row_number() OVER (PARTITION BY s.id ORDER BY se.id) AS ord
+            FROM submission_event se JOIN s ON s.id = se.submission_id)
+      , u1 AS (UPDATE submission SET created_at = now() - interval '1 hour' * (60 + s.rn * 7) FROM s WHERE submission.id = s.id RETURNING 1)
+      , u2 AS (UPDATE submission_event SET created_at = now() - interval '1 hour' * (60 + e.rn * 7)
+                 + interval '1 hour' * (e.ord * (2 + (e.rn % 5) * 3)) FROM e WHERE submission_event.id = e.id RETURNING 1)
+      SELECT 1;` } }),
+  })
+  if (!run.ok) throw new Error(`Không dàn được thời gian dữ liệu mẫu: ${await run.text()}`)
+  await fetch(`${HASURA}`.replace('/v1/graphql', '/v2/query'), {
+    method: 'POST',
+    headers: { 'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    body: JSON.stringify({ type: 'run_sql', args: { source: 'default', sql: `
+      UPDATE submission s SET created_at = s.created_at, finished_at = (SELECT max(created_at) FROM submission_event WHERE submission_id = s.id)
+      WHERE id IN (${ids}) AND status <> 'running';` } }),
+  })
 }
 console.log('Xong.')

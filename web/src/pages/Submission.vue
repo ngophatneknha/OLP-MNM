@@ -7,8 +7,8 @@ Một hồ sơ: nội dung đã khai, hàng ô ký cho biết đang ở đâu, v
 <script setup>
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ArrowLeft } from 'lucide-vue-next'
-import { gql, formatValue, formatTime, whereIs, waitsOnMe, stepOf, ROLE_LABEL, SUBMISSION_FIELDS } from '../lib.js'
+import { ArrowLeft, Download, Paperclip } from 'lucide-vue-next'
+import { auth, gql, formatValue, formatTime, whereIs, waitsOnMe, stepOf, ROLE_LABEL, SUBMISSION_FIELDS, uploadFile, downloadFile, formatSize, toast } from '../lib.js'
 import SignatureRow from '../components/SignatureRow.vue'
 import DecisionBar from '../components/DecisionBar.vue'
 
@@ -26,6 +26,16 @@ async function load() {
 onMounted(() => { load(); timer = setInterval(load, 3000) })
 onUnmounted(() => clearInterval(timer))
 watch(() => route.params.id, load)
+
+const canAttach = () => submission.value.submitter_id === auth.userId || waitsOnMe(submission.value)
+async function attach(event) {
+  for (const file of event.target.files) {
+    try { await uploadFile(submission.value.id, file); toast(`Đã đính kèm “${file.name}”`) } catch (err) { toast(err.message, false) }
+  }
+  event.target.value = ''
+  load()
+}
+const save = (file) => downloadFile(file).catch((err) => toast(err.message, false))
 
 const VERB = { approve: 'đã duyệt', reject: 'không duyệt', done: 'đã hoàn tất' }
 const stepName = (key) => submission.value.version.spec.steps.find((s) => s.key === key)?.name ?? key
@@ -65,6 +75,19 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
           <dd class="num min-w-0 flex-1 whitespace-pre-line font-medium">{{ formatValue(field, submission.data[field.key]) }}</dd>
         </div>
       </dl>
+    </section>
+
+    <section class="mt-8" aria-labelledby="files-title">
+      <h2 id="files-title" class="section-title">Tệp đính kèm</h2>
+      <ul class="panel mt-3">
+        <li v-for="file in submission.attachments" :key="file.id" class="panel-row">
+          <Paperclip :size="16" class="text-pencil" aria-hidden="true" />
+          <div class="min-w-[min(100%,10rem)] flex-1"><div class="font-medium">{{ file.name }}</div><div class="num text-xs text-pencil">{{ formatSize(file.size) }} · {{ file.uploader_name }} · {{ formatTime(file.created_at) }}</div></div>
+          <button class="btn-quiet" @click="save(file)"><Download :size="16" aria-hidden="true" /> Tải về</button>
+        </li>
+        <li v-if="!submission.attachments.length" class="panel-row text-pencil">Chưa có tệp nào.</li>
+      </ul>
+      <label v-if="canAttach()" class="btn-quiet mt-3 cursor-pointer"><Paperclip :size="16" aria-hidden="true" /> Thêm tệp<input type="file" multiple class="sr-only" @change="attach" /></label>
     </section>
 
     <section class="mt-8" aria-labelledby="sign-title">

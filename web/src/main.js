@@ -14,6 +14,8 @@ import { login } from './lib.js'
 import Home from './pages/Home.vue'
 import Apps from './pages/Apps.vue'
 import Submission from './pages/Submission.vue'
+import Documents from './pages/Documents.vue'
+import Stats from './pages/Stats.vue'
 import Builder from './pages/Builder.vue'
 import Processes from './pages/Processes.vue'
 
@@ -26,6 +28,8 @@ login().then(() => {
       { path: '/', component: Home },
       { path: '/gui/:key?', component: Apps },
       { path: '/ho-so/:id', component: Submission },
+      { path: '/tai-lieu', component: Documents },
+      { path: '/so-lieu', component: Stats },
       { path: '/soan', component: Builder },
       { path: '/quy-trinh', component: Processes },
       { path: '/:rest(.*)', redirect: '/' },
