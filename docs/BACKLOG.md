@@ -25,9 +25,9 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 | Nhóm | Hoàn thành | MVP | Tiến độ |
 |---|---|---|---|
 | PM — Quản trị dự án | 2/12 | 2/12 | ██░░░░░░░░ 16% |
-| POF — Tiêu chí PoF (50 điểm, chấm qua kho mã) | 3/12 | 3/12 | ██░░░░░░░░ 25% |
+| POF — Tiêu chí PoF (50 điểm, chấm qua kho mã) | 4/12 | 4/12 | ███░░░░░░░ 33% |
 | ID — Tầng 1: Định danh & Cổng API (Keycloak, APISIX) | 4/9 | 4/7 | ████░░░░░░ 44% |
-| DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS) | 2/9 | 2/8 | ██░░░░░░░░ 22% |
+| DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS) | 3/9 | 3/8 | ███░░░░░░░ 33% |
 | WF — Tầng 1: Workflow (Flowable) | 4/6 | 4/5 | ███████░░░ 66% |
 | GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo) | 7/10 | 7/9 | ███████░░░ 70% |
 | UI — Tầng 2: Ứng dụng H-P-D-I (Vue 3) | 3/11 | 3/10 | ███░░░░░░░ 27% |
@@ -36,7 +36,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 | OPS — Hạ tầng & vận hành | 0/4 | 0/2 | ░░░░░░░░░░ 0% |
 | DOC — Tài liệu & trình diễn | 0/8 | 0/8 | ░░░░░░░░░░ 0% |
 | RISK — Rủi ro cần theo dõi | 0/5 | 0/5 | ░░░░░░░░░░ 0% |
-| **Tổng** | **25/95** | **25/81** | ███░░░░░░░ 26% |
+| **Tổng** | **27/95** | **27/81** | ███░░░░░░░ 28% |
 <!-- progress:end -->
 
 ## Mốc thời gian
@@ -94,7 +94,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: không còn tag `latest`.
 - [ ] **POF-04** Cấu hình hoàn toàn qua `.env`/file cấu hình, không phải sửa tay header/mã — `A` · Tuần 1 · MVP
   - Hoàn thành khi: máy mới chỉ cần `cp .env.example .env` rồi chạy.
-- [ ] **POF-05** Release **v0.1.0** theo SemVer, định dạng `.tar.gz` (không zip/rar) — `A` · Tuần 2 · MVP
+- [x] **POF-05** Release **v0.1.0** theo SemVer, định dạng `.tar.gz` (không zip/rar) — `A` · Tuần 2 · MVP
   - Hoàn thành khi: GitHub Release có ghi chú và tệp `.tar.gz`; dùng git-cliff/Conventional Commits để sinh CHANGELOG.
 - [ ] **POF-06** Hướng dẫn "Build from source" và kiểm thử trên máy sạch (lặp ở Tuần 5 và 7) — `A` · Tuần 2 · MVP
   - Hoàn thành khi: người chưa từng tham gia làm theo README thành công, không cần hỏi.
@@ -140,7 +140,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: dựng lại DB từ đầu chỉ bằng `docker compose up`.
 - [x] **DA-03** Phân quyền Hasura theo role, row-level (nhân viên chỉ thấy việc của mình) — `B` · Tuần 1 · MVP
   - Hoàn thành khi: có test truy vấn chứng minh staff không đọc được dữ liệu người khác.
-- [ ] **DA-04** Seed dữ liệu mẫu đủ đẹp cho demo — `B` · Tuần 2 · MVP
+- [x] **DA-04** Seed dữ liệu mẫu đủ đẹp cho demo — `B` · Tuần 2 · MVP
   - Hoàn thành khi: một lệnh nạp lại dữ liệu mẫu.
 - [ ] **DA-05** SeaweedFS S3: bật khóa truy cập, bucket, presigned URL upload/download qua gateway — `B` · Tuần 2 · MVP
   - Hoàn thành khi: tải tệp lên và xuống được với quyền đúng.

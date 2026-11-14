@@ -1,0 +1,19 @@
+{
+  "key": "mua_thiet_bi",
+  "name": "Đề xuất mua thiết bị",
+  "category": "Mua sắm",
+  "description": "Phòng ban đề xuất mua thiết bị. Trưởng phòng duyệt; giá trên 20 triệu cần giám đốc; kế toán đặt hàng.",
+  "spec": {
+    "fields": [
+      { "key": "ten_thiet_bi", "label": "Tên thiết bị", "type": "text", "required": true },
+      { "key": "loai", "label": "Loại thiết bị", "type": "select", "required": true, "options": ["Máy tính", "Máy in", "Thiết bị mạng", "Khác"] },
+      { "key": "gia_du_kien", "label": "Giá dự kiến (đồng)", "type": "number", "required": true },
+      { "key": "ly_do", "label": "Lý do cần mua", "type": "longtext", "required": true }
+    ],
+    "steps": [
+      { "key": "truong_phong", "name": "Trưởng phòng duyệt", "role": "manager", "type": "approve" },
+      { "key": "giam_doc", "name": "Giám đốc duyệt", "role": "director", "type": "approve", "when": { "field": "gia_du_kien", "op": ">", "value": 20000000 } },
+      { "key": "dat_hang", "name": "Kế toán đặt hàng", "role": "accountant", "type": "task" }
+    ]
+  }
+}

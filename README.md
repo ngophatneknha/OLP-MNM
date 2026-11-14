@@ -10,7 +10,7 @@ SPDX-License-Identifier: Apache-2.0
 
 Sản phẩm dự thi **OLP Phần mềm nguồn mở 2026** – chủ đề *Xây dựng Hệ điều hành Doanh nghiệp số (DX-OS)*.
 
-> Trạng thái: **khung dự án (v0.0.1 – chưa phát hành)**. Xem [CHANGELOG.md](CHANGELOG.md).
+> Phiên bản hiện tại: **v0.1.0**. Xem [CHANGELOG.md](CHANGELOG.md) và trang **Releases**.
 
 ## Ý tưởng
 
@@ -54,6 +54,14 @@ Phát triển giao diện không cần build lại image: `cd web && npm ci && n
 Tài khoản mẫu (realm `dxlab`, chỉ dùng cho phát triển): `staff1`, `staff2`, `manager1`, `director1`, `accountant1` – mật khẩu xem trong `infra/keycloak/realm/dxlab-realm.json`.
 
 Kiểm tra nhanh toàn bộ chuỗi (đăng nhập → gateway → định nghĩa ứng dụng → chạy quy trình → phân quyền): `sh scripts/smoke.sh`.
+
+### Dữ liệu mẫu
+
+Sau khi hệ thống đã chạy, nạp 4 quy trình mẫu trong [`library/`](library) và một loạt hồ sơ ở nhiều trạng thái:
+
+```bash
+docker compose exec workflow-bridge node seed.js
+```
 
 ### Trợ lý AI (tùy chọn)
 

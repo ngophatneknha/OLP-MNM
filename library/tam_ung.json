@@ -1,0 +1,18 @@
+{
+  "key": "tam_ung",
+  "name": "Xin tạm ứng",
+  "category": "Tài chính",
+  "description": "Nhân viên xin tạm ứng tiền. Trưởng phòng luôn duyệt; khoản trên 5 triệu cần thêm giám đốc; kế toán chi tiền.",
+  "spec": {
+    "fields": [
+      { "key": "so_tien", "label": "Số tiền (đồng)", "type": "number", "required": true },
+      { "key": "ly_do", "label": "Lý do tạm ứng", "type": "longtext", "required": true },
+      { "key": "ngay_can", "label": "Ngày cần tiền", "type": "date", "required": false }
+    ],
+    "steps": [
+      { "key": "truong_phong", "name": "Trưởng phòng duyệt", "role": "manager", "type": "approve" },
+      { "key": "giam_doc", "name": "Giám đốc duyệt", "role": "director", "type": "approve", "when": { "field": "so_tien", "op": ">", "value": 5000000 } },
+      { "key": "chi_tien", "name": "Kế toán chi tiền", "role": "accountant", "type": "task" }
+    ]
+  }
+}

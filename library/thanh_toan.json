@@ -1,0 +1,19 @@
+{
+  "key": "thanh_toan",
+  "name": "Đề nghị thanh toán",
+  "category": "Tài chính",
+  "description": "Đề nghị thanh toán cho nhà cung cấp. Kế toán kiểm tra chứng từ trước, giám đốc duyệt chi, kế toán chuyển tiền.",
+  "spec": {
+    "fields": [
+      { "key": "nha_cung_cap", "label": "Nhà cung cấp", "type": "text", "required": true },
+      { "key": "so_tien", "label": "Số tiền (đồng)", "type": "number", "required": true },
+      { "key": "so_hoa_don", "label": "Số hóa đơn", "type": "text", "required": true },
+      { "key": "han_thanh_toan", "label": "Hạn thanh toán", "type": "date", "required": false }
+    ],
+    "steps": [
+      { "key": "kiem_tra", "name": "Kế toán kiểm tra chứng từ", "role": "accountant", "type": "approve" },
+      { "key": "giam_doc", "name": "Giám đốc duyệt chi", "role": "director", "type": "approve" },
+      { "key": "chuyen_tien", "name": "Kế toán chuyển tiền", "role": "accountant", "type": "task" }
+    ]
+  }
+}

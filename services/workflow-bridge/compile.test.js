@@ -4,7 +4,8 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { validateSpec, toBpmn, toViewSql } from './compile.js'
+import { readdirSync, readFileSync } from 'node:fs'
+import { validateSpec, toBpmn, toViewSql, isKey } from './compile.js'
 
 const spec = {
   fields: [
@@ -50,4 +51,17 @@ test('view phẳng ép kiểu số', () => {
   assert.match(sql, /CREATE VIEW bi\.app_tam_ung/)
   assert.match(sql, /\(data->>'so_tien'\)::numeric AS so_tien/)
   assert.throws(() => toViewSql('x; drop', spec))
+})
+
+test('mọi quy trình trong kho mẫu library/ đều hợp lệ và biên dịch được', () => {
+  const dir = new URL('../../library/', import.meta.url)
+  const files = readdirSync(dir).filter((f) => f.endsWith('.json'))
+  assert.ok(files.length > 0)
+  for (const file of files) {
+    const item = JSON.parse(readFileSync(new URL(file, dir), 'utf8'))
+    assert.equal(`${item.key}.json`, file, 'tên tệp phải trùng mã quy trình')
+    assert.ok(isKey(item.key) && item.name && item.description && item.category, file)
+    assert.deepEqual(validateSpec(item.spec), [], file)
+    toBpmn(item.key, item.name, item.spec)
+  }
 })
