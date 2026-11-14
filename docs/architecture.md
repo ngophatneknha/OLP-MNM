@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 
 ```mermaid
 flowchart TB
-  UI["Ứng dụng Nuxt 3 (H-P-D-I)"] --> GW["APISIX Gateway"]
+  UI["Ứng dụng web Vue 3 (H-P-D-I)"] --> GW["APISIX Gateway"]
   GW --> KC["Keycloak SSO"]
   GW --> HS["Hasura GraphQL"] --> PG[("PostgreSQL")]
   GW -.-> S3[("SeaweedFS S3 (route: kế hoạch)")]
