@@ -176,6 +176,17 @@ Mọi cấu hình nằm trong tệp `.env` (mẫu: [`.env.example`](.env.example
 - **Dùng dịch vụ ngoài:** nội dung mô tả quy trình sẽ được gửi tới dịch vụ đó.
 - **Để trống:** tính năng AI tắt, mọi phần khác hoạt động bình thường.
 
+## Gói container (GitHub Packages)
+
+Mỗi bản phát hành còn có hai image dựng sẵn trên [GitHub Packages](https://github.com/ngophatneknha/OLP-MNM/pkgs/container/dxlab-web), chỉ chứa mã của chính dự án (cùng giấy phép Apache-2.0):
+
+```bash
+docker pull ghcr.io/ngophatneknha/dxlab-web:latest              # ứng dụng web (nginx + bản dựng Vue)
+docker pull ghcr.io/ngophatneknha/dxlab-workflow-bridge:latest  # bộ biên dịch quy trình và cầu nối Hasura–Flowable
+```
+
+Hai image này chỉ là tiện lợi. Cách cài chuẩn vẫn là dựng từ mã nguồn bằng `docker compose up -d --build`, nên không phụ thuộc gói nào. `workflow-bridge` cần gắn thư mục `library/` vào `/library`.
+
 ## Kiểm thử
 
 Kiểm thử đối chiếu trực tiếp với tài liệu của Ban tổ chức (đề thi và thể lệ), chạy trên hệ thống thật, không giả lập:

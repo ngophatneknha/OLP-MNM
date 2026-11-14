@@ -9,6 +9,11 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-15
+
+### Added
+- **GitHub Packages**: mỗi thẻ phiên bản tự động phát hành hai image lên `ghcr.io` (`dxlab-web`, `dxlab-workflow-bridge`) kèm nhãn nguồn và giấy phép; thêm `services/workflow-bridge/Dockerfile`. Cài từ mã nguồn bằng `docker compose` vẫn là cách chuẩn.
+
 ## [1.1.0] - 2026-11-15
 
 Bản kiểm thử theo tiêu chuẩn: thay smoke test bằng bộ kiểm thử đối chiếu trực tiếp với đề thi và thể lệ, và vá các lỗi mà bộ kiểm thử tìm ra.
