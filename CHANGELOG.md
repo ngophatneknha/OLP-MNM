@@ -9,6 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+### Changed
+- **Làm lại toàn bộ giao diện theo hướng "bàn giấy văn phòng"**: màu mực bút bi xanh, con dấu đỏ khi duyệt, giấy nhớ cho lời nhắn của trợ lý; Be Vietnam Pro cho chữ, Noto Serif cho tên văn bản và chữ ký; biểu tượng Lucide.
+- Trang chủ "Bàn làm việc" có lời chào, tóm tắt việc hôm nay, việc chờ bạn xử lý (duyệt ngay tại chỗ) và lối tắt gửi hồ sơ.
+- Mỗi hồ sơ có số ("hồ sơ số 27") và trang riêng: nội dung, hàng ô ký (ai đã ký, ai đang chờ, bước nào không cần), nhật ký kể bằng câu.
+- Từ chối hồ sơ bắt buộc ghi lý do để người gửi biết phải sửa gì.
+- Soạn quy trình thành 3 bước dẫn dắt (bắt đầu, soạn, xuất bản); quy trình có mô tả ngắn và nhóm.
+- Thanh điều hướng dưới đáy trên điện thoại; thông báo ngắn sau mỗi hành động; lời báo lỗi nói rõ cách khắc phục.
+
 ### Added
 - **Quy trình là mã nguồn mở**: mỗi quy trình có lịch sử phiên bản bất biến kèm ghi chú thay đổi; sửa một quy trình đang chạy phải mở *đề xuất thay đổi*, được kiểm tra tự động, chạy thử trên các hồ sơ đã có (bao nhiêu hồ sơ đổi đường đi, thời gian chờ ước tính), và phải do người khác (giám đốc) chấp nhận mới phát hành.
 - Trang "Quy trình": xem sơ đồ, so sánh thay đổi bằng lời thường, lịch sử phiên bản, góp ý và báo lỗi quy trình — mọi vai trò đều xem được.

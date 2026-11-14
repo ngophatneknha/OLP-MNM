@@ -3,11 +3,17 @@
 
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import '@fontsource/be-vietnam-pro/400.css'
+import '@fontsource/be-vietnam-pro/500.css'
+import '@fontsource/be-vietnam-pro/600.css'
+import '@fontsource/noto-serif/400.css'
+import '@fontsource/noto-serif/700.css'
 import './style.css'
 import App from './App.vue'
 import { login } from './lib.js'
-import Inbox from './pages/Inbox.vue'
+import Home from './pages/Home.vue'
 import Apps from './pages/Apps.vue'
+import Submission from './pages/Submission.vue'
 import Builder from './pages/Builder.vue'
 import Processes from './pages/Processes.vue'
 
@@ -17,10 +23,11 @@ login().then(() => {
   const router = createRouter({
     history: createWebHistory(),
     routes: [
-      { path: '/', component: Inbox },
-      { path: '/apps', component: Apps },
-      { path: '/builder', component: Builder },
-      { path: '/processes', component: Processes },
+      { path: '/', component: Home },
+      { path: '/gui/:key?', component: Apps },
+      { path: '/ho-so/:id', component: Submission },
+      { path: '/soan', component: Builder },
+      { path: '/quy-trinh', component: Processes },
       { path: '/:rest(.*)', redirect: '/' },
     ],
   })

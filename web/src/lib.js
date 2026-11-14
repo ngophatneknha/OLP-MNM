@@ -8,7 +8,7 @@ import Keycloak from 'keycloak-js'
 import { reactive } from 'vue'
 
 export const ROLE_LABEL = { staff: 'Nhân viên', manager: 'Trưởng phòng', director: 'Giám đốc', accountant: 'Kế toán' }
-export const STATUS_LABEL = { running: 'Đang xử lý', approved: 'Hoàn tất', rejected: 'Bị từ chối' }
+export const CATEGORIES = ['Tài chính', 'Nhân sự', 'Mua sắm', 'Hành chính', 'Khác']
 
 export const auth = reactive({ name: '', userId: '', role: 'staff', roles: [] })
 let keycloak
@@ -54,6 +54,65 @@ export const formatValue = (field, value) =>
     : field.type === 'number' ? Number(value).toLocaleString('vi-VN') : String(value)
 
 export const formatTime = (iso) => new Date(iso).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+
+const relative = new Intl.RelativeTimeFormat('vi', { numeric: 'auto' })
+/** "2 giờ trước", "hôm qua" — con người đọc khoảng cách thời gian dễ hơn dấu thời gian. */
+export function ago(iso) {
+  const seconds = (Date.parse(iso) - Date.now()) / 1000
+  for (const [unit, size] of [['day', 86400], ['hour', 3600], ['minute', 60]]) {
+    if (Math.abs(seconds) >= size) return relative.format(Math.round(seconds / size), unit)
+  }
+  return 'vừa xong'
+}
+
+/** Tên gọi thân mật: Keycloak ghép "tên + họ" ("Chi Lê"), nên lấy từ đầu tiên. */
+export const givenName = (name) => (name || '').trim().split(/\s+/)[0]
+export const initials = (name) => (name || '?').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+
+/** Thông báo ngắn sau một hành động. */
+export const toasts = reactive([])
+export function toast(text, ok = true) {
+  const item = { id: Date.now() + Math.random(), text, ok }
+  toasts.push(item)
+  setTimeout(() => toasts.splice(toasts.indexOf(item), 1), 5000)
+}
+
+/** Các trường cần để hiển thị một hồ sơ ở mọi màn hình. */
+export const SUBMISSION_FIELDS = `id no data status current_step waiting_role submitter_id submitter_name app_version created_at finished_at
+  app { key name category }
+  version { spec }
+  events(order_by: {id: asc}) { step_key action note actor_name created_at }`
+
+export const stepOf = (s) => s.version.spec.steps.find((x) => x.key === s.current_step)
+export const waitsOnMe = (s) => s.status === 'running' && s.waiting_role === auth.role && s.submitter_id !== auth.userId
+
+/** Hồ sơ đang ở đâu, nói bằng một câu. */
+export function whereIs(s) {
+  if (s.status === 'approved') return `Đã hoàn tất ${ago(s.finished_at)}`
+  if (s.status === 'rejected') {
+    const refusal = s.events.findLast((e) => e.action === 'reject')
+    return `${refusal?.actor_name ?? 'Người duyệt'} không duyệt${refusal?.note ? `: ${refusal.note}` : ''}`
+  }
+  const step = stepOf(s)
+  return step ? `Đang chờ ${ROLE_LABEL[s.waiting_role]} ${step.type === 'task' ? 'thực hiện' : 'ký duyệt'}` : 'Đang chuyển tới người xử lý'
+}
+
+/** Ô thông tin đáng nhìn nhất của hồ sơ (ô bắt buộc đầu tiên), để một dòng danh sách vẫn đủ ý. */
+export function headline(s) {
+  const field = s.version.spec.fields.find((f) => f.required && s.data[f.key] !== undefined) ?? s.version.spec.fields[0]
+  return field ? `${field.label}: ${formatValue(field, s.data[field.key])}` : ''
+}
+
+/** "Trưởng phòng, Giám đốc (chỉ khi Số tiền trên 5.000.000), Kế toán" */
+export const routeText = (spec) => spec.steps
+  .map((step) => ROLE_LABEL[step.role] + (step.when ? ` (${conditionText(spec, step).toLowerCase().replace(/ \(.*?\)/g, '')})` : '')).join(', ')
+
+/** Gửi một hành động lên hồ sơ. Từ chối bắt buộc có lý do: người gửi cần biết phải sửa gì. */
+export async function sendAction(submission, action, note) {
+  await gql('mutation($o: submission_event_insert_input!) { insert_submission_event_one(object: $o) { id } }',
+    { o: { submission_id: submission.id, step_key: submission.current_step, action, note: note?.trim() || null } })
+  toast({ approve: 'Đã duyệt hồ sơ', reject: 'Đã từ chối hồ sơ', done: 'Đã ghi nhận hoàn tất' }[action])
+}
 
 const OP_TEXT = { '>': 'trên', '>=': 'từ', '<': 'dưới', '<=': 'tối đa', '==': 'là', '!=': 'khác' }
 

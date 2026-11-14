@@ -38,6 +38,8 @@ CREATE TABLE document (
 CREATE TABLE app (
   key        text PRIMARY KEY CHECK (key ~ '^[a-z][a-z0-9_]{1,30}$'),
   name       text NOT NULL CHECK (length(name) BETWEEN 1 AND 100),
+  description text CHECK (length(description) <= 300),
+  category   text CHECK (length(category) <= 40),
   spec       jsonb NOT NULL,
   status     text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'published', 'error')),
   error      text,
@@ -121,6 +123,7 @@ CREATE TRIGGER app_change_decide BEFORE UPDATE ON app_change FOR EACH ROW EXECUT
 -- Một hồ sơ gửi vào ứng dụng. current_step / waiting_role do workflow-bridge đồng bộ từ Flowable.
 CREATE TABLE submission (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  no           bigint GENERATED ALWAYS AS IDENTITY UNIQUE, -- số hồ sơ để con người gọi tên ("hồ sơ số 27")
   app_key      text NOT NULL REFERENCES app,
   app_version  integer NOT NULL DEFAULT 0, -- phiên bản quy trình lúc gửi; trigger submission_check điền
   data         jsonb NOT NULL,
