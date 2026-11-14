@@ -5,34 +5,6 @@
 -- shortcut: chỉ chạy khi volume Postgres còn trống (đổi schema phải `docker compose down -v`);
 -- chuyển sang Hasura migrations khi cần giữ dữ liệu qua các lần nâng cấp.
 
-CREATE TABLE project (
-  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name       text NOT NULL,
-  owner_id   text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE task (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id  uuid NOT NULL REFERENCES project ON DELETE CASCADE,
-  title       text NOT NULL,
-  status      text NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'doing', 'done')),
-  position    integer NOT NULL DEFAULT 0,
-  assignee_id text,
-  created_at  timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE document (
-  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id   uuid REFERENCES project ON DELETE SET NULL,
-  name         text NOT NULL,
-  object_key   text NOT NULL UNIQUE,
-  content_type text,
-  size         bigint,
-  owner_id     text NOT NULL,
-  created_at   timestamptz NOT NULL DEFAULT now()
-);
-
 -- Ứng dụng quy trình do người dùng định nghĩa. `spec` = { fields, steps } (xem services/workflow-bridge/compile.js).
 -- workflow-bridge biên dịch spec thành BPMN + view phẳng rồi đặt status = published | error.
 CREATE TABLE app (
@@ -193,11 +165,23 @@ END $$;
 CREATE TRIGGER submission_check BEFORE INSERT ON submission
   FOR EACH ROW EXECUTE FUNCTION check_submission_data();
 
-CREATE INDEX ON task (project_id);
-CREATE INDEX ON task (assignee_id);
 CREATE INDEX ON submission (app_key);
 CREATE INDEX ON submission (submitter_id);
 CREATE INDEX ON submission (waiting_role) WHERE status = 'running';
 CREATE INDEX ON submission_event (submission_id);
+
+-- Tệp đính kèm hồ sơ. Nội dung nằm trong kho S3; bảng này giữ tên, kích thước và khóa đối tượng.
+CREATE TABLE attachment (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  submission_id uuid NOT NULL REFERENCES submission ON DELETE CASCADE,
+  name          text NOT NULL CHECK (length(name) BETWEEN 1 AND 150),
+  size          bigint NOT NULL CHECK (size BETWEEN 1 AND 10485760),
+  content_type  text,
+  object_key    text NOT NULL UNIQUE,
+  uploader_id   text NOT NULL,
+  uploader_name text,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX ON attachment (submission_id);
 CREATE INDEX ON app_change (app_key);
 CREATE INDEX ON app_issue (app_key);

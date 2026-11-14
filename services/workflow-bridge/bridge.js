@@ -7,6 +7,7 @@
 //   submission_start  có hồ sơ mới                 -> khởi tạo tiến trình (businessKey = submission.id)
 //   submission_act    có hành động duyệt/từ chối   -> hoàn tất user task tương ứng
 //   app_change_check  có đề xuất thay đổi quy trình -> kiểm tra hợp lệ + chạy thử trên hồ sơ cũ
+// Nhận yêu cầu tệp đính kèm tại /files (xem files.js).
 // Nhận Hasura action tại POST /library : kho quy trình mẫu đọc từ thư mục /library.
 // Nhận Hasura action tại POST /ai/spec : mô tả bằng lời -> bản mô tả ứng dụng (xem ai.js).
 // Sau mỗi bước, trạng thái hồ sơ trong DB được đồng bộ lại từ Flowable (Flowable là nguồn sự thật của quy trình).
@@ -16,6 +17,7 @@ import { createServer } from 'node:http'
 import { readdirSync, readFileSync } from 'node:fs'
 import { validateSpec, toBpmn, toViewSql, simulate } from './compile.js'
 import { generateApp } from './ai.js'
+import { handleFiles } from './files.js'
 
 const { BRIDGE_SECRET, FLOWABLE_URL, FLOWABLE_USER, FLOWABLE_PASSWORD, HASURA_URL, HASURA_ADMIN_SECRET } = process.env
 for (const name of ['BRIDGE_SECRET', 'FLOWABLE_URL', 'FLOWABLE_USER', 'FLOWABLE_PASSWORD', 'HASURA_URL', 'HASURA_ADMIN_SECRET']) {
@@ -134,6 +136,7 @@ setInterval(sweepPendingApps, 10000)
 const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission, app_change_check: checkChange }
 
 createServer(async (req, res) => {
+  if (req.url.startsWith('/files')) return handleFiles(req, res)
   try {
     if (req.method !== 'POST' || req.headers['x-bridge-secret'] !== BRIDGE_SECRET) {
       res.writeHead(401).end()

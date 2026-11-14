@@ -81,7 +81,8 @@ export function toast(text, ok = true) {
 export const SUBMISSION_FIELDS = `id no data status current_step waiting_role submitter_id submitter_name app_version created_at finished_at
   app { key name category }
   version { spec }
-  events(order_by: {id: asc}) { step_key action note actor_name created_at }`
+  events(order_by: {id: asc}) { step_key action note actor_name created_at }
+  attachments(order_by: {created_at: asc}) { id name size uploader_name created_at }`
 
 export const stepOf = (s) => s.version.spec.steps.find((x) => x.key === s.current_step)
 export const waitsOnMe = (s) => s.status === 'running' && s.waiting_role === auth.role && s.submitter_id !== auth.userId
@@ -161,4 +162,35 @@ export function diffSpec(before, after) {
   if (common(before.steps, newSteps) !== common(after.steps, oldSteps)) out.push({ kind: 'change', text: 'Đổi thứ tự các bước' })
   if (!out.length) out.push({ kind: 'change', text: 'Không thay đổi cấu hình (chỉ đổi tên hoặc phát hành lại)' })
   return out
+}
+
+export const MAX_FILE_BYTES = 10 * 1024 * 1024
+export const formatSize = (bytes) => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
+
+/** Tải một tệp lên hồ sơ. Ném lỗi với câu chữ người dùng đọc được. */
+export async function uploadFile(submissionId, file) {
+  if (file.size > MAX_FILE_BYTES) throw new Error(`“${file.name}” lớn hơn 10 MB`)
+  if (file.size === 0) throw new Error(`“${file.name}” là tệp rỗng`)
+  await keycloak.updateToken(30)
+  const res = await fetch(`${apiUrl}/files`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${keycloak.token}`, 'x-hasura-role': auth.role, 'x-submission-id': submissionId,
+      'x-file-name': encodeURIComponent(file.name), 'content-type': file.type || 'application/octet-stream',
+    },
+    body: file,
+  })
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? `Không tải lên được “${file.name}”`)
+}
+
+/** Tải tệp về máy. Trình duyệt không gửi được token khi bấm liên kết, nên lấy qua fetch rồi lưu. */
+export async function downloadFile(file) {
+  await keycloak.updateToken(30)
+  const res = await fetch(`${apiUrl}/files/${file.id}`, { headers: { authorization: `Bearer ${keycloak.token}`, 'x-hasura-role': auth.role } })
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Không tải được tệp')
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(await res.blob())
+  link.download = file.name
+  link.click()
+  URL.revokeObjectURL(link.href)
 }

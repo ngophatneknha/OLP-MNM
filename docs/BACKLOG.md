@@ -25,18 +25,18 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 | Nhóm | Hoàn thành | MVP | Tiến độ |
 |---|---|---|---|
 | PM — Quản trị dự án | 2/12 | 2/12 | ██░░░░░░░░ 16% |
-| POF — Tiêu chí PoF (50 điểm, chấm qua kho mã) | 4/12 | 4/12 | ███░░░░░░░ 33% |
+| POF — Tiêu chí PoF (50 điểm, chấm qua kho mã) | 6/12 | 6/12 | █████░░░░░ 50% |
 | ID — Tầng 1: Định danh & Cổng API (Keycloak, APISIX) | 4/9 | 4/7 | ████░░░░░░ 44% |
-| DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS) | 3/9 | 3/8 | ███░░░░░░░ 33% |
+| DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS) | 6/9 | 6/8 | ███████░░░ 66% |
 | WF — Tầng 1: Workflow (Flowable) | 4/6 | 4/5 | ███████░░░ 66% |
 | GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo) | 11/15 | 11/14 | ███████░░░ 73% |
-| UI — Tầng 2: Ứng dụng H-P-D-I (Vue 3) | 3/11 | 3/10 | ███░░░░░░░ 27% |
-| BI — Không gian [D]: Dashboard & tìm kiếm | 0/4 | 0/3 | ░░░░░░░░░░ 0% |
+| UI — Tầng 2: Ứng dụng H-P-D-I (Vue 3) | 5/11 | 5/10 | █████░░░░░ 45% |
+| BI — Không gian [D]: Dashboard & tìm kiếm | 3/4 | 3/3 | ████████░░ 75% |
 | AI — Không gian [I]: Trí tuệ nhân tạo (Stretch) | 0/5 | 0/0 | ░░░░░░░░░░ 0% |
 | OPS — Hạ tầng & vận hành | 0/4 | 0/2 | ░░░░░░░░░░ 0% |
-| DOC — Tài liệu & trình diễn | 0/8 | 0/8 | ░░░░░░░░░░ 0% |
+| DOC — Tài liệu & trình diễn | 1/8 | 1/8 | █░░░░░░░░░ 12% |
 | RISK — Rủi ro cần theo dõi | 0/5 | 0/5 | ░░░░░░░░░░ 0% |
-| **Tổng** | **31/100** | **31/86** | ███░░░░░░░ 31% |
+| **Tổng** | **42/100** | **42/86** | ████░░░░░░ 42% |
 <!-- progress:end -->
 
 ## Mốc thời gian
@@ -98,11 +98,11 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: GitHub Release có ghi chú và tệp `.tar.gz`; dùng git-cliff/Conventional Commits để sinh CHANGELOG.
 - [ ] **POF-06** Hướng dẫn "Build from source" và kiểm thử trên máy sạch (lặp ở Tuần 5 và 7) — `A` · Tuần 2 · MVP
   - Hoàn thành khi: người chưa từng tham gia làm theo README thành công, không cần hỏi.
-- [ ] **POF-07** Rà giấy phép từng thành phần, điền cột "Đã xác minh" trong `THIRD_PARTY.md` — `B` · Tuần 1 · MVP
+- [x] **POF-07** Rà giấy phép từng thành phần, điền cột "Đã xác minh" trong `THIRD_PARTY.md` — `B` · Tuần 1 · MVP
   - Hoàn thành khi: mọi thành phần đã đối chiếu trên repo chính thức; loại bỏ thành phần không OSI-approved.
 - [ ] **POF-08** Kiểm tra tương thích giấy phép (Apache-2.0 vs các dịch vụ AGPL chạy tách container) — `B` · Tuần 7 · MVP
   - Hoàn thành khi: kết luận bằng văn bản trong `THIRD_PARTY.md`, đã hỏi giảng viên nếu có nghi ngại.
-- [ ] **POF-09** Bảng liệt kê thư viện/gói đính kèm, không sửa mã gói đính kèm — `B` · Tuần 7 · MVP
+- [x] **POF-09** Bảng liệt kê thư viện/gói đính kèm, không sửa mã gói đính kèm — `B` · Tuần 7 · MVP
   - Hoàn thành khi: `THIRD_PARTY.md` đầy đủ phiên bản và giấy phép.
 - [ ] **POF-10** Release **v1.0.0** trước hạn nộp — `A` · Tuần 7 · MVP
   - Hoàn thành khi: tạo trước 06/12, có `.tar.gz`, CHANGELOG đầy đủ.
@@ -142,11 +142,11 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: có test truy vấn chứng minh staff không đọc được dữ liệu người khác.
 - [x] **DA-04** Seed dữ liệu mẫu đủ đẹp cho demo — `B` · Tuần 2 · MVP
   - Hoàn thành khi: một lệnh nạp lại dữ liệu mẫu.
-- [ ] **DA-05** SeaweedFS S3: bật khóa truy cập, bucket, presigned URL upload/download qua gateway — `B` · Tuần 2 · MVP
+- [x] **DA-05** SeaweedFS S3: bật khóa truy cập, bucket, presigned URL upload/download qua gateway — `B` · Tuần 2 · MVP
   - Hoàn thành khi: tải tệp lên và xuống được với quyền đúng.
-- [ ] **DA-06** Bảng `document` liên kết metadata với đối tượng trong SeaweedFS — `B` · Tuần 2 · MVP
+- [x] **DA-06** Bảng `document` liên kết metadata với đối tượng trong SeaweedFS — `B` · Tuần 2 · MVP
   - Hoàn thành khi: xóa document thì xử lý đối tượng tương ứng nhất quán.
-- [ ] **DA-07** View/bảng phẳng cho BI (không phụ thuộc cấu trúc nghiệp vụ) — `B` · Tuần 4 · MVP
+- [x] **DA-07** View/bảng phẳng cho BI (không phụ thuộc cấu trúc nghiệp vụ) — `B` · Tuần 4 · MVP
   - Hoàn thành khi: Metabase đọc được view mà không cần quyền ghi.
 - [ ] **DA-08** Script sao lưu/khôi phục (pg_dump + mc mirror) — `B` · Tuần 5 · MVP
   - Hoàn thành khi: khôi phục thành công trên môi trường sạch, ghi trong runbook.
@@ -209,13 +209,13 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: đăng nhập SSO end-to-end; menu thay đổi theo role.
 - [ ] **UI-03** [H] Bảng Kanban dự án và công việc — `C` · Tuần 2 · MVP
   - Hoàn thành khi: kéo thả đổi trạng thái, lưu qua GraphQL.
-- [ ] **UI-04** [H] Quản lý tài liệu: tải lên, danh sách, tải xuống — `C` · Tuần 2 · MVP
+- [x] **UI-04** [H] Quản lý tài liệu: tải lên, danh sách, tải xuống — `C` · Tuần 2 · MVP
   - Hoàn thành khi: dùng được với SeaweedFS qua presigned URL.
 - [x] **UI-05** [P] Form gửi yêu cầu và danh sách yêu cầu của tôi — `C` · Tuần 3 · MVP
   - Hoàn thành khi: gửi yêu cầu → xuất hiện ở hàng chờ duyệt.
 - [x] **UI-06** [P] Màn hình duyệt dành cho quản lý — `C` · Tuần 3 · MVP
   - Hoàn thành khi: duyệt/từ chối có lý do, cập nhật cho người gửi.
-- [ ] **UI-07** [D] Nhúng dashboard Metabase vào ứng dụng — `C` · Tuần 4 · MVP
+- [x] **UI-07** [D] Nhúng dashboard Metabase vào ứng dụng *(trang Số liệu)* — `C` · Tuần 4 · MVP
   - Hoàn thành khi: dashboard hiển thị trong app, chỉ role được phép mới xem.
 - [ ] **UI-08** [H] Trang cá nhân và trung tâm thông báo — `C` · Tuần 4 · MVP
   - Hoàn thành khi: nhận thông báo từ WF-05.
@@ -228,11 +228,11 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 
 ## BI — Không gian [D]: Dashboard & tìm kiếm
 
-- [ ] **BI-01** Thêm Metabase vào compose, kết nối view dữ liệu — `B` · Tuần 4 · MVP
+- [x] **BI-01** Thêm Metabase vào compose, kết nối view dữ liệu *(thay bằng trang Số liệu trong ứng dụng, không dùng Metabase)* — `B` · Tuần 4 · MVP
   - Hoàn thành khi: cấu hình lưu trong repo hoặc script tạo lại được.
-- [ ] **BI-02** Dashboard: tiến độ dự án, khối lượng việc theo người, thời gian xử lý yêu cầu — `B` · Tuần 4 · MVP
+- [x] **BI-02** Dashboard: tiến độ dự án, khối lượng việc theo người, thời gian xử lý yêu cầu — `B` · Tuần 4 · MVP
   - Hoàn thành khi: số liệu đổi theo dữ liệu thật khi demo.
-- [ ] **BI-03** Nhúng dashboard có ký bảo mật (signed embedding) — `B` · Tuần 4 · MVP
+- [x] **BI-03** Nhúng dashboard có ký bảo mật (signed embedding) *(không còn cần: số liệu nằm trong ứng dụng, đã có phân quyền)* — `B` · Tuần 4 · MVP
   - Hoàn thành khi: không truy cập được dashboard nếu không có token hợp lệ.
 - [ ] **BI-04** Tìm kiếm toàn văn bằng Meilisearch — `B` · Tuần 5 · Stretch
   - Hoàn thành khi: tìm được task/tài liệu theo từ khóa, tôn trọng phân quyền.
@@ -263,7 +263,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 
 ## DOC — Tài liệu & trình diễn
 
-- [ ] **DOC-01** Cập nhật sơ đồ kiến trúc theo thực tế sau mỗi mốc — `C` · Tuần 2 · MVP
+- [x] **DOC-01** Cập nhật sơ đồ kiến trúc theo thực tế sau mỗi mốc — `C` · Tuần 2 · MVP
   - Hoàn thành khi: `docs/architecture.md` khớp với compose hiện hành.
 - [ ] **DOC-02** Tài liệu người dùng (hướng dẫn từng không gian H/P/D/I) — `C` · Tuần 6 · MVP
   - Hoàn thành khi: có ảnh chụp màn hình, người ngoài làm theo được.

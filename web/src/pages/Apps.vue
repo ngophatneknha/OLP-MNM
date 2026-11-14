@@ -7,8 +7,8 @@ Gửi hồ sơ: chọn loại hồ sơ, điền form (dựng hoàn toàn từ qu
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, ChevronRight, Send } from 'lucide-vue-next'
-import { auth, gql, routeText, toast } from '../lib.js'
+import { ArrowLeft, ChevronRight, Paperclip, Send, X } from 'lucide-vue-next'
+import { auth, gql, routeText, toast, uploadFile, formatSize } from '../lib.js'
 import SignatureRow from '../components/SignatureRow.vue'
 import CategoryIcon from '../components/CategoryIcon.vue'
 
@@ -18,6 +18,8 @@ const apps = ref(null)
 const form = reactive({})
 const errors = reactive({})
 const sending = ref(false)
+const files = ref([])
+const pick = (event) => { files.value.push(...event.target.files); event.target.value = '' }
 
 onMounted(async () => {
   apps.value = (await gql('{ app(where: {status: {_eq: "published"}}, order_by: {name: asc}) { key name description category spec } }')).app
@@ -27,6 +29,7 @@ const selected = computed(() => apps.value?.find((a) => a.key === route.params.k
 watch(selected, () => {
   for (const key of Object.keys(form)) delete form[key]
   for (const key of Object.keys(errors)) delete errors[key]
+  files.value = []
 })
 
 async function submit() {
@@ -51,7 +54,11 @@ async function submit() {
     const { insert_submission_one: created } = await gql(
       'mutation($app: String!, $data: jsonb!) { insert_submission_one(object: {app_key: $app, data: $data}) { id no } }',
       { app: selected.value.key, data })
-    toast(`Đã gửi hồ sơ số ${created.no}`)
+    const failed = []
+    for (const file of files.value) {
+      try { await uploadFile(created.id, file) } catch (err) { failed.push(err.message) }
+    }
+    toast(failed.length ? `Đã gửi hồ sơ số ${created.no}, nhưng chưa đính kèm được: ${failed.join('; ')}. Bạn có thể thêm lại ở trang hồ sơ` : `Đã gửi hồ sơ số ${created.no}`, !failed.length)
     router.push(`/ho-so/${created.id}`)
   } catch (err) {
     toast(`Chưa gửi được hồ sơ: ${err.message}. Kiểm tra lại các ô rồi thử lại.`, false)
@@ -118,6 +125,18 @@ async function submit() {
             />
             <p v-if="errors[field.key]" :id="`e-${field.key}`" class="mt-1 text-sm text-seal">{{ errors[field.key] }}</p>
           </div>
+        </div>
+
+        <div class="panel mt-4 p-5">
+          <div class="label">Tệp đính kèm <span class="font-normal text-pencil">(không bắt buộc, mỗi tệp tối đa 10 MB)</span></div>
+          <ul v-if="files.length" class="mb-3 space-y-1 text-sm">
+            <li v-for="(file, i) in files" :key="i" class="flex items-center gap-2">
+              <Paperclip :size="14" class="text-pencil" aria-hidden="true" /> <span class="min-w-0 flex-1 truncate">{{ file.name }}</span>
+              <span class="num text-pencil">{{ formatSize(file.size) }}</span>
+              <button type="button" class="btn-icon !h-7 !w-7" :aria-label="`Bỏ tệp ${file.name}`" @click="files.splice(i, 1)"><X :size="14" aria-hidden="true" /></button>
+            </li>
+          </ul>
+          <label class="btn-quiet cursor-pointer"><Paperclip :size="16" aria-hidden="true" /> Chọn tệp<input type="file" multiple class="sr-only" @change="pick" /></label>
         </div>
 
         <h2 class="section-title mt-8">Hồ sơ sẽ cần chữ ký của</h2>

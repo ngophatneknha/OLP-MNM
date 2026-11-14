@@ -16,7 +16,7 @@ GW=http://localhost:9080/v1/graphql
 APP="smoke_$(date +%s)"
 
 token() {
-  curl -fsS -d grant_type=password -d client_id=dxlab-app -d "username=$1" -d password=dxlab-dev "$KC" |
+  curl -fsS -d grant_type=password -d client_id=dxlab-cli -d "username=$1" -d password=dxlab-dev "$KC" |
     sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'
 }
 # gql <token> <role> <query>  (dấu nháy kép trong query viết là \")
@@ -61,6 +61,8 @@ S1=$(token staff1); S2=$(token staff2); D1=$(token director1); A1=$(token accoun
 [ "$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -d '{"query":"{app{key}}"}' "$GW")" = 401 ] ||
   fail "gateway không trả 401 khi thiếu token"
 
+[ "$(curl -s -o /dev/null -w '%{http_code}' -d grant_type=password -d client_id=dxlab-app -d username=staff1 -d password=dxlab-dev "$KC")" != 200 ] ||
+  fail "ứng dụng web được phép đăng nhập bằng mật khẩu trực tiếp (chỉ nên dùng luồng chuyển hướng PKCE)"
 echo "Quản lý định nghĩa ứng dụng $APP..."
 SPEC='{fields:[{key:\"so_tien\",label:\"Số tiền\",type:\"number\",required:true}],steps:[{key:\"truong_phong\",name:\"Trưởng phòng duyệt\",role:\"manager\"},{key:\"giam_doc\",name:\"Giám đốc duyệt\",role:\"director\",when:{field:\"so_tien\",op:\">\",value:5000000}},{key:\"chi_tien\",name:\"Kế toán chi tiền\",role:\"accountant\",type:\"task\"}]}'
 has "$S1" staff "mutation{insert_app_one(object:{key:\\\"x$APP\\\",name:\\\"x\\\",spec:$SPEC}){key}}" "x$APP" &&
@@ -119,10 +121,27 @@ act "$M1" manager "$ID" truong_phong approve | grep -q '"id"' || fail "trưởng
 waits "$ID" '"current_step":"chi_tien"'
 has "$S1" staff '{library{key}}' '"key":"tam_ung"' || fail "không đọc được kho quy trình mẫu"
 
+echo "Tệp đính kèm: chỉ người liên quan mới tải lên và tải về được"
+AID=$(submit 4000000); waits "$AID" '"waiting_role":"manager"'
+FILE=$(mktemp); printf 'noi dung thu nghiem %s' "$APP" > "$FILE"
+FILES=http://localhost:9080/files
+put() { curl -s -o "$TMP_OUT" -w '%{http_code}' -X POST -H "Authorization: Bearer $1" -H "x-hasura-role: $2" -H "x-submission-id: $AID" -H 'x-file-name: bao%20gia.txt' -H 'content-type: text/plain' --data-binary @"$FILE" "$FILES"; }
+TMP_OUT=$(mktemp)
+[ "$(put "$S2" staff)" = 403 ] || fail "người không liên quan tải tệp lên được hồ sơ của người khác"
+[ "$(put "$S1" staff)" = 200 ] || fail "người gửi không đính kèm được tệp"
+FID=$(sed -n 's/.*"id":"\([^"]*\)".*/\1/p' "$TMP_OUT"); [ -n "$FID" ] || fail "không nhận được mã tệp"
+get() { curl -s -o "$TMP_OUT" -w '%{http_code}' -H "Authorization: Bearer $1" -H "x-hasura-role: $2" "$FILES/$FID"; }
+[ "$(get "$S1" staff)" = 200 ] && grep -q "noi dung thu nghiem $APP" "$TMP_OUT" || fail "người gửi không tải lại đúng nội dung tệp"
+[ "$(get "$M1" manager)" = 200 ] || fail "trưởng phòng không tải được tệp của hồ sơ chờ mình"
+[ "$(get "$S2" staff)" = 404 ] || fail "người không liên quan tải được tệp"
+[ "$(curl -s -o /dev/null -w '%{http_code}' "$FILES/$FID")" = 401 ] || fail "tải tệp không cần đăng nhập"
+[ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8333/dxlab/)" != 200 ] || fail "kho S3 mở ra ngoài cổng API"
+rm -f "$FILE" "$TMP_OUT"
+
 curl -fsS http://localhost:3000/config.json | grep -q '"apiUrl":"http' || fail "ứng dụng web không phục vụ cấu hình"
 curl -fsS http://localhost:3000/apps | grep -q '<div id="app">' || fail "ứng dụng web không phục vụ trang"
 
 docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT count(*) FROM bi.app_'"$APP"' WHERE so_tien >= 1000000"' |
-  grep -q '^5' || fail "view phẳng cho BI không có đủ 5 hồ sơ"
+  grep -q '^6' || fail "view phẳng cho BI không có đủ 6 hồ sơ"
 
 echo "OK: sinh ứng dụng từ bản mô tả, 3 nhánh quy trình, phân quyền và view BI đều đúng."

@@ -7,16 +7,45 @@ SPDX-License-Identifier: Apache-2.0
 
 ```mermaid
 flowchart TB
-  UI["Ứng dụng web Vue 3 (H-P-D-I)"] --> GW["APISIX Gateway"]
-  GW --> KC["Keycloak SSO"]
-  GW --> HS["Hasura GraphQL"] --> PG[("PostgreSQL")]
-  GW -.-> S3[("SeaweedFS S3 (route: kế hoạch)")]
-  HS -- "event trigger" --> BR["workflow-bridge"] --> FL["Flowable BPMN"]
-  BR -- "ghi mã tiến trình" --> HS
-  BI["Metabase (kế hoạch)"] --> PG
+  UI["Ứng dụng web Vue 3 (H-P-D-I)"] -- "token Keycloak" --> GW["APISIX Gateway<br/>kiểm JWT, CORS, giới hạn tần suất"]
+  UI -. đăng nhập .-> KC["Keycloak SSO"]
+  GW -- "/v1/graphql" --> HS["Hasura GraphQL<br/>phân quyền theo dòng"] --> PG[("PostgreSQL")]
+  GW -- "/files" --> BR["workflow-bridge"]
+  HS -- "event trigger, action" --> BR
+  BR --> FL["Flowable BPMN"]
+  BR -- "ghi bước đang chờ" --> HS
+  BR -- "tệp đính kèm" --> S3[("SeaweedFS S3<br/>không mở ra ngoài")]
 ```
 
 Nguyên tắc: tầng lõi **headless** – chỉ cung cấp dịch vụ qua API; mọi giao diện nằm ở tầng ứng dụng.
+
+## Các không gian trong ứng dụng
+
+| Không gian | Màn hình | Dữ liệu |
+|---|---|---|
+| [H] Con người | Bàn làm việc, Tài liệu (mọi tệp tôi được xem) | `submission`, `attachment` |
+| [P] Quy trình | Gửi hồ sơ, trang hồ sơ (ô ký, nhật ký), Quy trình (phiên bản, đề xuất, góp ý), Soạn quy trình | `app`, `app_version`, `app_change`, `app_issue`, `submission_event` |
+| [D] Dữ liệu | Số liệu: thời gian xử lý, điểm nghẽn, trạng thái, theo loại hồ sơ | tính từ `submission` và `submission_event` (`web/src/metrics.js`, có kiểm thử) |
+| [I] Trí tuệ | Trợ lý phác thảo quy trình trong Soạn quy trình | Hasura action `generateApp` |
+
+## Tệp đính kèm
+
+Nội dung tệp nằm trong kho S3 (SeaweedFS); bảng `attachment` giữ tên, kích thước và khóa đối tượng. Tệp đi qua `POST /files` và `GET /files/<id>` của cổng API:
+
+1. Cổng API kiểm chữ ký token (JWKS của Keycloak).
+2. `workflow-bridge` gọi Hasura **bằng chính token của người dùng**; quyền xem/đính kèm do cùng bộ luật phân quyền của hồ sơ quyết định, nên không có hai nơi định nghĩa "ai được thấy tệp".
+3. Dòng dữ liệu được ghi trước, rồi mới ghi tệp vào S3; nếu ghi S3 lỗi thì dòng bị xóa để không có bản ghi trỏ vào tệp không tồn tại.
+4. Tải về luôn là `attachment` kèm `nosniff`: tệp do người dùng gửi không bao giờ được trình duyệt mở như trang web.
+
+Giới hạn hiện tại: mỗi tệp tối đa 10 MB, chưa quét mã độc (backlog ID-09).
+
+## Bảo mật khi triển khai
+
+- Chỉ ba cổng mở ra máy chủ: ứng dụng web, cổng API, trang đăng nhập Keycloak. Cơ sở dữ liệu, Hasura, Flowable, kho S3 chỉ nằm trong mạng nội bộ.
+- Console Hasura tắt; Keycloak chạy chế độ production (`start`).
+- Ứng dụng web chỉ đăng nhập bằng luồng chuyển hướng có PKCE. Đăng nhập bằng mật khẩu trực tiếp chỉ bật cho client `dxlab-cli` (smoke test và nạp dữ liệu mẫu); smoke test kiểm tra điều này.
+- Chưa có: TLS (đặt reverse proxy phía trước), xác thực hai yếu tố, quét mã độc, đổi mật khẩu tài khoản mẫu. Đây là việc phải làm trước khi đưa lên Internet.
+
 ## Bộ sinh ứng dụng
 
 Một ứng dụng quy trình chỉ là dữ liệu: một dòng trong bảng `app` với cột `spec`:

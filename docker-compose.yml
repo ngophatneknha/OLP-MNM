@@ -22,7 +22,8 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    command: start-dev --import-realm
+    # Chế độ production của Keycloak (không phải start-dev). HTTP bật vì TLS do lớp ngoài (reverse proxy) đảm nhiệm khi triển khai thật.
+    command: start --import-realm
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
@@ -35,6 +36,7 @@ services:
       KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL}
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: "true"
     volumes:
       - ./infra/keycloak/realm:/opt/keycloak/data/import:ro
     ports:
@@ -54,14 +56,12 @@ services:
     restart: unless-stopped
     environment:
       HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "false"
       HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
       BRIDGE_SECRET: ${BRIDGE_SECRET}
       # Xác thực JWT bằng khóa công khai (JWKS) của Keycloak; role lấy từ realm role, user id = sub.
       # Mọi người dùng phải có role `staff` (role mặc định); client gửi header x-hasura-role để dùng role khác.
       HASURA_GRAPHQL_JWT_SECRET: '{"jwk_url":"http://keycloak:8080/realms/dxlab/protocol/openid-connect/certs","claims_map":{"x-hasura-allowed-roles":{"path":"$$.realm_access.roles"},"x-hasura-default-role":"staff","x-hasura-user-id":{"path":"$$.sub"},"x-hasura-user-name":{"path":"$$.name","default":""}}}'
-    ports:
-      - "8082:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/healthz"]
       interval: 5s
@@ -94,8 +94,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       FLOWABLE_REST_APP_ADMIN_USERID: ${FLOWABLE_USER}
       FLOWABLE_REST_APP_ADMIN_PASSWORD: ${FLOWABLE_PASSWORD}
-    ports:
-      - "8083:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -112,6 +110,7 @@ services:
       FLOWABLE_USER: ${FLOWABLE_USER}
       FLOWABLE_PASSWORD: ${FLOWABLE_PASSWORD}
       HASURA_URL: http://hasura:8080
+      S3_URL: http://seaweedfs:8333
       HASURA_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
       # Trợ lý AI (tùy chọn): mọi máy chủ tương thích OpenAI /chat/completions (Ollama, vLLM, Mistral...).
       AI_BASE_URL: ${AI_BASE_URL:-}

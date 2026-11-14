@@ -20,437 +20,6 @@
             {
               "table": {
                 "schema": "public",
-                "name": "project"
-              },
-              "array_relationships": [
-                {
-                  "name": "tasks",
-                  "using": {
-                    "foreign_key_constraint_on": {
-                      "column": "project_id",
-                      "table": {
-                        "schema": "public",
-                        "name": "task"
-                      }
-                    }
-                  }
-                }
-              ],
-              "select_permissions": [
-                {
-                  "role": "staff",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {}
-                  }
-                },
-                {
-                  "role": "manager",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {}
-                  }
-                },
-                {
-                  "role": "director",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {}
-                  }
-                },
-                {
-                  "role": "accountant",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {}
-                  }
-                }
-              ],
-              "insert_permissions": [
-                {
-                  "role": "manager",
-                  "permission": {
-                    "check": {},
-                    "columns": [
-                      "name"
-                    ],
-                    "set": {
-                      "owner_id": "X-Hasura-User-Id"
-                    }
-                  }
-                }
-              ],
-              "update_permissions": [
-                {
-                  "role": "manager",
-                  "permission": {
-                    "columns": [
-                      "name"
-                    ],
-                    "filter": {},
-                    "check": null
-                  }
-                }
-              ],
-              "delete_permissions": [
-                {
-                  "role": "manager",
-                  "permission": {
-                    "filter": {}
-                  }
-                }
-              ]
-            },
-            {
-              "table": {
-                "schema": "public",
-                "name": "task"
-              },
-              "object_relationships": [
-                {
-                  "name": "project",
-                  "using": {
-                    "foreign_key_constraint_on": "project_id"
-                  }
-                }
-              ],
-              "select_permissions": [
-                {
-                  "role": "staff",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {
-                      "assignee_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    }
-                  }
-                },
-                {
-                  "role": "manager",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {}
-                  }
-                },
-                {
-                  "role": "director",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {
-                      "assignee_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    }
-                  }
-                },
-                {
-                  "role": "accountant",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {
-                      "assignee_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    }
-                  }
-                }
-              ],
-              "insert_permissions": [
-                {
-                  "role": "staff",
-                  "permission": {
-                    "check": {},
-                    "columns": [
-                      "project_id",
-                      "title",
-                      "status",
-                      "position"
-                    ],
-                    "set": {
-                      "assignee_id": "X-Hasura-User-Id"
-                    }
-                  }
-                },
-                {
-                  "role": "manager",
-                  "permission": {
-                    "check": {},
-                    "columns": [
-                      "project_id",
-                      "title",
-                      "status",
-                      "position",
-                      "assignee_id"
-                    ]
-                  }
-                },
-                {
-                  "role": "director",
-                  "permission": {
-                    "check": {},
-                    "columns": [
-                      "project_id",
-                      "title",
-                      "status",
-                      "position"
-                    ],
-                    "set": {
-                      "assignee_id": "X-Hasura-User-Id"
-                    }
-                  }
-                },
-                {
-                  "role": "accountant",
-                  "permission": {
-                    "check": {},
-                    "columns": [
-                      "project_id",
-                      "title",
-                      "status",
-                      "position"
-                    ],
-                    "set": {
-                      "assignee_id": "X-Hasura-User-Id"
-                    }
-                  }
-                }
-              ],
-              "update_permissions": [
-                {
-                  "role": "staff",
-                  "permission": {
-                    "columns": [
-                      "title",
-                      "status",
-                      "position"
-                    ],
-                    "filter": {
-                      "assignee_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    },
-                    "check": null
-                  }
-                },
-                {
-                  "role": "manager",
-                  "permission": {
-                    "columns": [
-                      "title",
-                      "status",
-                      "position",
-                      "assignee_id"
-                    ],
-                    "filter": {},
-                    "check": null
-                  }
-                },
-                {
-                  "role": "director",
-                  "permission": {
-                    "columns": [
-                      "title",
-                      "status",
-                      "position"
-                    ],
-                    "filter": {
-                      "assignee_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    },
-                    "check": null
-                  }
-                },
-                {
-                  "role": "accountant",
-                  "permission": {
-                    "columns": [
-                      "title",
-                      "status",
-                      "position"
-                    ],
-                    "filter": {
-                      "assignee_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    },
-                    "check": null
-                  }
-                }
-              ],
-              "delete_permissions": [
-                {
-                  "role": "manager",
-                  "permission": {
-                    "filter": {}
-                  }
-                }
-              ]
-            },
-            {
-              "table": {
-                "schema": "public",
-                "name": "document"
-              },
-              "object_relationships": [
-                {
-                  "name": "project",
-                  "using": {
-                    "foreign_key_constraint_on": "project_id"
-                  }
-                }
-              ],
-              "select_permissions": [
-                {
-                  "role": "staff",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {
-                      "owner_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    }
-                  }
-                },
-                {
-                  "role": "manager",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {}
-                  }
-                },
-                {
-                  "role": "director",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {
-                      "owner_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    }
-                  }
-                },
-                {
-                  "role": "accountant",
-                  "permission": {
-                    "columns": "*",
-                    "filter": {
-                      "owner_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    }
-                  }
-                }
-              ],
-              "insert_permissions": [
-                {
-                  "role": "staff",
-                  "permission": {
-                    "check": {},
-                    "columns": [
-                      "project_id",
-                      "name",
-                      "object_key",
-                      "content_type",
-                      "size"
-                    ],
-                    "set": {
-                      "owner_id": "X-Hasura-User-Id"
-                    }
-                  }
-                },
-                {
-                  "role": "manager",
-                  "permission": {
-                    "check": {},
-                    "columns": [
-                      "project_id",
-                      "name",
-                      "object_key",
-                      "content_type",
-                      "size"
-                    ],
-                    "set": {
-                      "owner_id": "X-Hasura-User-Id"
-                    }
-                  }
-                },
-                {
-                  "role": "director",
-                  "permission": {
-                    "check": {},
-                    "columns": [
-                      "project_id",
-                      "name",
-                      "object_key",
-                      "content_type",
-                      "size"
-                    ],
-                    "set": {
-                      "owner_id": "X-Hasura-User-Id"
-                    }
-                  }
-                },
-                {
-                  "role": "accountant",
-                  "permission": {
-                    "check": {},
-                    "columns": [
-                      "project_id",
-                      "name",
-                      "object_key",
-                      "content_type",
-                      "size"
-                    ],
-                    "set": {
-                      "owner_id": "X-Hasura-User-Id"
-                    }
-                  }
-                }
-              ],
-              "delete_permissions": [
-                {
-                  "role": "staff",
-                  "permission": {
-                    "filter": {
-                      "owner_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    }
-                  }
-                },
-                {
-                  "role": "manager",
-                  "permission": {
-                    "filter": {}
-                  }
-                },
-                {
-                  "role": "director",
-                  "permission": {
-                    "filter": {
-                      "owner_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    }
-                  }
-                },
-                {
-                  "role": "accountant",
-                  "permission": {
-                    "filter": {
-                      "owner_id": {
-                        "_eq": "X-Hasura-User-Id"
-                      }
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "table": {
-                "schema": "public",
                 "name": "app"
               },
               "select_permissions": [
@@ -612,6 +181,18 @@
               ],
               "array_relationships": [
                 {
+                  "name": "attachments",
+                  "using": {
+                    "foreign_key_constraint_on": {
+                      "column": "submission_id",
+                      "table": {
+                        "schema": "public",
+                        "name": "attachment"
+                      }
+                    }
+                  }
+                },
+                {
                   "name": "events",
                   "using": {
                     "foreign_key_constraint_on": {
@@ -656,54 +237,14 @@
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {
-                      "_or": [
-                        {
-                          "submitter_id": {
-                            "_eq": "X-Hasura-User-Id"
-                          }
-                        },
-                        {
-                          "waiting_role": {
-                            "_eq": "X-Hasura-Role"
-                          }
-                        },
-                        {
-                          "events": {
-                            "actor_id": {
-                              "_eq": "X-Hasura-User-Id"
-                            }
-                          }
-                        }
-                      ]
-                    }
+                    "filter": {}
                   }
                 },
                 {
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {
-                      "_or": [
-                        {
-                          "submitter_id": {
-                            "_eq": "X-Hasura-User-Id"
-                          }
-                        },
-                        {
-                          "waiting_role": {
-                            "_eq": "X-Hasura-Role"
-                          }
-                        },
-                        {
-                          "events": {
-                            "actor_id": {
-                              "_eq": "X-Hasura-User-Id"
-                            }
-                          }
-                        }
-                      ]
-                    }
+                    "filter": {}
                   }
                 },
                 {
@@ -1345,6 +886,260 @@
                     ],
                     "filter": {},
                     "check": null
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "attachment"
+              },
+              "object_relationships": [
+                {
+                  "name": "submission",
+                  "using": {
+                    "foreign_key_constraint_on": "submission_id"
+                  }
+                }
+              ],
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "submission": {
+                        "_or": [
+                          {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          },
+                          {
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            }
+                          },
+                          {
+                            "events": {
+                              "actor_id": {
+                                "_eq": "X-Hasura-User-Id"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "submission": {
+                        "_or": [
+                          {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          },
+                          {
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            }
+                          },
+                          {
+                            "events": {
+                              "actor_id": {
+                                "_eq": "X-Hasura-User-Id"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ],
+              "insert_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "check": {
+                      "submission": {
+                        "_or": [
+                          {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          },
+                          {
+                            "_and": [
+                              {
+                                "status": {
+                                  "_eq": "running"
+                                }
+                              },
+                              {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "columns": [
+                      "submission_id",
+                      "name",
+                      "size",
+                      "content_type",
+                      "object_key"
+                    ],
+                    "set": {
+                      "uploader_id": "X-Hasura-User-Id",
+                      "uploader_name": "X-Hasura-User-Name"
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "check": {
+                      "submission": {
+                        "_or": [
+                          {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          },
+                          {
+                            "_and": [
+                              {
+                                "status": {
+                                  "_eq": "running"
+                                }
+                              },
+                              {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "columns": [
+                      "submission_id",
+                      "name",
+                      "size",
+                      "content_type",
+                      "object_key"
+                    ],
+                    "set": {
+                      "uploader_id": "X-Hasura-User-Id",
+                      "uploader_name": "X-Hasura-User-Name"
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "check": {
+                      "submission": {
+                        "_or": [
+                          {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          },
+                          {
+                            "_and": [
+                              {
+                                "status": {
+                                  "_eq": "running"
+                                }
+                              },
+                              {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "columns": [
+                      "submission_id",
+                      "name",
+                      "size",
+                      "content_type",
+                      "object_key"
+                    ],
+                    "set": {
+                      "uploader_id": "X-Hasura-User-Id",
+                      "uploader_name": "X-Hasura-User-Name"
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "check": {
+                      "submission": {
+                        "_or": [
+                          {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          },
+                          {
+                            "_and": [
+                              {
+                                "status": {
+                                  "_eq": "running"
+                                }
+                              },
+                              {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "columns": [
+                      "submission_id",
+                      "name",
+                      "size",
+                      "content_type",
+                      "object_key"
+                    ],
+                    "set": {
+                      "uploader_id": "X-Hasura-User-Id",
+                      "uploader_name": "X-Hasura-User-Name"
+                    }
                   }
                 }
               ]

@@ -31,7 +31,7 @@
       "name": "DX-Lab Project Hub",
       "publicClient": true,
       "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
       "redirectUris": [
         "http://localhost:3000/*"
       ],
@@ -41,6 +41,15 @@
       "attributes": {
         "pkce.code.challenge.method": "S256"
       }
+    },
+    {
+      "clientId": "dxlab-cli",
+      "name": "Công cụ dòng lệnh (smoke test, nạp dữ liệu mẫu)",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": []
     }
   ],
   "users": [

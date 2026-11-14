@@ -3,15 +3,17 @@ SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 -->
 <script setup>
-import { Inbox, FilePlus2, Workflow, PencilRuler, LogOut, CircleCheck, CircleAlert } from 'lucide-vue-next'
+import { Inbox, FilePlus2, FolderOpen, ChartNoAxesColumn, Workflow, PencilRuler, LogOut, CircleCheck, CircleAlert } from 'lucide-vue-next'
 import { auth, logout, ROLE_LABEL, initials, toasts } from './lib.js'
 
 const nav = [
   { to: '/', label: 'Bàn làm việc', icon: Inbox },
   { to: '/gui', label: 'Gửi hồ sơ', icon: FilePlus2 },
+  { to: '/tai-lieu', label: 'Tài liệu', icon: FolderOpen },
+  { to: '/so-lieu', label: 'Số liệu', icon: ChartNoAxesColumn, roles: ['manager', 'director'] },
   { to: '/quy-trinh', label: 'Quy trình', icon: Workflow },
   { to: '/soan', label: 'Soạn quy trình', icon: PencilRuler, role: 'manager' },
-].filter((item) => !item.role || auth.role === item.role)
+].filter((item) => (!item.role || auth.role === item.role) && (!item.roles || item.roles.includes(auth.role)))
 </script>
 
 <template>
