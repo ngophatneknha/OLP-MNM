@@ -9,6 +9,10 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-15
+
+Bản ổn định đầu tiên: quy trình như mã nguồn mở, giao diện làm lại, tệp đính kèm, số liệu và trợ lý AI "thử việc".
+
 ### Added
 - **Trợ lý AI "thử việc"**: mỗi bước duyệt có bốn nấc tự chủ (người làm, chạy bóng, gợi ý, tự duyệt). Trợ lý cho ý kiến kèm lý do dựa trên hồ sơ và các quyết định gần đây của người ở bước đó; ở nấc 3 người duyệt thấy gợi ý, ở nấc 4 trợ lý tự duyệt hồ sơ hợp lệ còn từ chối luôn do người quyết.
 - Nâng nấc bị cơ sở dữ liệu chặn nếu thiếu bằng chứng: chỉ giám đốc, từng nấc một, cần ≥ 10 quyết định thật của người và ≥ 90% khớp; dữ liệu mẫu không được tính. Hạ nấc ai có quyền cũng làm được.
