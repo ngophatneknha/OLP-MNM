@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 # SPDX-License-Identifier: Apache-2.0
 #
-# Khung tầng 1 (headless core). CHƯA kiểm thử trên máy có Docker – cần chạy thử ở Tuần 1.
+# Tầng 1 (headless core). Kiểm thử bằng scripts/smoke.sh (chạy trong CI).
 # Phiên bản image cố định để build tái lập được; cập nhật có chủ đích.
 
 services:
@@ -31,43 +31,113 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HTTP_PORT: 8080
+      # Issuer trong token cố định theo địa chỉ công khai; dịch vụ nội bộ vẫn gọi được qua keycloak:8080.
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
     volumes:
       - ./infra/keycloak/realm:/opt/keycloak/data/import:ro
     ports:
       - "8081:8080"
+    healthcheck:
+      # Image Keycloak không có curl; gọi /health/ready (cổng quản trị 9000) bằng bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q 'HTTP/1.1 200' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
     depends_on:
       postgres:
         condition: service_healthy
 
   hasura:
     image: hasura/graphql-engine:v2.40.0
+    restart: unless-stopped
     environment:
       HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
       HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
-      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: anonymous
-      HASURA_GRAPHQL_JWT_SECRET: ${HASURA_JWT_SECRET}
+      BRIDGE_SECRET: ${BRIDGE_SECRET}
+      # Xác thực JWT bằng khóa công khai (JWKS) của Keycloak; role lấy từ realm role, user id = sub.
+      # Mọi người dùng phải có role `staff` (role mặc định); client gửi header x-hasura-role để dùng role khác.
+      HASURA_GRAPHQL_JWT_SECRET: '{"jwk_url":"http://keycloak:8080/realms/dxlab/protocol/openid-connect/certs","claims_map":{"x-hasura-allowed-roles":{"path":"$$.realm_access.roles"},"x-hasura-default-role":"staff","x-hasura-user-id":{"path":"$$.sub"}}}'
     ports:
       - "8082:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  # Chạy một lần: nạp bảng, quan hệ và phân quyền theo dòng vào Hasura.
+  hasura-init:
+    image: curlimages/curl:8.10.1
+    restart: "no"
+    command: ["-fsS", "-X", "POST", "-H", "X-Hasura-Admin-Secret: ${HASURA_ADMIN_SECRET}", "-H", "Content-Type: application/json", "-d", "@/metadata.json", "http://hasura:8080/v1/metadata"]
+    volumes:
+      - ./infra/hasura/metadata.json:/metadata.json:ro
+    depends_on:
+      hasura:
+        condition: service_healthy
+
+  # Động cơ quy trình BPMN (chỉ REST API, không giao diện).
+  flowable:
+    image: flowable/flowable-rest:7.2.0
+    environment:
+      SPRING_DATASOURCE_DRIVERCLASSNAME: org.postgresql.Driver
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/flowable
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      FLOWABLE_REST_APP_ADMIN_USERID: ${FLOWABLE_USER}
+      FLOWABLE_REST_APP_ADMIN_PASSWORD: ${FLOWABLE_PASSWORD}
+    ports:
+      - "8083:8080"
     depends_on:
       postgres:
         condition: service_healthy
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+  # Chạy một lần: triển khai quy trình BPMN trong infra/flowable (mỗi lần chạy tạo một phiên bản mới).
+  flowable-init:
+    image: curlimages/curl:8.10.1
+    restart: "no"
+    command: ["-fsS", "--retry", "40", "--retry-delay", "5", "--retry-all-errors", "-u", "${FLOWABLE_USER}:${FLOWABLE_PASSWORD}", "-F", "file=@/bpmn/request-approval.bpmn20.xml", "http://flowable:8080/flowable-rest/service/repository/deployments"]
     volumes:
-      - miniodata:/data
-    ports:
-      - "9001:9001"
+      - ./infra/flowable:/bpmn:ro
+    depends_on:
+      - flowable
+
+  # Cầu nối sự kiện Hasura -> Flowable (mã nguồn: services/workflow-bridge).
+  workflow-bridge:
+    image: node:22.19.0-alpine
+    restart: unless-stopped
+    command: node /app/bridge.js
+    environment:
+      BRIDGE_SECRET: ${BRIDGE_SECRET}
+      FLOWABLE_URL: http://flowable:8080/flowable-rest/service
+      FLOWABLE_USER: ${FLOWABLE_USER}
+      FLOWABLE_PASSWORD: ${FLOWABLE_PASSWORD}
+      HASURA_URL: http://hasura:8080/v1/graphql
+      HASURA_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
+    volumes:
+      - ./services/workflow-bridge:/app:ro
+
+  # Lưu trữ đối tượng chuẩn S3 (thay MinIO: image cộng đồng không còn trên Docker Hub).
+  # shortcut: S3 chưa bật xác thực và chưa mở cổng ra ngoài; cấu hình khóa truy cập khi làm DA-05.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.53
+    command: server -dir=/data -s3
+    volumes:
+      - s3data:/data
 
   apisix:
     image: apache/apisix:3.9.1-debian
+    # Chế độ standalone khai báo trong config.yaml; không đặt APISIX_STAND_ALONE vì entrypoint sẽ ghi đè tệp cấu hình.
     environment:
-      APISIX_STAND_ALONE: "true"
+      APP_ORIGIN: ${APP_ORIGIN}
     volumes:
       - ./infra/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
       - ./infra/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
@@ -76,8 +146,7 @@ services:
     depends_on:
       - hasura
       - keycloak
-      - minio
 
 volumes:
   pgdata:
-  miniodata:
+  s3data:

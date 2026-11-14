@@ -3,3 +3,4 @@
 
 -- Cơ sở dữ liệu riêng cho Keycloak (cùng máy chủ Postgres để tiết kiệm RAM).
 CREATE DATABASE keycloak;
+CREATE DATABASE flowable;

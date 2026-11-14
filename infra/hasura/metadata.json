@@ -1,0 +1,389 @@
+{
+  "type": "replace_metadata",
+  "version": 2,
+  "args": {
+    "allow_inconsistent_metadata": false,
+    "metadata": {
+      "version": 3,
+      "sources": [
+        {
+          "name": "default",
+          "kind": "postgres",
+          "configuration": {
+            "connection_info": {
+              "database_url": {
+                "from_env": "HASURA_GRAPHQL_DATABASE_URL"
+              }
+            }
+          },
+          "tables": [
+            {
+              "table": {
+                "schema": "public",
+                "name": "project"
+              },
+              "array_relationships": [
+                {
+                  "name": "tasks",
+                  "using": {
+                    "foreign_key_constraint_on": {
+                      "column": "project_id",
+                      "table": {
+                        "schema": "public",
+                        "name": "task"
+                      }
+                    }
+                  }
+                }
+              ],
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                }
+              ],
+              "insert_permissions": [
+                {
+                  "role": "manager",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "name"
+                    ],
+                    "set": {
+                      "owner_id": "X-Hasura-User-Id"
+                    }
+                  }
+                }
+              ],
+              "update_permissions": [
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": [
+                      "name"
+                    ],
+                    "filter": {},
+                    "check": null
+                  }
+                }
+              ],
+              "delete_permissions": [
+                {
+                  "role": "manager",
+                  "permission": {
+                    "filter": {}
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "task"
+              },
+              "object_relationships": [
+                {
+                  "name": "project",
+                  "using": {
+                    "foreign_key_constraint_on": "project_id"
+                  }
+                }
+              ],
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "assignee_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                }
+              ],
+              "insert_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "project_id",
+                      "title",
+                      "status",
+                      "position"
+                    ],
+                    "set": {
+                      "assignee_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "project_id",
+                      "title",
+                      "status",
+                      "position",
+                      "assignee_id"
+                    ]
+                  }
+                }
+              ],
+              "update_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": [
+                      "title",
+                      "status",
+                      "position"
+                    ],
+                    "filter": {
+                      "assignee_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    },
+                    "check": null
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": [
+                      "title",
+                      "status",
+                      "position",
+                      "assignee_id"
+                    ],
+                    "filter": {},
+                    "check": null
+                  }
+                }
+              ],
+              "delete_permissions": [
+                {
+                  "role": "manager",
+                  "permission": {
+                    "filter": {}
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "document"
+              },
+              "object_relationships": [
+                {
+                  "name": "project",
+                  "using": {
+                    "foreign_key_constraint_on": "project_id"
+                  }
+                }
+              ],
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "owner_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                }
+              ],
+              "insert_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "project_id",
+                      "name",
+                      "object_key",
+                      "content_type",
+                      "size"
+                    ],
+                    "set": {
+                      "owner_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "project_id",
+                      "name",
+                      "object_key",
+                      "content_type",
+                      "size"
+                    ],
+                    "set": {
+                      "owner_id": "X-Hasura-User-Id"
+                    }
+                  }
+                }
+              ],
+              "delete_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "filter": {
+                      "owner_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "filter": {}
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "request"
+              },
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "requester_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                }
+              ],
+              "insert_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "title",
+                      "description",
+                      "amount"
+                    ],
+                    "set": {
+                      "requester_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "title",
+                      "description",
+                      "amount"
+                    ],
+                    "set": {
+                      "requester_id": "X-Hasura-User-Id"
+                    }
+                  }
+                }
+              ],
+              "update_permissions": [
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": [
+                      "status",
+                      "decision_note",
+                      "decided_at"
+                    ],
+                    "filter": {
+                      "status": {
+                        "_eq": "pending"
+                      }
+                    },
+                    "check": null,
+                    "set": {
+                      "approver_id": "X-Hasura-User-Id"
+                    }
+                  }
+                }
+              ],
+              "event_triggers": [
+                {
+                  "name": "request_workflow",
+                  "definition": {
+                    "enable_manual": false,
+                    "insert": {
+                      "columns": "*"
+                    },
+                    "update": {
+                      "columns": [
+                        "status"
+                      ]
+                    }
+                  },
+                  "retry_conf": {
+                    "num_retries": 10,
+                    "interval_sec": 10,
+                    "timeout_sec": 30
+                  },
+                  "webhook": "http://workflow-bridge:3000/",
+                  "headers": [
+                    {
+                      "name": "x-bridge-secret",
+                      "value_from_env": "BRIDGE_SECRET"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
