@@ -7,5 +7,49 @@
       { "name": "manager", "description": "Quản lý – phê duyệt yêu cầu" },
       { "name": "admin", "description": "Quản trị hệ thống" }
     ]
-  }
+  },
+  "clients": [
+    {
+      "clientId": "dxlab-app",
+      "name": "DX-Lab Project Hub",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["+"],
+      "attributes": { "pkce.code.challenge.method": "S256" }
+    }
+  ],
+  "users": [
+    {
+      "username": "staff1",
+      "enabled": true,
+      "email": "staff1@dxlab.test",
+      "emailVerified": true,
+      "firstName": "An",
+      "lastName": "Nguyễn",
+      "credentials": [{ "type": "password", "value": "dxlab-dev", "temporary": false }],
+      "realmRoles": ["staff"]
+    },
+    {
+      "username": "staff2",
+      "enabled": true,
+      "email": "staff2@dxlab.test",
+      "emailVerified": true,
+      "firstName": "Bình",
+      "lastName": "Trần",
+      "credentials": [{ "type": "password", "value": "dxlab-dev", "temporary": false }],
+      "realmRoles": ["staff"]
+    },
+    {
+      "username": "manager1",
+      "enabled": true,
+      "email": "manager1@dxlab.test",
+      "emailVerified": true,
+      "firstName": "Chi",
+      "lastName": "Lê",
+      "credentials": [{ "type": "password", "value": "dxlab-dev", "temporary": false }],
+      "realmRoles": ["staff", "manager"]
+    }
+  ]
 }
