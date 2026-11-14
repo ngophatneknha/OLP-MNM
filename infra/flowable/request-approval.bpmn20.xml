@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+SPDX-License-Identifier: Apache-2.0
+
+Quy trình phê duyệt yêu cầu 1 cấp: nhân viên gửi -> quản lý xem xét -> duyệt / từ chối.
+-->
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="https://github.com/ngophatneknha/OLP-MNM">
+  <process id="requestApproval" name="Phê duyệt yêu cầu" isExecutable="true">
+    <startEvent id="start" name="Nhân viên gửi yêu cầu"/>
+    <sequenceFlow id="toReview" sourceRef="start" targetRef="review"/>
+    <userTask id="review" name="Quản lý xem xét yêu cầu" flowable:candidateGroups="manager"/>
+    <sequenceFlow id="toDecision" sourceRef="review" targetRef="decision"/>
+    <exclusiveGateway id="decision" name="Duyệt?" default="toRejected"/>
+    <sequenceFlow id="toApproved" sourceRef="decision" targetRef="approved">
+      <conditionExpression xsi:type="tFormalExpression">${approved}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="toRejected" sourceRef="decision" targetRef="rejected"/>
+    <endEvent id="approved" name="Đã duyệt"/>
+    <endEvent id="rejected" name="Từ chối"/>
+  </process>
+</definitions>

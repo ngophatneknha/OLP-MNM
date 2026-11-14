@@ -14,7 +14,7 @@ Sản phẩm dự thi **OLP Phần mềm nguồn mở 2026** – chủ đề *X�
 
 ## Kiến trúc
 
-- **Tầng 1 – Lõi headless (không UI người dùng cuối):** Keycloak (SSO), Apache APISIX (API Gateway), PostgreSQL + Hasura (API dữ liệu), MinIO (lưu trữ đối tượng), Flowable (workflow BPMN – sẽ bổ sung).
+- **Tầng 1 – Lõi headless (không UI người dùng cuối):** Keycloak (SSO), Apache APISIX (API Gateway), PostgreSQL + Hasura (API dữ liệu), SeaweedFS (lưu trữ đối tượng chuẩn S3), Flowable (workflow BPMN).
 - **Tầng 2 – Ứng dụng H-P-D-I:** ứng dụng Nuxt 3 (sẽ bổ sung) + dashboard Metabase (sẽ bổ sung).
 
 Chi tiết: [docs/architecture.md](docs/architecture.md).
@@ -35,7 +35,13 @@ docker compose up -d
 | API Gateway (APISIX) | http://localhost:9080 | Cổng vào duy nhất cho ứng dụng |
 | Keycloak | http://localhost:8081 | Quản trị: tài khoản trong `.env` |
 | Hasura | http://localhost:8082 | Chỉ dùng nội bộ/phát triển |
-| MinIO console | http://localhost:9001 | Tài khoản trong `.env` |
+| Flowable REST | http://localhost:8083/flowable-rest | Chỉ dùng nội bộ/phát triển; tài khoản trong `.env` |
+
+Tài khoản mẫu (realm `dxlab`, chỉ dùng cho phát triển): `staff1`, `staff2`, `manager1` – mật khẩu xem trong `infra/keycloak/realm/dxlab-realm.json`.
+
+Kiểm tra nhanh toàn bộ chuỗi đăng nhập → gateway → dữ liệu → quy trình phê duyệt: `sh scripts/smoke.sh` (cần volume trống).
+
+Lần khởi động đầu mất khoảng 1–2 phút (Keycloak nhập realm, Flowable tạo bảng). Cần khoảng 4 GB RAM cho Docker.
 
 Dừng và xóa dữ liệu: `docker compose down -v`.
 

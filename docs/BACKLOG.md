@@ -24,33 +24,35 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 <!-- progress:start -->
 | Nhóm | Hoàn thành | MVP | Tiến độ |
 |---|---|---|---|
-| PM — Quản trị dự án | 1/12 | 1/12 | █░░░░░░░░░ 8% |
-| POF — Tiêu chí PoF (50 điểm, chấm qua kho mã) | 2/12 | 2/12 | ██░░░░░░░░ 16% |
-| ID — Tầng 1: Định danh & Cổng API (Keycloak, APISIX) | 0/9 | 0/7 | ░░░░░░░░░░ 0% |
-| DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, MinIO) | 0/9 | 0/8 | ░░░░░░░░░░ 0% |
-| WF — Tầng 1: Workflow (Flowable) | 0/6 | 0/5 | ░░░░░░░░░░ 0% |
+| PM — Quản trị dự án | 2/12 | 2/12 | ██░░░░░░░░ 16% |
+| POF — Tiêu chí PoF (50 điểm, chấm qua kho mã) | 3/12 | 3/12 | ██░░░░░░░░ 25% |
+| ID — Tầng 1: Định danh & Cổng API (Keycloak, APISIX) | 4/9 | 4/7 | ████░░░░░░ 44% |
+| DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS) | 2/9 | 2/8 | ██░░░░░░░░ 22% |
+| WF — Tầng 1: Workflow (Flowable) | 4/6 | 4/5 | ███████░░░ 66% |
 | UI — Tầng 2: Ứng dụng H-P-D-I (Nuxt 3) | 0/11 | 0/10 | ░░░░░░░░░░ 0% |
 | BI — Không gian [D]: Dashboard & tìm kiếm | 0/4 | 0/3 | ░░░░░░░░░░ 0% |
 | AI — Không gian [I]: Trí tuệ nhân tạo (Stretch) | 0/5 | 0/0 | ░░░░░░░░░░ 0% |
 | OPS — Hạ tầng & vận hành | 0/4 | 0/2 | ░░░░░░░░░░ 0% |
 | DOC — Tài liệu & trình diễn | 0/8 | 0/8 | ░░░░░░░░░░ 0% |
 | RISK — Rủi ro cần theo dõi | 0/5 | 0/5 | ░░░░░░░░░░ 0% |
-| **Tổng** | **3/85** | **3/72** | ░░░░░░░░░░ 3% |
+| **Tổng** | **15/85** | **15/72** | ██░░░░░░░░ 17% |
 <!-- progress:end -->
 
 ## Mốc thời gian
 
 | Tuần | Hạn | Cột mốc |
 |---|---|---|
-| 0 | 18/10 | Repo, license, backlog, chốt stack |
-| 1 | 25/10 | Đăng nhập SSO end-to-end |
-| 2 | 01/11 | **Release v0.1.0** (skeleton + build guide) |
-| 3 | 08/11 | Luồng phê duyệt chạy được |
-| 4 | 15/11 | **v0.3.0** H-P-D hoàn chỉnh; đối chiếu đề chính thức |
-| 5 | 22/11 | **v0.5.0**; quyết định cắt/giữ Stretch |
-| 6 | 29/11 | **FEATURE FREEZE** |
-| 7 | 06/12 | **v1.0.0 + NỘP BÀI** |
-| 8 | 10/12 | **Chung kết** |
+> **Lịch nén (cập nhật 14/11/2026):** dự án trễ so với lịch 8 tuần ban đầu (3/85 mục). Cột "Tuần" ở từng đầu việc bên dưới là lịch cũ; thứ tự làm thực tế theo bảng này. Toàn bộ mục Stretch bị cắt trừ khi Sprint 2 xong sớm.
+
+| Sprint | Hạn | Cột mốc | Đầu việc |
+|---|---|---|---|
+| 1 | 20/11 | Lõi tầng 1 chạy được, **Release v0.1.0** (`.tar.gz`) | ID-01…06, DA-01…05, WF-01…04, POF-03…06, OPS-02 |
+| 2 | 27/11 | Ứng dụng Nuxt: SSO, [H] Kanban + tài liệu, [P] gửi/duyệt yêu cầu, **v0.3.0** | UI-01…06, UI-08, WF-05, DA-06, OPS-01 |
+| 3 | 03/12 | [D] dashboard Metabase nhúng, tài liệu, thử build trên máy sạch, **FEATURE FREEZE** | BI-01…03, DA-07, UI-07, UI-09, UI-10, DOC-01…03, POF-07…09, ID-07 |
+| Nộp | 06/12 17:00 | **v1.0.0 + email nộp bài** | POF-10, POF-11, DOC-06 |
+| Chung kết | 10/12 | Slide 15 phút, video dự phòng, diễn tập | DOC-04, DOC-05, DOC-07, DOC-08 |
+
+Đối chiếu đề chính thức (PM-09): đề bắt buộc tầng 1 headless gồm Identity/SSO, API Gateway, dữ liệu cấu trúc/phi cấu trúc, Workflow và ít nhất một ứng dụng minh họa H-P-D-I ở tầng 2 — khớp thiết kế hiện tại, không cần đổi kiến trúc. Không gian [I] không bắt buộc. Đề ghi hạn "Chủ Nhật 06/12/2025" nhưng 06/12 rơi vào Chủ Nhật ở năm 2026 và thể lệ ghi chấm kho mã 7–9/12/2026, nên hạn là 06/12/2026 (vẫn nên xác nhận trên Telegram – PM-05).
 
 ---
 
@@ -74,7 +76,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: storyline 1 trang trong `docs/`, cả đội đồng ý.
 - [ ] **PM-08** Cài Docker, kiểm tra cấu hình máy từng người (RAM, CPU) — `ALL` · Tuần 0 · MVP
   - Hoàn thành khi: mỗi người chạy được `docker compose up`; ghi lại cấu hình để quyết định Stretch AI.
-- [ ] **PM-09** Đối chiếu đề thi chính thức (công bố 11/2026) với thiết kế, cập nhật backlog — `A` · Tuần 4 · MVP
+- [x] **PM-09** Đối chiếu đề thi chính thức (công bố 11/2026) với thiết kế, cập nhật backlog — `A` · Tuần 4 · MVP
   - Hoàn thành khi: danh sách thay đổi yêu cầu được tạo thành Issues.
 - [ ] **PM-10** Quyết định cắt/giữ các mục Stretch dựa trên tiến độ thực tế — `ALL` · Tuần 5 · MVP
   - Hoàn thành khi: mục Stretch bị cắt được ghi vào "Định hướng phát triển".
@@ -87,7 +89,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: CI fail nếu có file thiếu giấy phép. *(Mỗi file mới vẫn phải có header — kiểm tra liên tục.)*
 - [x] **POF-02** Mẫu Issue báo lỗi để bug tracker dùng thật — `C` · Tuần 0 · MVP
   - Hoàn thành khi: có `.github/ISSUE_TEMPLATE/bug_report.md`; bug thật được ghi vào Issues trong suốt dự án.
-- [ ] **POF-03** Cố định phiên bản mọi image trong compose (hiện MinIO dùng `latest`) — `A` · Tuần 1 · MVP
+- [x] **POF-03** Cố định phiên bản mọi image trong compose — `A` · Tuần 1 · MVP
   - Hoàn thành khi: không còn tag `latest`.
 - [ ] **POF-04** Cấu hình hoàn toàn qua `.env`/file cấu hình, không phải sửa tay header/mã — `A` · Tuần 1 · MVP
   - Hoàn thành khi: máy mới chỉ cần `cp .env.example .env` rồi chạy.
@@ -110,15 +112,15 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 
 ## ID — Tầng 1: Định danh & Cổng API (Keycloak, APISIX)
 
-- [ ] **ID-01** Chạy compose thực tế, sửa lỗi cấu hình (compose chưa từng được chạy thử) — `A` · Tuần 1 · MVP
+- [x] **ID-01** Chạy compose thực tế, sửa lỗi cấu hình (compose chưa từng được chạy thử) — `A` · Tuần 1 · MVP
   - Hoàn thành khi: mọi container healthy; ghi lại lỗi gặp phải vào Issues.
-- [ ] **ID-02** Keycloak realm `dxlab`: client cho ứng dụng, role staff/manager/admin, user mẫu — `A` · Tuần 1 · MVP
+- [x] **ID-02** Keycloak realm `dxlab`: client cho ứng dụng, role staff/manager/admin, user mẫu — `A` · Tuần 1 · MVP
   - Hoàn thành khi: realm export nằm trong `infra/keycloak/realm/`, dựng lại được từ đầu.
 - [ ] **ID-03** Gateway: route `/v1/graphql`, `/auth`, `/storage`, `/workflow` — `A` · Tuần 2 · MVP
   - Hoàn thành khi: ứng dụng chỉ gọi qua cổng 9080.
-- [ ] **ID-04** Gateway xác thực JWT của Keycloak (OIDC) cho route nghiệp vụ — `A` · Tuần 2 · MVP
+- [x] **ID-04** Gateway xác thực JWT của Keycloak (OIDC) cho route nghiệp vụ — `A` · Tuần 2 · MVP
   - Hoàn thành khi: gọi không token trả 401, có token hợp lệ trả 200.
-- [ ] **ID-05** Hasura nhận JWT từ Keycloak (JWKS) thay khóa HS256 tạm — `A` · Tuần 2 · MVP
+- [x] **ID-05** Hasura nhận JWT từ Keycloak (JWKS) thay khóa HS256 tạm — `A` · Tuần 2 · MVP
   - Hoàn thành khi: claim role của Keycloak ánh xạ đúng sang role Hasura.
 - [ ] **ID-06** Rate limiting và CORS ở gateway — `A` · Tuần 2 · MVP
   - Hoàn thành khi: vượt ngưỡng trả 429; chỉ origin ứng dụng được phép.
@@ -129,19 +131,19 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 - [ ] **ID-09** Quét tệp tải lên bằng ClamAV — `A` · Tuần 6 · Stretch
   - Hoàn thành khi: tệp nhiễm mã độc mẫu (EICAR) bị từ chối.
 
-## DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, MinIO)
+## DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS)
 
 - [ ] **DA-01** Thiết kế schema: user_profile, project, task, document, request, request_history — `B` · Tuần 0 · MVP
   - Hoàn thành khi: sơ đồ ER trong `docs/`, được A và C xem lại.
-- [ ] **DA-02** Migration SQL và Hasura metadata lưu trong repo — `B` · Tuần 1 · MVP
+- [x] **DA-02** Migration SQL và Hasura metadata lưu trong repo — `B` · Tuần 1 · MVP
   - Hoàn thành khi: dựng lại DB từ đầu chỉ bằng `docker compose up`.
-- [ ] **DA-03** Phân quyền Hasura theo role, row-level (nhân viên chỉ thấy việc của mình) — `B` · Tuần 1 · MVP
+- [x] **DA-03** Phân quyền Hasura theo role, row-level (nhân viên chỉ thấy việc của mình) — `B` · Tuần 1 · MVP
   - Hoàn thành khi: có test truy vấn chứng minh staff không đọc được dữ liệu người khác.
 - [ ] **DA-04** Seed dữ liệu mẫu đủ đẹp cho demo — `B` · Tuần 2 · MVP
   - Hoàn thành khi: một lệnh nạp lại dữ liệu mẫu.
-- [ ] **DA-05** MinIO: bucket, presigned URL upload/download qua gateway — `B` · Tuần 2 · MVP
+- [ ] **DA-05** SeaweedFS S3: bật khóa truy cập, bucket, presigned URL upload/download qua gateway — `B` · Tuần 2 · MVP
   - Hoàn thành khi: tải tệp lên và xuống được với quyền đúng.
-- [ ] **DA-06** Bảng `document` liên kết metadata với đối tượng trong MinIO — `B` · Tuần 2 · MVP
+- [ ] **DA-06** Bảng `document` liên kết metadata với đối tượng trong SeaweedFS — `B` · Tuần 2 · MVP
   - Hoàn thành khi: xóa document thì xử lý đối tượng tương ứng nhất quán.
 - [ ] **DA-07** View/bảng phẳng cho BI (không phụ thuộc cấu trúc nghiệp vụ) — `B` · Tuần 4 · MVP
   - Hoàn thành khi: Metabase đọc được view mà không cần quyền ghi.
@@ -152,13 +154,13 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 
 ## WF — Tầng 1: Workflow (Flowable)
 
-- [ ] **WF-01** Thêm Flowable REST vào compose — `B` · Tuần 3 · MVP
+- [x] **WF-01** Thêm Flowable REST vào compose — `B` · Tuần 3 · MVP
   - Hoàn thành khi: container healthy, truy cập qua gateway có xác thực.
-- [ ] **WF-02** Quy trình BPMN phê duyệt yêu cầu 1 cấp (staff → manager) — `B` · Tuần 3 · MVP
+- [x] **WF-02** Quy trình BPMN phê duyệt yêu cầu 1 cấp (staff → manager) — `B` · Tuần 3 · MVP
   - Hoàn thành khi: file `.bpmn` nằm trong repo, tự deploy khi khởi động.
-- [ ] **WF-03** Hasura event trigger khởi chạy tiến trình khi có request mới — `B` · Tuần 3 · MVP
+- [x] **WF-03** Hasura event trigger khởi chạy tiến trình khi có request mới — `B` · Tuần 3 · MVP
   - Hoàn thành khi: tạo request → tiến trình tự khởi tạo.
-- [ ] **WF-04** Callback cập nhật trạng thái request khi quản lý duyệt/từ chối — `B` · Tuần 3 · MVP
+- [x] **WF-04** Callback cập nhật trạng thái request khi quản lý duyệt/từ chối — `B` · Tuần 3 · MVP
   - Hoàn thành khi: trạng thái trong DB khớp trạng thái tiến trình.
 - [ ] **WF-05** Thông báo realtime khi có người duyệt (Hasura subscription) — `B` · Tuần 4 · MVP
   - Hoàn thành khi: giao diện người gửi cập nhật không cần tải lại trang.
@@ -174,7 +176,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 - [ ] **UI-03** [H] Bảng Kanban dự án và công việc — `C` · Tuần 2 · MVP
   - Hoàn thành khi: kéo thả đổi trạng thái, lưu qua GraphQL.
 - [ ] **UI-04** [H] Quản lý tài liệu: tải lên, danh sách, tải xuống — `C` · Tuần 2 · MVP
-  - Hoàn thành khi: dùng được với MinIO qua presigned URL.
+  - Hoàn thành khi: dùng được với SeaweedFS qua presigned URL.
 - [ ] **UI-05** [P] Form gửi yêu cầu và danh sách yêu cầu của tôi — `C` · Tuần 3 · MVP
   - Hoàn thành khi: gửi yêu cầu → xuất hiện ở hàng chờ duyệt.
 - [ ] **UI-06** [P] Màn hình duyệt dành cho quản lý — `C` · Tuần 3 · MVP
@@ -205,7 +207,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 
 - [ ] **AI-01** Ollama trong compose profile `ai` (tùy chọn) — `B` · Tuần 5 · Stretch
   - Hoàn thành khi: chạy được mô hình nhỏ trên máy yếu nhất của đội.
-- [ ] **AI-02** Qdrant + pipeline nhúng tài liệu từ MinIO — `B` · Tuần 5 · Stretch
+- [ ] **AI-02** Qdrant + pipeline nhúng tài liệu từ SeaweedFS — `B` · Tuần 5 · Stretch
   - Hoàn thành khi: tài liệu mới tải lên được lập chỉ mục tự động.
 - [ ] **AI-03** API hỏi đáp RAG qua gateway — `B` · Tuần 6 · Stretch
   - Hoàn thành khi: câu trả lời kèm trích dẫn tài liệu nguồn.
