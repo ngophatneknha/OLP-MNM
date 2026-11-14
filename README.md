@@ -3,83 +3,192 @@ SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# DX-Lab Project Hub (DX-OS Open-Core)
+# DX-Lab Project Hub
 
 [![CI](https://github.com/ngophatneknha/OLP-MNM/actions/workflows/ci.yml/badge.svg)](https://github.com/ngophatneknha/OLP-MNM/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Phiên bản](https://img.shields.io/github/v/release/ngophatneknha/OLP-MNM?label=phi%C3%AAn%20b%E1%BA%A3n)](https://github.com/ngophatneknha/OLP-MNM/releases)
+[![Giấy phép](https://img.shields.io/badge/gi%E1%BA%A5y%20ph%C3%A9p-Apache--2.0-blue.svg)](LICENSE)
 
-Sản phẩm dự thi **OLP Phần mềm nguồn mở 2026** – chủ đề *Xây dựng Hệ điều hành Doanh nghiệp số (DX-OS)*.
+**Mô tả cách công việc đang diễn ra, nhận lại một ứng dụng chạy được — và quản lý quy trình của tổ chức như một dự án nguồn mở.**
 
-> Phiên bản hiện tại: **v0.1.0**. Xem [CHANGELOG.md](CHANGELOG.md) và trang **Releases**.
+Sản phẩm dự thi **OLP Phần mềm nguồn mở 2026**, chủ đề *Xây dựng Hệ điều hành Chuyển đổi số bằng công nghệ lõi nguồn mở (DX-OS Open-Core)*.
 
-## Ý tưởng
+![Trợ lý AI phác thảo ứng dụng từ một đoạn mô tả bằng tiếng Việt](docs/images/tao-ung-dung.jpg)
 
-Doanh nghiệp nhỏ thất bại khi chuyển đổi số không phải vì thiếu phần mềm, mà vì phần mềm có sẵn không khớp cách họ đang làm việc, còn thuê viết riêng thì quá đắt. DX-Lab Project Hub lấp khoảng trống đó: **mô tả quy trình bằng lời, nhận lại một ứng dụng chạy được**.
+## Vấn đề
 
-1. Quản lý mô tả quy trình bằng tiếng Việt (hoặc tự khai báo các trường và các bước).
-2. Trợ lý AI đề xuất bản mô tả ứng dụng và hỏi lại những điểm còn mơ hồ; con người xem lại và quyết định.
-3. Hệ thống biên dịch bản mô tả thành quy trình BPMN, phân quyền theo vai trò, rào chắn dữ liệu và view cho dashboard.
-4. Nhân viên gửi hồ sơ; từng vai trò chỉ thấy và xử lý đúng bước của mình; mọi hành động được ghi nhật ký.
-5. **Quy trình được quản lý như mã nguồn mở**: có phiên bản và changelog; muốn sửa phải mở đề xuất thay đổi, hệ thống tự kiểm tra và chạy thử trên hồ sơ cũ, người khác duyệt mới phát hành; ai cũng góp ý, báo lỗi được; quy trình hay có thể chia sẻ qua thư mục [`library/`](library).
+Doanh nghiệp nhỏ thường thất bại khi chuyển đổi số không phải vì thiếu phần mềm:
 
-Tắt AI thì hệ thống vẫn chạy đầy đủ: AI chỉ đề xuất, không tự xuất bản.
+- Phần mềm có sẵn **không khớp cách họ đang làm việc**, nên vài tháng sau mọi người quay lại nhắn tin và bảng tính.
+- Thuê viết riêng thì **quá đắt**, mà mỗi phòng ban lại có một quy trình khác nhau.
+- Khi quy trình cần đổi, **không ai biết thay đổi đó ảnh hưởng tới việc đang chạy thế nào**, và không còn dấu vết ai đã đổi gì.
+
+## Giải pháp
+
+### 1. Nói ra quy trình, có ngay ứng dụng
+
+Người quản lý viết một câu như *"Nhân viên xin tạm ứng, trưởng phòng duyệt, trên 5 triệu phải thêm giám đốc, kế toán chi tiền"*. Hệ thống làm phần còn lại:
+
+1. **Trợ lý AI phác thảo** các ô thông tin và các bước xử lý, đồng thời hỏi lại những điểm còn mơ hồ.
+2. **Con người xem lại** trên form và sơ đồ, sửa nếu cần. AI chỉ đề xuất, không tự xuất bản.
+3. **Bấm xuất bản**: hệ thống tự sinh quy trình BPMN, form nhập liệu, phân quyền theo vai trò, kiểm tra dữ liệu đầu vào và bảng dữ liệu cho báo cáo.
+4. **Nhân viên dùng ngay**: gửi hồ sơ, từng vai trò chỉ thấy và xử lý đúng bước của mình, sơ đồ cho biết hồ sơ đang ở đâu.
+
+Không dùng AI vẫn làm được mọi thứ: tự khai báo trên form, hoặc lấy một quy trình trong [kho mẫu](library).
+
+![Hồ sơ đã gửi kèm sơ đồ: bước đang chờ, bước đã qua, bước bị bỏ qua, bước bị từ chối](docs/images/viec-cua-toi.jpg)
+
+### 2. Quy trình là mã nguồn mở
+
+Những gì cộng đồng nguồn mở dùng để quản lý mã, ở đây dùng để quản lý quy trình của tổ chức:
+
+| Trong dự án nguồn mở | Trong DX-Lab Project Hub |
+|---|---|
+| Commit, bản phát hành, changelog | Mỗi lần phát hành quy trình là một **phiên bản** bất biến có ghi chú |
+| Pull request | Muốn sửa quy trình đang chạy phải mở **đề xuất thay đổi** |
+| CI kiểm tra pull request | Hệ thống tự kiểm tra và **chạy thử trên các hồ sơ đã có**: bao nhiêu hồ sơ sẽ đổi đường đi |
+| Review bắt buộc | Người duyệt phải **khác người đề xuất** |
+| Issue | Ai cũng **góp ý, báo lỗi** quy trình được, và ai cũng đọc được |
+| Fork | Lấy quy trình từ **kho mẫu** về dùng, xuất tệp để đóng góp lại |
+
+![Một đề xuất thay đổi: phần khác biệt viết bằng lời thường và kết quả chạy thử trên hồ sơ cũ](docs/images/de-xuat-thay-doi.jpg)
 
 ## Kiến trúc
 
-- **Tầng 1 – Lõi headless (không UI người dùng cuối):** Keycloak (SSO), Apache APISIX (API Gateway), PostgreSQL + Hasura (API dữ liệu), SeaweedFS (lưu trữ đối tượng chuẩn S3), Flowable (workflow BPMN).
-- **Tầng 2 – Ứng dụng H-P-D-I:** ứng dụng web Vue 3 (`web/`) + dashboard Metabase (sẽ bổ sung).
+Hệ thống theo đúng mô hình DX-OS: tầng lõi chạy ngầm không có giao diện, tầng ứng dụng chỉ nói chuyện với lõi qua cổng API.
 
-Chi tiết: [docs/architecture.md](docs/architecture.md).
+```mermaid
+flowchart TB
+  subgraph T2["Tầng 2 — Không gian năng lực số"]
+    WEB["Ứng dụng web (Vue 3)"]
+  end
+  subgraph T1["Tầng 1 — Nền tảng lõi, không giao diện"]
+    GW["Apache APISIX<br/>cổng API, kiểm JWT tại biên"]
+    KC["Keycloak<br/>đăng nhập một lần"]
+    HS["Hasura<br/>API dữ liệu, phân quyền theo dòng"]
+    PG[("PostgreSQL")]
+    BR["workflow-bridge<br/>biên dịch quy trình"]
+    FL["Flowable<br/>động cơ quy trình BPMN"]
+    S3[("SeaweedFS<br/>lưu trữ đối tượng S3")]
+  end
+  WEB --> GW --> HS --> PG
+  WEB -. đăng nhập .-> KC
+  GW -. xác minh token .-> KC
+  HS -- sự kiện --> BR --> FL
+  BR --> HS
+```
 
-## Chạy thử (từ mã nguồn)
+| Yêu cầu của đề | Thành phần | Giấy phép |
+|---|---|---|
+| Định danh, đăng nhập một lần | Keycloak | Apache-2.0 |
+| Cổng API | Apache APISIX | Apache-2.0 |
+| Dữ liệu có cấu trúc | PostgreSQL + Hasura | PostgreSQL / Apache-2.0 |
+| Dữ liệu phi cấu trúc | SeaweedFS | Apache-2.0 |
+| Động cơ luồng công việc | Flowable | Apache-2.0 |
 
-Yêu cầu: Docker + Docker Compose v2.
+Mã do dự án tự viết gồm `services/workflow-bridge` (bộ biên dịch quy trình và cầu nối sự kiện, không phụ thuộc gói ngoài) và `web/` (ứng dụng web). Chi tiết thiết kế: [docs/architecture.md](docs/architecture.md).
+
+## Cài đặt từ mã nguồn
+
+**Yêu cầu:** Docker và Docker Compose v2, khoảng 4 GB RAM dành cho Docker. Không cần cài gì khác.
 
 ```bash
-git clone <URL-kho-ma-nguon>
-cd <thu-muc>
-cp .env.example .env        # sửa mật khẩu nếu cần
+git clone https://github.com/ngophatneknha/OLP-MNM.git
+cd OLP-MNM
+cp .env.example .env
 docker compose up -d --build
 ```
 
-Phát triển giao diện không cần build lại image: `cd web && npm ci && npm run dev` (cần Node.js 22).
+Hoặc tải tệp `.tar.gz` của [bản phát hành mới nhất](https://github.com/ngophatneknha/OLP-MNM/releases), giải nén rồi chạy hai lệnh cuối.
 
-| Dịch vụ | Địa chỉ | Ghi chú |
-|---|---|---|
-| **Ứng dụng web** | http://localhost:3000 | Đăng nhập bằng tài khoản mẫu bên dưới |
-| API Gateway (APISIX) | http://localhost:9080 | Cổng vào duy nhất cho ứng dụng |
-| Keycloak | http://localhost:8081 | Quản trị: tài khoản trong `.env` |
-| Hasura | http://localhost:8082 | Chỉ dùng nội bộ/phát triển |
-| Flowable REST | http://localhost:8083/flowable-rest | Chỉ dùng nội bộ/phát triển; tài khoản trong `.env` |
-
-Tài khoản mẫu (realm `dxlab`, chỉ dùng cho phát triển): `staff1`, `staff2`, `manager1`, `director1`, `accountant1` – mật khẩu xem trong `infra/keycloak/realm/dxlab-realm.json`.
-
-Kiểm tra nhanh toàn bộ chuỗi (đăng nhập → gateway → định nghĩa ứng dụng → chạy quy trình → phân quyền): `sh scripts/smoke.sh`.
-
-### Dữ liệu mẫu
-
-Sau khi hệ thống đã chạy, nạp 4 quy trình mẫu trong [`library/`](library) và một loạt hồ sơ ở nhiều trạng thái:
+Lần khởi động đầu mất khoảng 1–2 phút. Sau đó nạp dữ liệu mẫu (4 quy trình và 9 hồ sơ ở nhiều trạng thái):
 
 ```bash
 docker compose exec workflow-bridge node seed.js
 ```
 
+Mở **http://localhost:3000** và đăng nhập.
+
+### Tài khoản mẫu
+
+| Tài khoản | Vai trò | Làm được gì |
+|---|---|---|
+| `staff1`, `staff2` | Nhân viên | Gửi hồ sơ, theo dõi hồ sơ của mình, góp ý quy trình |
+| `manager1` | Trưởng phòng | Duyệt hồ sơ, tạo ứng dụng, mở đề xuất thay đổi |
+| `director1` | Giám đốc | Duyệt hồ sơ, chấp nhận hoặc từ chối đề xuất thay đổi |
+| `accountant1` | Kế toán | Xử lý các bước chi tiền, đặt hàng, kiểm tra chứng từ |
+
+Mật khẩu dùng chung cho các tài khoản mẫu nằm trong [`infra/keycloak/realm/dxlab-realm.json`](infra/keycloak/realm/dxlab-realm.json). Chúng chỉ dành cho chạy thử; đổi trước khi dùng thật.
+
+### Thử trong 3 phút
+
+1. Đăng nhập `manager1`, vào **Tạo ứng dụng**, chọn một quy trình trong kho mẫu hoặc gõ mô tả rồi bấm **Xuất bản**.
+2. Đăng nhập `staff1`, vào **Ứng dụng**, điền form và gửi.
+3. Đăng nhập lại `manager1`, vào **Việc của tôi** để duyệt.
+4. Vẫn là `manager1`: mở lại quy trình vừa tạo, đổi một điều kiện và **Gửi đề xuất thay đổi**.
+5. Đăng nhập `director1`, vào **Quy trình** để xem phần khác biệt, kết quả chạy thử, rồi chấp nhận.
+
+### Các địa chỉ
+
+| Dịch vụ | Địa chỉ | Ghi chú |
+|---|---|---|
+| Ứng dụng web | http://localhost:3000 | |
+| Cổng API | http://localhost:9080 | Cổng vào duy nhất của ứng dụng |
+| Keycloak | http://localhost:8081 | Tài khoản quản trị trong `.env` |
+| Hasura | http://localhost:8082 | Chỉ mở khi phát triển |
+| Flowable REST | http://localhost:8083/flowable-rest | Chỉ mở khi phát triển |
+
+Dừng hệ thống: `docker compose down`. Dừng và xóa toàn bộ dữ liệu: `docker compose down -v`.
+
+## Cấu hình
+
+Mọi cấu hình nằm trong tệp `.env` (mẫu: [`.env.example`](.env.example)); không phải sửa mã nguồn.
+
 ### Trợ lý AI (tùy chọn)
 
-Đặt `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` trong `.env` (xem `.env.example`) rồi `docker compose up -d`. Để giữ dữ liệu trong nội bộ, hãy trỏ tới Ollama/vLLM chạy trên máy của bạn; nếu trỏ tới dịch vụ ngoài thì nội dung mô tả quy trình sẽ được gửi tới dịch vụ đó. Để trống thì tính năng AI tắt, phần còn lại không đổi.
+Đặt `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` rồi chạy lại `docker compose up -d`. Hệ thống gọi được mọi máy chủ tương thích OpenAI `/chat/completions`.
 
-Lần khởi động đầu mất khoảng 1–2 phút (Keycloak nhập realm, Flowable tạo bảng). Cần khoảng 4 GB RAM cho Docker.
+- **Giữ dữ liệu trong nội bộ:** trỏ tới [Ollama](https://ollama.com) hoặc vLLM chạy trên máy của bạn với một mô hình trọng số mở.
+- **Dùng dịch vụ ngoài:** nội dung mô tả quy trình sẽ được gửi tới dịch vụ đó.
+- **Để trống:** tính năng AI tắt, mọi phần khác hoạt động bình thường.
 
-Dừng và xóa dữ liệu: `docker compose down -v`.
+## Kiểm thử
 
-## Kế hoạch & tiến độ
+```bash
+node --test services/workflow-bridge/compile.test.js   # bộ biên dịch quy trình (cần Node.js 22)
+sh scripts/smoke.sh                                     # toàn hệ thống, từ đăng nhập tới phát hành phiên bản mới
+```
 
-Danh sách đầu việc chi tiết (85 mục, chia theo nhóm, người phụ trách, tuần, ưu tiên MVP/Stretch) và bảng tiến độ: [docs/BACKLOG.md](docs/BACKLOG.md). Trạng thái theo dõi trên tab **Issues** / **Projects**.
+Smoke test dựng cả hệ thống rồi đóng vai năm người dùng: định nghĩa một ứng dụng, chạy ba nhánh quy trình, thử các hành vi phải bị chặn (tự duyệt hồ sơ của mình, duyệt thay bước của người khác, tự chấp nhận đề xuất của mình) và phát hành một phiên bản quy trình mới. CI chạy cả hai lệnh trên mỗi pull request.
+
+## Cấu trúc kho mã
+
+```
+docker-compose.yml          toàn bộ hệ thống
+infra/                      cấu hình Keycloak, APISIX, Hasura, PostgreSQL
+services/workflow-bridge/   bộ biên dịch quy trình, cầu nối Hasura–Flowable, trợ lý AI
+web/                        ứng dụng web (Vue 3)
+library/                    kho quy trình mẫu, mỗi quy trình một tệp JSON
+scripts/                    smoke test và công cụ theo dõi tiến độ
+docs/                       kiến trúc và kế hoạch
+```
+
+## Hiện trạng và hướng phát triển
+
+Đã chạy được, có kiểm thử: nền tảng lõi, bộ sinh ứng dụng, trợ lý AI phác thảo, quản lý phiên bản và đề xuất thay đổi quy trình, ứng dụng web.
+
+Đang làm tiếp:
+
+- **AI phải "thử việc"**: AI chạy song song với người ở từng bước duyệt, chỉ được giao thêm quyền khi tỷ lệ khớp với quyết định của con người đủ cao.
+- Tệp đính kèm trong hồ sơ, lưu qua kho S3.
+- Bảng điều hành: thời gian xử lý, điểm nghẽn, mức trưởng thành H-P-D-I của tổ chức.
+
+Danh sách đầu việc và tiến độ: [docs/BACKLOG.md](docs/BACKLOG.md). Lịch sử thay đổi: [CHANGELOG.md](CHANGELOG.md).
+
+## Đóng góp
+
+Báo lỗi và đề xuất tại mục [Issues](https://github.com/ngophatneknha/OLP-MNM/issues). Cách đóng góp mã, và cách **đóng góp một quy trình vào kho mẫu**: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Giấy phép
 
-Mã nguồn tự viết phát hành theo [Apache License 2.0](LICENSE). Mỗi tệp mã chứa tiêu đề SPDX; kiểm tra bằng `reuse lint`. Danh sách thành phần bên thứ ba: [THIRD_PARTY.md](THIRD_PARTY.md).
-
-## Đóng góp & báo lỗi
-
-Xem [CONTRIBUTING.md](CONTRIBUTING.md). Lỗi và đề xuất được theo dõi tại mục **Issues** của kho mã nguồn.
+Mã nguồn của dự án phát hành theo [Apache License 2.0](LICENSE). Mỗi tệp mã mang tiêu đề SPDX và được kiểm tra bằng [REUSE](https://reuse.software) trong CI. Các thành phần bên thứ ba chạy dưới dạng container riêng, không sửa và không đính kèm mã vào kho này; danh sách và giấy phép: [THIRD_PARTY.md](THIRD_PARTY.md).
