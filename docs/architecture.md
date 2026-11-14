@@ -17,14 +17,43 @@ flowchart TB
 ```
 
 Nguyên tắc: tầng lõi **headless** – chỉ cung cấp dịch vụ qua API; mọi giao diện nằm ở tầng ứng dụng.
-## Luồng phê duyệt yêu cầu
+## Bộ sinh ứng dụng
 
-1. Nhân viên tạo `request` qua GraphQL (Hasura tự gán `requester_id` từ token).
-2. Hasura event trigger gọi `workflow-bridge`, dịch vụ này khởi tạo tiến trình `requestApproval` trên Flowable với `businessKey` = mã yêu cầu.
-3. Quản lý đổi `status` thành `approved`/`rejected` qua GraphQL; chỉ role `manager` có quyền này và chỉ với yêu cầu đang `pending`.
-4. Event trigger thứ hai khiến `workflow-bridge` hoàn tất bước "xem xét" trên Flowable; tiến trình kết thúc ở nút tương ứng.
+Một ứng dụng quy trình chỉ là dữ liệu: một dòng trong bảng `app` với cột `spec`:
 
-Phân quyền chỉ đặt ở một nơi (Hasura); Flowable giữ trạng thái và lịch sử quy trình. Sự kiện được Hasura gửi lại khi lỗi nên các bước ở `workflow-bridge` đều chạy lại được an toàn.
+```json
+{
+  "fields": [{ "key": "so_tien", "label": "Số tiền", "type": "number", "required": true }],
+  "steps": [
+    { "key": "truong_phong", "name": "Trưởng phòng duyệt", "role": "manager" },
+    { "key": "giam_doc", "name": "Giám đốc duyệt", "role": "director",
+      "when": { "field": "so_tien", "op": ">", "value": 5000000 } },
+    { "key": "chi_tien", "name": "Kế toán chi tiền", "role": "accountant", "type": "task" }
+  ]
+}
+```
+
+Khi `spec` được tạo hoặc sửa, `workflow-bridge` kiểm tra rồi biên dịch (`services/workflow-bridge/compile.js`):
+
+| Từ spec | Sinh ra | Ở đâu |
+|---|---|---|
+| `steps`, `when` | Quy trình BPMN `app_<key>` (user task theo vai trò, cổng rẽ nhánh, nhánh từ chối) | Flowable |
+| `fields` | View phẳng `bi.app_<key>` đã ép kiểu | PostgreSQL |
+| `fields` | Kiểm tra kiểu / bắt buộc khi gửi hồ sơ (trigger `submission_check`) | PostgreSQL |
+| `role` của bước đang chờ | Ai được thấy và hành động trên hồ sơ (`waiting_role`) | Hasura |
+
+Mọi định danh trong spec bị ép theo mẫu `^[a-z][a-z0-9_]{1,30}$` trước khi chèn vào BPMN hay SQL; có kiểm thử cho các trường hợp chèn mã.
+
+Trợ lý AI (`ai.js`, Hasura action `generateApp`, chỉ role `manager`) chỉ tạo ra `spec` đề xuất. Kết quả đi qua cùng bộ kiểm tra, được tự sửa một lần nếu sai, và không bao giờ tự xuất bản.
+
+## Luồng xử lý một hồ sơ
+
+1. Người dùng tạo `submission` qua GraphQL (Hasura tự gán `submitter_id` từ token; trigger DB kiểm dữ liệu theo spec).
+2. Hasura event trigger gọi `workflow-bridge`, dịch vụ này khởi tạo tiến trình `app_<key>` trên Flowable với `businessKey` = mã hồ sơ, rồi ghi bước đang chờ (`current_step`, `waiting_role`) vào hồ sơ.
+3. Người có đúng vai trò đang chờ thêm một dòng `submission_event` (`approve` / `reject` / `done`); Hasura chặn mọi người khác và mọi hồ sơ đã kết thúc.
+4. Event trigger khiến `workflow-bridge` hoàn tất đúng user task đó trên Flowable, rồi đồng bộ lại bước kế tiếp hoặc kết quả cuối.
+
+Phân quyền chỉ đặt ở một nơi (Hasura); Flowable là nguồn sự thật của quy trình; `submission_event` là nhật ký chỉ-thêm. Sự kiện được Hasura gửi lại khi lỗi nên các bước ở `workflow-bridge` đều chạy lại được an toàn.
 
 ## Xác thực
 

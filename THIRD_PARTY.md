@@ -17,9 +17,11 @@ Các thành phần chạy dưới dạng **container độc lập, không sửa 
 | SeaweedFS | 4.53 | Apache-2.0 | ☐ |
 | Flowable REST | 7.2.0 | Apache-2.0 | ☐ |
 | Node.js (image `node`, chạy `workflow-bridge`) | 22.19.0 | MIT | ☐ |
-| curl (image `curlimages/curl`, nạp metadata Hasura, triển khai BPMN) | 8.10.1 | curl License (MIT-like) | ☐ |
+| curl (image `curlimages/curl`, nạp metadata Hasura) | 8.10.1 | curl License (MIT-like) | ☐ |
 | Apache APISIX | 3.9.1 | Apache-2.0 | ☐ |
 
 Dự kiến bổ sung: Metabase, Nuxt/Vue, Meilisearch, Ollama, Qdrant.
+
+Trợ lý AI là **tùy chọn** và không đính kèm mô hình hay thư viện nào: hệ thống chỉ gọi một địa chỉ HTTP tương thích OpenAI do người triển khai cấu hình (khuyến nghị Ollama – MIT – với mô hình trọng số mở chạy nội bộ).
 
 Không dùng (không phải giấy phép OSI-approved): n8n, Directus, Redpanda, HashiCorp Vault phiên bản BSL.
