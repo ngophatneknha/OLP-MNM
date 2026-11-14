@@ -29,14 +29,14 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 | ID — Tầng 1: Định danh & Cổng API (Keycloak, APISIX) | 4/9 | 4/7 | ████░░░░░░ 44% |
 | DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS) | 2/9 | 2/8 | ██░░░░░░░░ 22% |
 | WF — Tầng 1: Workflow (Flowable) | 4/6 | 4/5 | ███████░░░ 66% |
-| GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo) | 5/10 | 5/9 | █████░░░░░ 50% |
-| UI — Tầng 2: Ứng dụng H-P-D-I (Nuxt 3) | 0/11 | 0/10 | ░░░░░░░░░░ 0% |
+| GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo) | 7/10 | 7/9 | ███████░░░ 70% |
+| UI — Tầng 2: Ứng dụng H-P-D-I (Vue 3) | 3/11 | 3/10 | ███░░░░░░░ 27% |
 | BI — Không gian [D]: Dashboard & tìm kiếm | 0/4 | 0/3 | ░░░░░░░░░░ 0% |
 | AI — Không gian [I]: Trí tuệ nhân tạo (Stretch) | 0/5 | 0/0 | ░░░░░░░░░░ 0% |
 | OPS — Hạ tầng & vận hành | 0/4 | 0/2 | ░░░░░░░░░░ 0% |
 | DOC — Tài liệu & trình diễn | 0/8 | 0/8 | ░░░░░░░░░░ 0% |
 | RISK — Rủi ro cần theo dõi | 0/5 | 0/5 | ░░░░░░░░░░ 0% |
-| **Tổng** | **20/95** | **20/81** | ██░░░░░░░░ 21% |
+| **Tổng** | **25/95** | **25/81** | ███░░░░░░░ 26% |
 <!-- progress:end -->
 
 ## Mốc thời gian
@@ -180,9 +180,9 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: hồ sơ sai kiểu bị từ chối; người sai vai trò không hành động được.
 - [x] **GEN-05** Trợ lý AI: mô tả tiếng Việt → spec + câu hỏi làm rõ (Hasura action) — `ALL` · Tuần 5 · MVP
   - Hoàn thành khi: gọi qua gateway với role manager trả spec hợp lệ; tắt AI hệ thống vẫn chạy.
-- [ ] **GEN-06** Giao diện tạo ứng dụng: mô tả → xem sơ đồ → chỉnh sửa → xuất bản — `ALL` · Tuần 6 · MVP
+- [x] **GEN-06** Giao diện tạo ứng dụng: mô tả → xem sơ đồ → chỉnh sửa → xuất bản — `ALL` · Tuần 6 · MVP
   - Hoàn thành khi: người không biết kỹ thuật tạo được ứng dụng mà không đọc JSON.
-- [ ] **GEN-07** Form tự sinh từ spec và hộp việc chờ theo vai trò — `ALL` · Tuần 6 · MVP
+- [x] **GEN-07** Form tự sinh từ spec và hộp việc chờ theo vai trò — `ALL` · Tuần 6 · MVP
   - Hoàn thành khi: gửi và duyệt hồ sơ hoàn toàn trên giao diện.
 - [ ] **GEN-08** Sơ đồ quy trình sáng theo thời gian thực khi hồ sơ di chuyển — `ALL` · Tuần 6 · MVP
   - Hoàn thành khi: hai trình duyệt cạnh nhau thấy trạng thái đổi không cần tải lại.
@@ -191,19 +191,19 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 - [ ] **GEN-10** Vòng hỏi-đáp với AI: trả lời câu hỏi làm rõ → spec được cập nhật — `ALL` · Tuần 7 · Stretch
   - Hoàn thành khi: câu trả lời làm thay đổi đúng bước tương ứng.
 
-## UI — Tầng 2: Ứng dụng H-P-D-I (Nuxt 3)
+## UI — Tầng 2: Ứng dụng H-P-D-I (Vue 3)
 
-- [ ] **UI-01** Khung Nuxt 3 + Tailwind, layout, đa ngôn ngữ vi/en — `C` · Tuần 1 · MVP
+- [ ] **UI-01** Khung Vue 3 + Tailwind, layout, đa ngôn ngữ vi/en — `C` · Tuần 1 · MVP
   - Hoàn thành khi: chạy trong compose, có Dockerfile.
-- [ ] **UI-02** Đăng nhập OIDC với Keycloak (PKCE), đăng xuất, phân quyền theo role — `C` · Tuần 1 · MVP
+- [x] **UI-02** Đăng nhập OIDC với Keycloak (PKCE), đăng xuất, phân quyền theo role — `C` · Tuần 1 · MVP
   - Hoàn thành khi: đăng nhập SSO end-to-end; menu thay đổi theo role.
 - [ ] **UI-03** [H] Bảng Kanban dự án và công việc — `C` · Tuần 2 · MVP
   - Hoàn thành khi: kéo thả đổi trạng thái, lưu qua GraphQL.
 - [ ] **UI-04** [H] Quản lý tài liệu: tải lên, danh sách, tải xuống — `C` · Tuần 2 · MVP
   - Hoàn thành khi: dùng được với SeaweedFS qua presigned URL.
-- [ ] **UI-05** [P] Form gửi yêu cầu và danh sách yêu cầu của tôi — `C` · Tuần 3 · MVP
+- [x] **UI-05** [P] Form gửi yêu cầu và danh sách yêu cầu của tôi — `C` · Tuần 3 · MVP
   - Hoàn thành khi: gửi yêu cầu → xuất hiện ở hàng chờ duyệt.
-- [ ] **UI-06** [P] Màn hình duyệt dành cho quản lý — `C` · Tuần 3 · MVP
+- [x] **UI-06** [P] Màn hình duyệt dành cho quản lý — `C` · Tuần 3 · MVP
   - Hoàn thành khi: duyệt/từ chối có lý do, cập nhật cho người gửi.
 - [ ] **UI-07** [D] Nhúng dashboard Metabase vào ứng dụng — `C` · Tuần 4 · MVP
   - Hoàn thành khi: dashboard hiển thị trong app, chỉ role được phép mới xem.

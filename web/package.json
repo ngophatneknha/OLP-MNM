@@ -1,0 +1,22 @@
+{
+  "name": "dxlab-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "vite --port 3000",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "keycloak-js": "^26.2.5",
+    "vue": "^3.5.45",
+    "vue-router": "^5.5.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@vitejs/plugin-vue": "^6.0.11",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.3.8"
+  }
+}

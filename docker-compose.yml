@@ -141,6 +141,17 @@ services:
       - hasura
       - keycloak
 
+  # Tầng 2: ứng dụng web (Vue 3). Mã nguồn: web/.
+  web:
+    build: ./web
+    environment:
+      KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL}
+      API_PUBLIC_URL: ${API_PUBLIC_URL}
+    ports:
+      - "3000:80"
+    depends_on:
+      - apisix
+
 volumes:
   pgdata:
   s3data:

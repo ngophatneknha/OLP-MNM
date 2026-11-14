@@ -9,7 +9,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 [ -f .env ] || cp .env.example .env
-docker compose up -d
+docker compose up -d --build
 
 KC=http://localhost:8081/realms/dxlab/protocol/openid-connect/token
 GW=http://localhost:9080/v1/graphql
@@ -95,7 +95,15 @@ act "$M1" manager "$ID" truong_phong reject | grep -q '"id"' || fail "trưởng 
 waits "$ID" '"status":"rejected"'
 act "$M1" manager "$ID" truong_phong approve | grep -q '"id"' && fail "vẫn hành động được trên hồ sơ đã kết thúc"
 
+echo "Không ai tự duyệt hồ sơ của chính mình"
+ID=$(gql "$M1" manager "mutation{insert_submission_one(object:{app_key:\\\"$APP\\\",data:{so_tien:3000000}}){id}}" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+until_ok "hồ sơ của quản lý không vào bước duyệt" has "$M1" manager "{submission_by_pk(id:\\\"$ID\\\"){waiting_role}}" '"waiting_role":"manager"'
+act "$M1" manager "$ID" truong_phong approve | grep -q '"id"' && fail "quản lý tự duyệt được hồ sơ của mình"
+
+curl -fsS http://localhost:3000/config.json | grep -q '"apiUrl":"http' || fail "ứng dụng web không phục vụ cấu hình"
+curl -fsS http://localhost:3000/apps | grep -q '<div id="app">' || fail "ứng dụng web không phục vụ trang"
+
 docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT count(*) FROM bi.app_'"$APP"' WHERE so_tien >= 1000000"' |
-  grep -q '^3' || fail "view phẳng cho BI không có đủ 3 hồ sơ"
+  grep -q '^4' || fail "view phẳng cho BI không có đủ 4 hồ sơ"
 
 echo "OK: sinh ứng dụng từ bản mô tả, 3 nhánh quy trình, phân quyền và view BI đều đúng."

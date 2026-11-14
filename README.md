@@ -26,7 +26,7 @@ Tắt AI thì hệ thống vẫn chạy đầy đủ: AI chỉ đề xuất, kh�
 ## Kiến trúc
 
 - **Tầng 1 – Lõi headless (không UI người dùng cuối):** Keycloak (SSO), Apache APISIX (API Gateway), PostgreSQL + Hasura (API dữ liệu), SeaweedFS (lưu trữ đối tượng chuẩn S3), Flowable (workflow BPMN).
-- **Tầng 2 – Ứng dụng H-P-D-I:** ứng dụng Nuxt 3 (sẽ bổ sung) + dashboard Metabase (sẽ bổ sung).
+- **Tầng 2 – Ứng dụng H-P-D-I:** ứng dụng web Vue 3 (`web/`) + dashboard Metabase (sẽ bổ sung).
 
 Chi tiết: [docs/architecture.md](docs/architecture.md).
 
@@ -38,11 +38,14 @@ Yêu cầu: Docker + Docker Compose v2.
 git clone <URL-kho-ma-nguon>
 cd <thu-muc>
 cp .env.example .env        # sửa mật khẩu nếu cần
-docker compose up -d
+docker compose up -d --build
 ```
+
+Phát triển giao diện không cần build lại image: `cd web && npm ci && npm run dev` (cần Node.js 22).
 
 | Dịch vụ | Địa chỉ | Ghi chú |
 |---|---|---|
+| **Ứng dụng web** | http://localhost:3000 | Đăng nhập bằng tài khoản mẫu bên dưới |
 | API Gateway (APISIX) | http://localhost:9080 | Cổng vào duy nhất cho ứng dụng |
 | Keycloak | http://localhost:8081 | Quản trị: tài khoản trong `.env` |
 | Hasura | http://localhost:8082 | Chỉ dùng nội bộ/phát triển |

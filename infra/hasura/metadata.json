@@ -913,6 +913,9 @@
                         },
                         "waiting_role": {
                           "_eq": "X-Hasura-Role"
+                        },
+                        "submitter_id": {
+                          "_neq": "X-Hasura-User-Id"
                         }
                       }
                     },
@@ -937,6 +940,9 @@
                         },
                         "waiting_role": {
                           "_eq": "X-Hasura-Role"
+                        },
+                        "submitter_id": {
+                          "_neq": "X-Hasura-User-Id"
                         }
                       }
                     },
@@ -961,6 +967,9 @@
                         },
                         "waiting_role": {
                           "_eq": "X-Hasura-Role"
+                        },
+                        "submitter_id": {
+                          "_neq": "X-Hasura-User-Id"
                         }
                       }
                     },
@@ -985,6 +994,9 @@
                         },
                         "waiting_role": {
                           "_eq": "X-Hasura-Role"
+                        },
+                        "submitter_id": {
+                          "_neq": "X-Hasura-User-Id"
                         }
                       }
                     },
