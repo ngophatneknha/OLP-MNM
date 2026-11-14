@@ -20,6 +20,7 @@ Doanh nghiệp nhỏ thất bại khi chuyển đổi số không phải vì thi
 2. Trợ lý AI đề xuất bản mô tả ứng dụng và hỏi lại những điểm còn mơ hồ; con người xem lại và quyết định.
 3. Hệ thống biên dịch bản mô tả thành quy trình BPMN, phân quyền theo vai trò, rào chắn dữ liệu và view cho dashboard.
 4. Nhân viên gửi hồ sơ; từng vai trò chỉ thấy và xử lý đúng bước của mình; mọi hành động được ghi nhật ký.
+5. **Quy trình được quản lý như mã nguồn mở**: có phiên bản và changelog; muốn sửa phải mở đề xuất thay đổi, hệ thống tự kiểm tra và chạy thử trên hồ sơ cũ, người khác duyệt mới phát hành; ai cũng góp ý, báo lỗi được; quy trình hay có thể chia sẻ qua thư mục [`library/`](library).
 
 Tắt AI thì hệ thống vẫn chạy đầy đủ: AI chỉ đề xuất, không tự xuất bản.
 

@@ -46,6 +46,21 @@ Mọi định danh trong spec bị ép theo mẫu `^[a-z][a-z0-9_]{1,30}$` trư�
 
 Trợ lý AI (`ai.js`, Hasura action `generateApp`, chỉ role `manager`) chỉ tạo ra `spec` đề xuất. Kết quả đi qua cùng bộ kiểm tra, được tự sửa một lần nếu sai, và không bao giờ tự xuất bản.
 
+## Quy trình là mã nguồn mở
+
+Cách dự án nguồn mở quản lý mã được áp dụng cho quy trình của tổ chức:
+
+| Trong dự án nguồn mở | Trong DX-Lab | Ở đâu |
+|---|---|---|
+| Commit / release | Phiên bản quy trình bất biến, có ghi chú | bảng `app_version` |
+| Pull request | Đề xuất thay đổi | bảng `app_change` |
+| CI kiểm tra PR | Kiểm tra hợp lệ + chạy thử trên hồ sơ cũ (`simulate` trong `compile.js`), ghi vào `app_change.checks` | `workflow-bridge` |
+| Review bắt buộc | Người duyệt phải khác người đề xuất; thiếu kết quả kiểm tra thì không chấp nhận được | quyền Hasura + trigger `app_change_decide` |
+| Issue | Góp ý / báo lỗi quy trình | bảng `app_issue` |
+| Fork | Lấy quy trình từ `library/` làm điểm xuất phát; xuất JSON để đóng góp lại | Hasura action `library` |
+
+Chấp nhận một đề xuất chạy trong một giao dịch cơ sở dữ liệu: cập nhật `app`, thêm `app_version`, rồi `workflow-bridge` triển khai định nghĩa mới lên Flowable. Hồ sơ đang chạy tiếp tục theo phiên bản cũ; mỗi hồ sơ lưu `app_version` lúc gửi nên luôn hiển thị đúng sơ đồ của nó.
+
 ## Luồng xử lý một hồ sơ
 
 1. Người dùng tạo `submission` qua GraphQL (Hasura tự gán `submitter_id` từ token; trigger DB kiểm dữ liệu theo spec).

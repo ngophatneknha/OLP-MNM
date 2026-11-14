@@ -506,23 +506,8 @@
                       "spec"
                     ],
                     "set": {
-                      "owner_id": "X-Hasura-User-Id"
-                    }
-                  }
-                }
-              ],
-              "update_permissions": [
-                {
-                  "role": "manager",
-                  "permission": {
-                    "columns": [
-                      "name",
-                      "spec"
-                    ],
-                    "filter": {},
-                    "check": null,
-                    "set": {
-                      "status": "pending"
+                      "owner_id": "X-Hasura-User-Id",
+                      "owner_name": "X-Hasura-User-Name"
                     }
                   }
                 }
@@ -555,6 +540,44 @@
                     }
                   ]
                 }
+              ],
+              "array_relationships": [
+                {
+                  "name": "versions",
+                  "using": {
+                    "foreign_key_constraint_on": {
+                      "column": "app_key",
+                      "table": {
+                        "schema": "public",
+                        "name": "app_version"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "changes",
+                  "using": {
+                    "foreign_key_constraint_on": {
+                      "column": "app_key",
+                      "table": {
+                        "schema": "public",
+                        "name": "app_change"
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "issues",
+                  "using": {
+                    "foreign_key_constraint_on": {
+                      "column": "app_key",
+                      "table": {
+                        "schema": "public",
+                        "name": "app_issue"
+                      }
+                    }
+                  }
+                }
               ]
             },
             {
@@ -567,6 +590,21 @@
                   "name": "app",
                   "using": {
                     "foreign_key_constraint_on": "app_key"
+                  }
+                },
+                {
+                  "name": "version",
+                  "using": {
+                    "manual_configuration": {
+                      "remote_table": {
+                        "schema": "public",
+                        "name": "app_version"
+                      },
+                      "column_mapping": {
+                        "app_key": "app_key",
+                        "app_version": "version"
+                      }
+                    }
                   }
                 }
               ],
@@ -704,7 +742,8 @@
                       "data"
                     ],
                     "set": {
-                      "submitter_id": "X-Hasura-User-Id"
+                      "submitter_id": "X-Hasura-User-Id",
+                      "submitter_name": "X-Hasura-User-Name"
                     }
                   }
                 },
@@ -717,7 +756,8 @@
                       "data"
                     ],
                     "set": {
-                      "submitter_id": "X-Hasura-User-Id"
+                      "submitter_id": "X-Hasura-User-Id",
+                      "submitter_name": "X-Hasura-User-Name"
                     }
                   }
                 },
@@ -730,7 +770,8 @@
                       "data"
                     ],
                     "set": {
-                      "submitter_id": "X-Hasura-User-Id"
+                      "submitter_id": "X-Hasura-User-Id",
+                      "submitter_name": "X-Hasura-User-Name"
                     }
                   }
                 },
@@ -743,7 +784,8 @@
                       "data"
                     ],
                     "set": {
-                      "submitter_id": "X-Hasura-User-Id"
+                      "submitter_id": "X-Hasura-User-Id",
+                      "submitter_name": "X-Hasura-User-Name"
                     }
                   }
                 }
@@ -927,7 +969,8 @@
                       "note"
                     ],
                     "set": {
-                      "actor_id": "X-Hasura-User-Id"
+                      "actor_id": "X-Hasura-User-Id",
+                      "actor_name": "X-Hasura-User-Name"
                     }
                   }
                 },
@@ -954,7 +997,8 @@
                       "note"
                     ],
                     "set": {
-                      "actor_id": "X-Hasura-User-Id"
+                      "actor_id": "X-Hasura-User-Id",
+                      "actor_name": "X-Hasura-User-Name"
                     }
                   }
                 },
@@ -981,7 +1025,8 @@
                       "note"
                     ],
                     "set": {
-                      "actor_id": "X-Hasura-User-Id"
+                      "actor_id": "X-Hasura-User-Id",
+                      "actor_name": "X-Hasura-User-Name"
                     }
                   }
                 },
@@ -1008,7 +1053,8 @@
                       "note"
                     ],
                     "set": {
-                      "actor_id": "X-Hasura-User-Id"
+                      "actor_id": "X-Hasura-User-Id",
+                      "actor_name": "X-Hasura-User-Name"
                     }
                   }
                 }
@@ -1034,6 +1080,270 @@
                       "value_from_env": "BRIDGE_SECRET"
                     }
                   ]
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "app_version"
+              },
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "app_change"
+              },
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                }
+              ],
+              "insert_permissions": [
+                {
+                  "role": "manager",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "app_key",
+                      "name",
+                      "spec",
+                      "note"
+                    ],
+                    "set": {
+                      "author_id": "X-Hasura-User-Id",
+                      "author_name": "X-Hasura-User-Name"
+                    }
+                  }
+                }
+              ],
+              "update_permissions": [
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": [
+                      "status",
+                      "review_note"
+                    ],
+                    "filter": {
+                      "status": {
+                        "_eq": "open"
+                      },
+                      "author_id": {
+                        "_neq": "X-Hasura-User-Id"
+                      }
+                    },
+                    "check": {
+                      "status": {
+                        "_in": [
+                          "merged",
+                          "rejected"
+                        ]
+                      }
+                    },
+                    "set": {
+                      "reviewer_id": "X-Hasura-User-Id",
+                      "reviewer_name": "X-Hasura-User-Name"
+                    }
+                  }
+                }
+              ],
+              "event_triggers": [
+                {
+                  "name": "app_change_check",
+                  "definition": {
+                    "enable_manual": false,
+                    "insert": {
+                      "columns": "*"
+                    }
+                  },
+                  "retry_conf": {
+                    "num_retries": 10,
+                    "interval_sec": 10,
+                    "timeout_sec": 30
+                  },
+                  "webhook": "http://workflow-bridge:3000/",
+                  "headers": [
+                    {
+                      "name": "x-bridge-secret",
+                      "value_from_env": "BRIDGE_SECRET"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "app_issue"
+              },
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                }
+              ],
+              "insert_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "app_key",
+                      "title",
+                      "body"
+                    ],
+                    "set": {
+                      "author_id": "X-Hasura-User-Id",
+                      "author_name": "X-Hasura-User-Name"
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "app_key",
+                      "title",
+                      "body"
+                    ],
+                    "set": {
+                      "author_id": "X-Hasura-User-Id",
+                      "author_name": "X-Hasura-User-Name"
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "app_key",
+                      "title",
+                      "body"
+                    ],
+                    "set": {
+                      "author_id": "X-Hasura-User-Id",
+                      "author_name": "X-Hasura-User-Name"
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "app_key",
+                      "title",
+                      "body"
+                    ],
+                    "set": {
+                      "author_id": "X-Hasura-User-Id",
+                      "author_name": "X-Hasura-User-Name"
+                    }
+                  }
+                }
+              ],
+              "update_permissions": [
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": [
+                      "status"
+                    ],
+                    "filter": {},
+                    "check": null
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": [
+                      "status"
+                    ],
+                    "filter": {},
+                    "check": null
+                  }
                 }
               ]
             }
@@ -1066,6 +1376,31 @@
                 "type": "[String!]!"
               }
             ]
+          },
+          {
+            "name": "LibraryItem",
+            "fields": [
+              {
+                "name": "key",
+                "type": "String!"
+              },
+              {
+                "name": "name",
+                "type": "String!"
+              },
+              {
+                "name": "category",
+                "type": "String!"
+              },
+              {
+                "name": "description",
+                "type": "String!"
+              },
+              {
+                "name": "spec",
+                "type": "jsonb!"
+              }
+            ]
           }
         ]
       },
@@ -1095,6 +1430,37 @@
           "permissions": [
             {
               "role": "manager"
+            }
+          ]
+        },
+        {
+          "name": "library",
+          "comment": "Kho quy trình mẫu (thư mục library/ của kho mã)",
+          "definition": {
+            "type": "query",
+            "handler": "http://workflow-bridge:3000/library",
+            "timeout": 30,
+            "arguments": [],
+            "output_type": "[LibraryItem!]!",
+            "headers": [
+              {
+                "name": "x-bridge-secret",
+                "value_from_env": "BRIDGE_SECRET"
+              }
+            ]
+          },
+          "permissions": [
+            {
+              "role": "staff"
+            },
+            {
+              "role": "manager"
+            },
+            {
+              "role": "director"
+            },
+            {
+              "role": "accountant"
             }
           ]
         }

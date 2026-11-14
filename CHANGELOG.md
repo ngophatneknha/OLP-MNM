@@ -9,6 +9,15 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+### Added
+- **Quy trình là mã nguồn mở**: mỗi quy trình có lịch sử phiên bản bất biến kèm ghi chú thay đổi; sửa một quy trình đang chạy phải mở *đề xuất thay đổi*, được kiểm tra tự động, chạy thử trên các hồ sơ đã có (bao nhiêu hồ sơ đổi đường đi, thời gian chờ ước tính), và phải do người khác (giám đốc) chấp nhận mới phát hành.
+- Trang "Quy trình": xem sơ đồ, so sánh thay đổi bằng lời thường, lịch sử phiên bản, góp ý và báo lỗi quy trình — mọi vai trò đều xem được.
+- Bắt đầu từ kho quy trình mẫu ngay trong trang "Tạo ứng dụng"; tải quy trình đang soạn thành tệp JSON đúng định dạng `library/` để đóng góp lại.
+- Hồ sơ ghi nhận phiên bản quy trình lúc gửi và hiển thị theo đúng phiên bản đó; nhật ký ghi tên người thực hiện.
+
+### Changed
+- Trưởng phòng không còn sửa thẳng được quy trình đã xuất bản (chỉ tạo mới hoặc mở đề xuất).
+
 ## [0.1.0] - 2026-11-14
 
 Bản phát hành đầu tiên: nền tảng lõi chạy được từ đầu đến cuối và bộ sinh ứng dụng quy trình.

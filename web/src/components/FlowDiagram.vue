@@ -7,21 +7,12 @@ bước đã qua chuyển xanh, bước bị bỏ qua (điều kiện sai) mờ 
 -->
 <script setup>
 import { computed } from 'vue'
-import { ROLE_LABEL } from '../lib.js'
+import { ROLE_LABEL, conditionText } from '../lib.js'
 
 const props = defineProps({
   spec: { type: Object, required: true },
   submission: { type: Object, default: null },
 })
-
-const OPS = { '>': 'trên', '>=': 'từ', '<': 'dưới', '<=': 'tối đa', '==': 'là', '!=': 'khác' }
-
-function condition(step) {
-  if (!step.when) return ''
-  const field = props.spec.fields.find((f) => f.key === step.when.field)
-  const value = typeof step.when.value === 'number' ? step.when.value.toLocaleString('vi-VN') : step.when.value
-  return `Chỉ khi ${field?.label ?? step.when.field} ${OPS[step.when.op] ?? step.when.op} ${value}`
-}
 
 // Cùng phép so sánh mà bộ biên dịch đưa vào BPMN, để sơ đồ khớp với đường đi thật.
 function applies(step, data) {
@@ -43,7 +34,7 @@ const nodes = computed(() => {
       else if (step.key === sub.current_step) state = 'current'
       else if (sub.status === 'approved' || (currentIndex >= 0 && i < currentIndex) || sub.events?.some((e) => e.step_key === step.key)) state = 'done'
     }
-    return { ...step, state, condition: condition(step) }
+    return { ...step, state, condition: conditionText(props.spec, step) }
   })
 })
 

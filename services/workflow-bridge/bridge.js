@@ -6,12 +6,15 @@
 //   app_publish       app được tạo / đổi spec      -> biên dịch, triển khai BPMN, tạo view phẳng
 //   submission_start  có hồ sơ mới                 -> khởi tạo tiến trình (businessKey = submission.id)
 //   submission_act    có hành động duyệt/từ chối   -> hoàn tất user task tương ứng
+//   app_change_check  có đề xuất thay đổi quy trình -> kiểm tra hợp lệ + chạy thử trên hồ sơ cũ
+// Nhận Hasura action tại POST /library : kho quy trình mẫu đọc từ thư mục /library.
 // Nhận Hasura action tại POST /ai/spec : mô tả bằng lời -> bản mô tả ứng dụng (xem ai.js).
 // Sau mỗi bước, trạng thái hồ sơ trong DB được đồng bộ lại từ Flowable (Flowable là nguồn sự thật của quy trình).
 // Hasura tự gửi lại sự kiện khi nhận mã lỗi, nên mọi thao tác ở đây phải chạy lại được an toàn.
 
 import { createServer } from 'node:http'
-import { validateSpec, toBpmn, toViewSql } from './compile.js'
+import { readdirSync, readFileSync } from 'node:fs'
+import { validateSpec, toBpmn, toViewSql, simulate } from './compile.js'
 import { generateApp } from './ai.js'
 
 const { BRIDGE_SECRET, FLOWABLE_URL, FLOWABLE_USER, FLOWABLE_PASSWORD, HASURA_URL, HASURA_ADMIN_SECRET } = process.env
@@ -98,6 +101,24 @@ async function actOnSubmission(ev) {
   await syncSubmission(ev.submission_id)
 }
 
+/** "CI" cho một đề xuất thay đổi quy trình: kết quả ghi vào app_change.checks, thiếu nó thì không ai chấp nhận được. */
+async function checkChange(change) {
+  const errors = validateSpec(change.spec)
+  let simulation = null
+  if (!errors.length) {
+    const { data } = await gql(
+      'query($k: String!) { app_by_pk(key: $k) { spec } submission(where: {app_key: {_eq: $k}}) { data created_at events { step_key created_at } } }',
+      { k: change.app_key })
+    simulation = simulate(data.app_by_pk.spec, change.spec, data.submission)
+  }
+  await gql('mutation($id: bigint!, $c: jsonb!) { update_app_change_by_pk(pk_columns: {id: $id}, _set: {checks: $c}) { id } }',
+    { id: change.id, c: { errors, simulation } })
+}
+
+const readLibrary = () => readdirSync('/library').filter((f) => f.endsWith('.json'))
+  .map((f) => JSON.parse(readFileSync(`/library/${f}`, 'utf8')))
+  .map(({ key, name, category, description, spec }) => ({ key, name, category, description, spec }))
+
 // Tự lành: xuất bản lại mà nội dung không đổi thì Hasura không phát sự kiện (trigger chỉ bắn khi cột thay đổi),
 // và sự kiện cũng có thể hết lượt gửi lại. Quét định kỳ các ứng dụng còn 'pending' để không cái nào bị kẹt.
 async function sweepPendingApps() {
@@ -110,7 +131,7 @@ async function sweepPendingApps() {
 }
 setInterval(sweepPendingApps, 10000)
 
-const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission }
+const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission, app_change_check: checkChange }
 
 createServer(async (req, res) => {
   try {
@@ -122,7 +143,9 @@ createServer(async (req, res) => {
     for await (const chunk of req) body += chunk
     const payload = JSON.parse(body)
     let result = {}
-    if (req.url === '/ai/spec') {
+    if (req.url === '/library') {
+      result = readLibrary()
+    } else if (req.url === '/ai/spec') {
       // Lỗi của action trả về dạng { message } với mã 4xx để Hasura chuyển nguyên văn cho người dùng.
       try {
         result = await generateApp(payload.input.description)

@@ -16,9 +16,10 @@ const error = ref('')
 let timer
 
 const QUERY = `{ submission(order_by: {created_at: desc}, limit: 50) {
-  id data status current_step waiting_role submitter_id created_at
-  app { name spec }
-  events(order_by: {id: asc}) { step_key action note created_at }
+  id data status current_step waiting_role submitter_id submitter_name app_version created_at
+  app { name }
+  version { spec }
+  events(order_by: {id: asc}) { step_key action note actor_name created_at }
 } }`
 
 async function load() {
@@ -37,7 +38,7 @@ onUnmounted(() => clearInterval(timer))
 const waiting = computed(() => (submissions.value ?? []).filter(
   (s) => s.status === 'running' && s.waiting_role === auth.role && s.submitter_id !== auth.userId))
 const mine = computed(() => (submissions.value ?? []).filter((s) => s.submitter_id === auth.userId))
-const step = (s) => s.app.spec.steps.find((x) => x.key === s.current_step)
+const step = (s) => s.version.spec.steps.find((x) => x.key === s.current_step)
 
 async function act(submission, action) {
   busy.value = submission.id
@@ -56,7 +57,7 @@ async function act(submission, action) {
 
 const STATUS_STYLE = { running: 'bg-indigo-100 text-indigo-700', approved: 'bg-emerald-100 text-emerald-700', rejected: 'bg-rose-100 text-rose-700' }
 const ACTION_LABEL = { approve: 'đã duyệt', reject: 'đã từ chối', done: 'đã hoàn tất' }
-const stepName = (s, key) => s.app.spec.steps.find((x) => x.key === key)?.name ?? key
+const stepName = (s, key) => s.version.spec.steps.find((x) => x.key === key)?.name ?? key
 </script>
 
 <template>
@@ -72,15 +73,15 @@ const stepName = (s, key) => s.app.spec.steps.find((x) => x.key === key)?.name ?
       <article v-for="s in waiting" :key="s.id" class="card mt-3">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
           <h3 class="font-semibold">{{ s.app.name }} — {{ step(s)?.name }}</h3>
-          <time class="text-xs text-slate-500">Gửi lúc {{ formatTime(s.created_at) }}</time>
+          <span class="text-xs text-slate-500">{{ s.submitter_name }} · {{ formatTime(s.created_at) }} · quy trình v{{ s.app_version }}</span>
         </div>
         <dl class="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-          <div v-for="field in s.app.spec.fields" :key="field.key">
+          <div v-for="field in s.version.spec.fields" :key="field.key">
             <dt class="text-slate-500">{{ field.label }}</dt>
             <dd class="font-medium">{{ formatValue(field, s.data[field.key]) }}</dd>
           </div>
         </dl>
-        <div class="mt-4"><FlowDiagram :spec="s.app.spec" :submission="s" /></div>
+        <div class="mt-4"><FlowDiagram :spec="s.version.spec" :submission="s" /></div>
         <div class="mt-4 flex flex-wrap items-center gap-2">
           <input v-model="notes[s.id]" class="input max-w-xs" placeholder="Ghi chú (không bắt buộc)" aria-label="Ghi chú" />
           <template v-if="step(s)?.type === 'task'">
@@ -107,14 +108,14 @@ const stepName = (s, key) => s.app.spec.steps.find((x) => x.key === key)?.name ?
           </span>
         </div>
         <p class="mt-1 text-sm text-slate-600">
-          <template v-for="(field, i) in s.app.spec.fields" :key="field.key">
+          <template v-for="(field, i) in s.version.spec.fields" :key="field.key">
             <template v-if="i"> · </template>{{ field.label }}: <span class="font-medium text-slate-900">{{ formatValue(field, s.data[field.key]) }}</span>
           </template>
         </p>
-        <div class="mt-4"><FlowDiagram :spec="s.app.spec" :submission="s" /></div>
+        <div class="mt-4"><FlowDiagram :spec="s.version.spec" :submission="s" /></div>
         <ul v-if="s.events.length" class="mt-3 space-y-1 text-xs text-slate-500">
           <li v-for="e in s.events" :key="e.created_at + e.step_key">
-            {{ formatTime(e.created_at) }} — {{ stepName(s, e.step_key) }}: {{ ACTION_LABEL[e.action] }}<template v-if="e.note"> (“{{ e.note }}”)</template>
+            {{ formatTime(e.created_at) }} — {{ stepName(s, e.step_key) }}: {{ e.actor_name }} {{ ACTION_LABEL[e.action] }}<template v-if="e.note"> (“{{ e.note }}”)</template>
           </li>
         </ul>
       </article>

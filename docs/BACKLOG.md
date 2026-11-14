@@ -29,14 +29,14 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 | ID — Tầng 1: Định danh & Cổng API (Keycloak, APISIX) | 4/9 | 4/7 | ████░░░░░░ 44% |
 | DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS) | 3/9 | 3/8 | ███░░░░░░░ 33% |
 | WF — Tầng 1: Workflow (Flowable) | 4/6 | 4/5 | ███████░░░ 66% |
-| GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo) | 7/10 | 7/9 | ███████░░░ 70% |
+| GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo) | 11/15 | 11/14 | ███████░░░ 73% |
 | UI — Tầng 2: Ứng dụng H-P-D-I (Vue 3) | 3/11 | 3/10 | ███░░░░░░░ 27% |
 | BI — Không gian [D]: Dashboard & tìm kiếm | 0/4 | 0/3 | ░░░░░░░░░░ 0% |
 | AI — Không gian [I]: Trí tuệ nhân tạo (Stretch) | 0/5 | 0/0 | ░░░░░░░░░░ 0% |
 | OPS — Hạ tầng & vận hành | 0/4 | 0/2 | ░░░░░░░░░░ 0% |
 | DOC — Tài liệu & trình diễn | 0/8 | 0/8 | ░░░░░░░░░░ 0% |
 | RISK — Rủi ro cần theo dõi | 0/5 | 0/5 | ░░░░░░░░░░ 0% |
-| **Tổng** | **27/95** | **27/81** | ███░░░░░░░ 28% |
+| **Tổng** | **31/100** | **31/86** | ███░░░░░░░ 31% |
 <!-- progress:end -->
 
 ## Mốc thời gian
@@ -184,6 +184,16 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: người không biết kỹ thuật tạo được ứng dụng mà không đọc JSON.
 - [x] **GEN-07** Form tự sinh từ spec và hộp việc chờ theo vai trò — `ALL` · Tuần 6 · MVP
   - Hoàn thành khi: gửi và duyệt hồ sơ hoàn toàn trên giao diện.
+- [x] **GEN-11** Phiên bản quy trình bất biến + changelog; hồ sơ gắn với phiên bản lúc gửi — `ALL` · Tuần 6 · MVP
+  - Hoàn thành khi: chấp nhận thay đổi tạo phiên bản mới, hồ sơ cũ vẫn hiển thị sơ đồ cũ.
+- [x] **GEN-12** Đề xuất thay đổi: so sánh, kiểm tra tự động, chạy thử trên hồ sơ cũ, người khác duyệt — `ALL` · Tuần 6 · MVP
+  - Hoàn thành khi: người đề xuất không tự chấp nhận được; smoke test chạy đủ vòng.
+- [x] **GEN-13** Góp ý / báo lỗi quy trình công khai — `ALL` · Tuần 6 · MVP
+  - Hoàn thành khi: mọi vai trò gửi và xem được, quản lý đánh dấu đã xử lý.
+- [x] **GEN-14** Kho quy trình mẫu `library/`: fork trong giao diện, xuất JSON để đóng góp lại — `ALL` · Tuần 6 · MVP
+  - Hoàn thành khi: có kiểm thử cho mọi tệp trong kho; README hướng dẫn đóng góp.
+- [ ] **GEN-15** AI thử việc: chạy bóng ở bước duyệt, tỷ lệ khớp, nấc tự chủ, nâng nấc qua đề xuất — `ALL` · Tuần 7 · MVP
+  - Hoàn thành khi: nấc tự chủ chỉ tăng khi có số liệu và có người duyệt.
 - [ ] **GEN-08** Sơ đồ quy trình sáng theo thời gian thực khi hồ sơ di chuyển — `ALL` · Tuần 6 · MVP
   - Hoàn thành khi: hai trình duyệt cạnh nhau thấy trạng thái đổi không cần tải lại.
 - [ ] **GEN-09** Điểm trưởng thành H-P-D-I của tổ chức tính từ dữ liệu sử dụng thật — `ALL` · Tuần 7 · MVP

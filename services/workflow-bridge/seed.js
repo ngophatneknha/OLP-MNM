@@ -51,10 +51,10 @@ const force = process.argv.includes('--force')
 
 // 1. Xuất bản các quy trình mẫu.
 const library = readdirSync('/library').filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(`/library/${f}`, 'utf8')))
+const have = new Set((await gql('manager1', '{ app { key } }')).app.map((a) => a.key))
 for (const { key, name, spec } of library) {
-  await gql('manager1',
-    'mutation($o: app_insert_input!) { insert_app_one(object: $o, on_conflict: {constraint: app_pkey, update_columns: [name, spec]}) { key } }',
-    { o: { key, name, spec } })
+  // Sửa một quy trình đã có phải đi qua đề xuất thay đổi, nên ở đây chỉ tạo cái còn thiếu.
+  if (!have.has(key)) await gql('manager1', 'mutation($o: app_insert_input!) { insert_app_one(object: $o) { key } }', { o: { key, name, spec } })
 }
 for (const { key } of library) {
   await until(`xuất bản ${key}`, async () => {

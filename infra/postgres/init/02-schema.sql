@@ -42,18 +42,93 @@ CREATE TABLE app (
   status     text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'published', 'error')),
   error      text,
   owner_id   text NOT NULL,
+  owner_name text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Quy trình được quản lý như mã nguồn: mỗi lần phát hành là một phiên bản bất biến, có ghi chú thay đổi.
+CREATE TABLE app_version (
+  app_key       text NOT NULL REFERENCES app ON DELETE CASCADE,
+  version       integer NOT NULL,
+  name          text NOT NULL,
+  spec          jsonb NOT NULL,
+  note          text NOT NULL,
+  author_id     text NOT NULL,
+  author_name   text,
+  reviewer_name text,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (app_key, version)
+);
+
+-- Đề xuất thay đổi quy trình (tương tự pull request). `checks` do workflow-bridge điền: kết quả kiểm tra
+-- hợp lệ và chạy thử trên hồ sơ cũ. Chỉ được chấp nhận khi đã kiểm tra xong và không có lỗi.
+CREATE TABLE app_change (
+  id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  app_key       text NOT NULL REFERENCES app ON DELETE CASCADE,
+  name          text NOT NULL CHECK (length(name) BETWEEN 1 AND 100),
+  spec          jsonb NOT NULL,
+  note          text NOT NULL CHECK (length(note) BETWEEN 5 AND 1000),
+  status        text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'merged', 'rejected')),
+  checks        jsonb,
+  author_id     text NOT NULL,
+  author_name   text,
+  reviewer_id   text,
+  reviewer_name text,
+  review_note   text,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  decided_at    timestamptz
+);
+
+-- Góp ý / báo lỗi về một quy trình (tương tự issue): ai cũng gửi được, ai cũng đọc được.
+CREATE TABLE app_issue (
+  id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  app_key     text NOT NULL REFERENCES app ON DELETE CASCADE,
+  title       text NOT NULL CHECK (length(title) BETWEEN 5 AND 200),
+  body        text,
+  status      text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+  author_id   text NOT NULL,
+  author_name text,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE FUNCTION app_first_version() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO app_version (app_key, version, name, spec, note, author_id, author_name)
+  VALUES (NEW.key, 1, NEW.name, NEW.spec, 'Phiên bản đầu tiên', NEW.owner_id, NEW.owner_name);
+  RETURN NULL;
+END $$;
+CREATE TRIGGER app_first_version AFTER INSERT ON app FOR EACH ROW EXECUTE FUNCTION app_first_version();
+
+-- Chấp nhận một đề xuất = phát hành phiên bản mới. Làm trong một giao dịch để app và lịch sử không lệch nhau.
+CREATE FUNCTION app_change_decide() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.status = OLD.status THEN RETURN NEW; END IF;
+  IF OLD.status <> 'open' THEN RAISE EXCEPTION 'Đề xuất đã được xử lý'; END IF;
+  NEW.decided_at := now();
+  IF NEW.status = 'merged' THEN
+    IF OLD.checks IS NULL OR jsonb_array_length(OLD.checks->'errors') > 0 THEN
+      RAISE EXCEPTION 'Đề xuất chưa qua kiểm tra tự động';
+    END IF;
+    UPDATE app SET name = NEW.name, spec = NEW.spec, status = 'pending', error = NULL WHERE key = NEW.app_key;
+    INSERT INTO app_version (app_key, version, name, spec, note, author_id, author_name, reviewer_name)
+    SELECT NEW.app_key, max(version) + 1, NEW.name, NEW.spec, NEW.note, NEW.author_id, NEW.author_name, NEW.reviewer_name
+    FROM app_version WHERE app_key = NEW.app_key;
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER app_change_decide BEFORE UPDATE ON app_change FOR EACH ROW EXECUTE FUNCTION app_change_decide();
 
 -- Một hồ sơ gửi vào ứng dụng. current_step / waiting_role do workflow-bridge đồng bộ từ Flowable.
 CREATE TABLE submission (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   app_key      text NOT NULL REFERENCES app,
+  app_version  integer NOT NULL DEFAULT 0, -- phiên bản quy trình lúc gửi; trigger submission_check điền
   data         jsonb NOT NULL,
   status       text NOT NULL DEFAULT 'running' CHECK (status IN ('running', 'approved', 'rejected')),
   current_step text,
   waiting_role text,
   submitter_id text NOT NULL,
+  submitter_name text,
   created_at   timestamptz NOT NULL DEFAULT now(),
   finished_at  timestamptz
 );
@@ -66,6 +141,7 @@ CREATE TABLE submission_event (
   action        text NOT NULL CHECK (action IN ('approve', 'reject', 'done')),
   note          text,
   actor_id      text NOT NULL,
+  actor_name    text,
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
@@ -81,6 +157,7 @@ BEGIN
   IF a.status IS DISTINCT FROM 'published' THEN
     RAISE EXCEPTION 'Ứng dụng "%" chưa được xuất bản', NEW.app_key;
   END IF;
+  SELECT max(version) INTO NEW.app_version FROM app_version WHERE app_key = NEW.app_key;
   IF jsonb_typeof(NEW.data) <> 'object' THEN
     RAISE EXCEPTION 'Dữ liệu hồ sơ phải là một đối tượng JSON';
   END IF;
@@ -119,3 +196,5 @@ CREATE INDEX ON submission (app_key);
 CREATE INDEX ON submission (submitter_id);
 CREATE INDEX ON submission (waiting_role) WHERE status = 'running';
 CREATE INDEX ON submission_event (submission_id);
+CREATE INDEX ON app_change (app_key);
+CREATE INDEX ON app_issue (app_key);

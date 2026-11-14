@@ -2,11 +2,12 @@
 SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 
-Tạo ứng dụng quy trình: mô tả bằng lời -> AI phác thảo -> con người chỉnh sửa và xem sơ đồ -> xuất bản.
+Tạo ứng dụng quy trình: mô tả bằng lời (hoặc lấy từ kho mẫu) -> AI phác thảo -> con người chỉnh sửa -> xuất bản.
+Sửa một quy trình đang chạy không xuất bản thẳng mà mở một đề xuất thay đổi để người khác duyệt.
 AI chỉ điền vào form này; không có gì được xuất bản nếu người dùng chưa bấm nút.
 -->
 <script setup>
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { gql, slug, ROLE_LABEL } from '../lib.js'
 import FlowDiagram from '../components/FlowDiagram.vue'
 
@@ -19,14 +20,38 @@ const questions = ref([])
 const message = ref(null) // { ok, text }
 const app = reactive({ key: '', name: '', spec: { fields: [], steps: [] } })
 const existing = ref([])
+const library = ref([])
+const note = ref('')
+// Đang sửa một quy trình đã xuất bản -> gửi đề xuất thay đổi thay vì xuất bản thẳng.
+const editing = computed(() => existing.value.some((a) => a.key === app.key))
 const publishing = ref(false)
 let timer
 
 async function loadExisting() {
   existing.value = (await gql('{ app(order_by: {created_at: desc}) { key name spec status error } }')).app
 }
-onMounted(loadExisting)
+onMounted(async () => {
+  await loadExisting()
+  library.value = (await gql('{ library { key name category description spec } }')).library
+})
 onUnmounted(() => clearInterval(timer))
+
+/** Lấy một quy trình trong kho mẫu làm điểm xuất phát (fork). Trùng mã thì thành bản sao mới. */
+function fork(item) {
+  const taken = existing.value.some((a) => a.key === item.key)
+  edit({ ...item, key: taken ? '' : item.key, name: taken ? `${item.name} (bản sao)` : item.name })
+}
+
+/** Tải quy trình đang soạn thành tệp JSON đúng định dạng thư mục library/ để đóng góp lại cho cộng đồng. */
+function exportJson() {
+  const key = app.key || slug(app.name)
+  const content = JSON.stringify({ key, name: app.name.trim(), category: 'Khác', description: description.value.trim() || app.name.trim(), spec: toSpec() }, null, 2)
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(new Blob([content + '\n'], { type: 'application/json' }))
+  link.download = `${key}.json`
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
 
 function edit(source) {
   app.key = source.key
@@ -83,14 +108,28 @@ function toSpec() {
   return { fields, steps }
 }
 
+async function propose() {
+  publishing.value = true
+  message.value = null
+  try {
+    const { insert_app_change_one: change } = await gql(
+      'mutation($o: app_change_insert_input!) { insert_app_change_one(object: $o) { id } }',
+      { o: { app_key: app.key, name: app.name.trim(), spec: toSpec(), note: note.value.trim() } })
+    note.value = ''
+    message.value = { ok: true, text: `Đã mở đề xuất thay đổi #${change.id}. Hệ thống đang kiểm tra và chạy thử trên hồ sơ cũ; giám đốc sẽ xem xét ở mục Quy trình.` }
+  } catch (err) {
+    message.value = { ok: false, text: `Không mở được đề xuất: ${err.message}` }
+  } finally {
+    publishing.value = false
+  }
+}
+
 async function publish() {
   publishing.value = true
   message.value = null
   const key = app.key || slug(app.name)
   try {
-    await gql(
-      `mutation($o: app_insert_input!) { insert_app_one(object: $o, on_conflict: {constraint: app_pkey, update_columns: [name, spec]}) { key } }`,
-      { o: { key, name: app.name.trim(), spec: toSpec() } })
+    await gql('mutation($o: app_insert_input!) { insert_app_one(object: $o) { key } }', { o: { key, name: app.name.trim(), spec: toSpec() } })
     app.key = key
     // Máy chủ biên dịch bất đồng bộ; chờ kết quả published / error.
     clearInterval(timer)
@@ -115,8 +154,21 @@ async function publish() {
   <h1 class="page-title">Tạo ứng dụng</h1>
   <p class="page-hint">Mô tả cách công việc đang diễn ra; hệ thống dựng form, luồng duyệt và phân quyền cho bạn.</p>
 
+  <section v-if="library.length" class="mt-6">
+    <h2 class="font-semibold">Bắt đầu từ kho quy trình mẫu</h2>
+    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+      <button v-for="item in library" :key="item.key" class="card text-left transition hover:border-indigo-400" @click="fork(item)">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-medium">{{ item.name }}</span>
+          <span class="chip bg-slate-100 text-slate-600">{{ item.category }}</span>
+        </div>
+        <p class="mt-1 text-sm text-slate-500">{{ item.description }}</p>
+      </button>
+    </div>
+  </section>
+
   <section class="card mt-6">
-    <label class="label" for="description">Mô tả quy trình bằng lời</label>
+    <label class="label" for="description">Hoặc mô tả quy trình bằng lời</label>
     <textarea
       id="description" v-model="description" class="input" rows="3"
       placeholder="Ví dụ: Nhân viên xin tạm ứng, dưới 5 triệu thì trưởng phòng duyệt, trên 5 triệu phải thêm giám đốc, kế toán chi tiền."
@@ -146,7 +198,7 @@ async function publish() {
       </div>
       <div>
         <label class="label" for="app-key">Mã (tự sinh nếu để trống)</label>
-        <input id="app-key" v-model="app.key" class="input font-mono" :placeholder="app.name ? slug(app.name) : 'xin_tam_ung'" />
+        <input id="app-key" v-model="app.key" class="input font-mono" :disabled="editing" :placeholder="app.name ? slug(app.name) : 'xin_tam_ung'" />
       </div>
     </div>
 
@@ -220,9 +272,20 @@ async function publish() {
     </template>
 
     <div class="mt-6 border-t border-slate-200 pt-4">
-      <button class="btn-primary" :disabled="publishing || !app.name.trim() || !app.spec.fields.length || !app.spec.steps.length" @click="publish">
+      <template v-if="editing">
+        <p class="text-sm text-slate-600">
+          “{{ app.name }}” đang chạy. Thay đổi sẽ được gửi thành một <strong>đề xuất</strong>: hệ thống kiểm tra, chạy thử trên hồ sơ cũ, và giám đốc duyệt rồi mới phát hành.
+        </p>
+        <label class="label mt-3" for="change-note">Vì sao cần thay đổi?</label>
+        <input id="change-note" v-model="note" class="input" placeholder="Ví dụ: Nâng ngưỡng cần giám đốc duyệt lên 10 triệu để giảm thời gian chờ" />
+        <button class="btn-primary mt-3" :disabled="publishing || note.trim().length < 5 || !app.spec.fields.length || !app.spec.steps.length" @click="propose">
+          {{ publishing ? 'Đang gửi…' : 'Gửi đề xuất thay đổi' }}
+        </button>
+      </template>
+      <button v-else class="btn-primary" :disabled="publishing || !app.name.trim() || !app.spec.fields.length || !app.spec.steps.length" @click="publish">
         {{ publishing ? 'Đang xuất bản…' : 'Xuất bản ứng dụng' }}
       </button>
+      <button class="btn-ghost ml-2" :disabled="!app.name.trim() || !app.spec.steps.length" @click="exportJson">Tải tệp JSON để chia sẻ</button>
     </div>
   </section>
 
