@@ -18,6 +18,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { validateSpec, toBpmn, toViewSql, simulate } from './compile.js'
 import { generateApp } from './ai.js'
 import { handleFiles } from './files.js'
+import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
 const { BRIDGE_SECRET, FLOWABLE_URL, FLOWABLE_USER, FLOWABLE_PASSWORD, HASURA_URL, HASURA_ADMIN_SECRET } = process.env
 for (const name of ['BRIDGE_SECRET', 'FLOWABLE_URL', 'FLOWABLE_USER', 'FLOWABLE_PASSWORD', 'HASURA_URL', 'HASURA_ADMIN_SECRET']) {
@@ -61,6 +62,7 @@ async function publishApp(app) {
   await flowable('POST', '/repository/deployments', form)
   await hasuraPost('/v2/query', { type: 'run_sql', args: { source: 'default', sql: toViewSql(app.key, app.spec) } })
   await setAppStatus(app.key, 'published')
+  await ensureAutonomy(app)
 }
 
 /** Ghi bước đang chờ (hoặc kết quả cuối) của hồ sơ từ Flowable vào DB. */
@@ -77,6 +79,8 @@ async function syncSubmission(id) {
     set = { current_step: null, waiting_role: null, status: done[0].endActivityId === 'approved' ? 'approved' : 'rejected', finished_at: new Date().toISOString() }
   }
   await gql('mutation($id: uuid!, $set: submission_set_input!) { update_submission_by_pk(pk_columns: {id: $id}, _set: $set) { id } }', { id, set })
+  // AI cho ý kiến ở nền: chậm hay lỗi thì cũng không làm trễ hay hỏng luồng của người.
+  if (set.current_step) opine(id, set.current_step).catch((err) => console.error('AI thử việc:', err.message))
 }
 
 async function startSubmission(sub) {
@@ -132,6 +136,9 @@ async function sweepPendingApps() {
   }
 }
 setInterval(sweepPendingApps, 10000)
+// Quy trình đã có từ trước khi tính năng này ra đời cũng cần có dòng nấc tự chủ; thử tới khi thành công.
+let autonomyReady = false
+setInterval(async () => { if (!autonomyReady) autonomyReady = await ensureAllAutonomy().then(() => true, () => false) }, 10000)
 
 const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission, app_change_check: checkChange }
 

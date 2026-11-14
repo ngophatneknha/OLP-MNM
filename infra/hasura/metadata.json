@@ -203,6 +203,18 @@
                       }
                     }
                   }
+                },
+                {
+                  "name": "opinions",
+                  "using": {
+                    "foreign_key_constraint_on": {
+                      "column": "submission_id",
+                      "table": {
+                        "schema": "public",
+                        "name": "ai_opinion"
+                      }
+                    }
+                  }
                 }
               ],
               "select_permissions": [
@@ -1139,6 +1151,168 @@
                     "set": {
                       "uploader_id": "X-Hasura-User-Id",
                       "uploader_name": "X-Hasura-User-Name"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "step_autonomy"
+              },
+              "select_permissions": [
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                }
+              ],
+              "update_permissions": [
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": [
+                      "level"
+                    ],
+                    "filter": {},
+                    "check": null,
+                    "set": {
+                      "updated_by": "X-Hasura-User-Name"
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": [
+                      "level"
+                    ],
+                    "filter": {},
+                    "check": null,
+                    "set": {
+                      "updated_by": "X-Hasura-User-Name"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "ai_opinion"
+              },
+              "object_relationships": [
+                {
+                  "name": "submission",
+                  "using": {
+                    "foreign_key_constraint_on": "submission_id"
+                  }
+                }
+              ],
+              "select_permissions": [
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": [
+                      "id",
+                      "submission_id",
+                      "step_key",
+                      "level",
+                      "decision",
+                      "reason",
+                      "created_at"
+                    ],
+                    "filter": {
+                      "_and": [
+                        {
+                          "level": {
+                            "_gte": 3
+                          }
+                        },
+                        {
+                          "human_action": {
+                            "_is_null": true
+                          }
+                        },
+                        {
+                          "submission": {
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": [
+                      "id",
+                      "submission_id",
+                      "step_key",
+                      "level",
+                      "decision",
+                      "reason",
+                      "created_at"
+                    ],
+                    "filter": {
+                      "_and": [
+                        {
+                          "level": {
+                            "_gte": 3
+                          }
+                        },
+                        {
+                          "human_action": {
+                            "_is_null": true
+                          }
+                        },
+                        {
+                          "submission": {
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": [
+                      "id",
+                      "submission_id",
+                      "step_key",
+                      "level",
+                      "decision",
+                      "reason",
+                      "created_at"
+                    ],
+                    "filter": {
+                      "level": {
+                        "_gt": 4
+                      }
                     }
                   }
                 }

@@ -10,6 +10,12 @@ SPDX-License-Identifier: Apache-2.0
 ## [Unreleased]
 
 ### Added
+- **Trợ lý AI "thử việc"**: mỗi bước duyệt có bốn nấc tự chủ (người làm, chạy bóng, gợi ý, tự duyệt). Trợ lý cho ý kiến kèm lý do dựa trên hồ sơ và các quyết định gần đây của người ở bước đó; ở nấc 3 người duyệt thấy gợi ý, ở nấc 4 trợ lý tự duyệt hồ sơ hợp lệ còn từ chối luôn do người quyết.
+- Nâng nấc bị cơ sở dữ liệu chặn nếu thiếu bằng chứng: chỉ giám đốc, từng nấc một, cần ≥ 10 quyết định thật của người và ≥ 90% khớp; dữ liệu mẫu không được tính. Hạ nấc ai có quyền cũng làm được.
+- Trang "Trợ lý AI" cho trưởng phòng và giám đốc: nấc hiện tại, bằng chứng khớp, nâng/hạ nấc, các lần gần đây trợ lý so với người.
+- `seed.js --ai-demo`: chạy bóng trợ lý trên 12 hồ sơ có người quyết định thật.
+
+### Added (đã phát hành trước đó trong nhánh chính)
 - **Tệp đính kèm hồ sơ** lưu trong kho S3 (SeaweedFS), đi qua cổng API; quyền xem/đính kèm theo đúng quyền của hồ sơ; tải về luôn dạng tệp đính kèm. Chọn tệp ngay trong form gửi hồ sơ hoặc thêm ở trang hồ sơ (tối đa 10 MB).
 - Trang **Tài liệu** (không gian [H]): mọi tệp tôi được xem, có tìm kiếm.
 - Trang **Số liệu** (không gian [D]) cho trưởng phòng và giám đốc: số hồ sơ, thời gian xử lý trung bình, tỷ lệ duyệt, bước chậm nhất, hồ sơ chờ lâu nhất; tính từ dữ liệu thật bằng mã có kiểm thử.

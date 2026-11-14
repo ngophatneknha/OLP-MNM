@@ -8,7 +8,7 @@ Một hồ sơ: nội dung đã khai, hàng ô ký cho biết đang ở đâu, v
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeft, Download, Paperclip } from 'lucide-vue-next'
-import { auth, gql, formatValue, formatTime, whereIs, waitsOnMe, stepOf, ROLE_LABEL, SUBMISSION_FIELDS, uploadFile, downloadFile, formatSize, toast } from '../lib.js'
+import { auth, gql, formatValue, formatTime, whereIs, waitsOnMe, stepOf, suggestion, ROLE_LABEL, SUBMISSION_FIELDS, uploadFile, downloadFile, formatSize, toast } from '../lib.js'
 import SignatureRow from '../components/SignatureRow.vue'
 import DecisionBar from '../components/DecisionBar.vue'
 
@@ -66,6 +66,8 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
       </p>
       <DecisionBar :submission="submission" @done="load" />
     </section>
+
+    <p v-if="suggestion(submission)" class="sticky-note mt-3 max-w-2xl">Trợ lý gợi ý <strong>{{ suggestion(submission).decision === 'approve' ? 'duyệt' : 'từ chối' }}</strong>: {{ suggestion(submission).reason }} <span class="text-xs">Quyết định vẫn là của bạn.</span></p>
 
     <section class="mt-6" aria-labelledby="content-title">
       <h2 id="content-title" class="section-title">Nội dung</h2>

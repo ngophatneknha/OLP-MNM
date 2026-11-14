@@ -138,6 +138,35 @@ get() { curl -s -o "$TMP_OUT" -w '%{http_code}' -H "Authorization: Bearer $1" -H
 [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8333/dxlab/)" != 200 ] || fail "kho S3 mở ra ngoài cổng API"
 rm -f "$FILE" "$TMP_OUT"
 
+echo "AI thử việc: nâng nấc tự chủ chỉ khi có bằng chứng thật, từng nấc một, và chỉ giám đốc"
+psql() { docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -q -tA'; }
+LEVEL="update_step_autonomy_by_pk(pk_columns:{app_key:\\\"$APP\\\",step_key:\\\"truong_phong\\\"},_set:{level:LV}){level}"
+raise() { gql "$1" "$2" "mutation{$(printf '%s' "$LEVEL" | sed "s/LV/$3/")}"; }
+until_ok "chưa có dòng nấc tự chủ của ứng dụng" has "$M1" manager '{step_autonomy{app_key level}}' "$APP"
+raise "$D1" director 3 | grep -q '"level":3' && fail "nâng nấc nhảy cóc 1 -> 3 được"
+raise "$M1" manager 2 | grep -q '"level":2' && fail "trưởng phòng tự nâng được nấc tự chủ"
+raise "$D1" director 2 | grep -q '"level":2' || fail "giám đốc không bật được chế độ chạy bóng"
+raise "$D1" director 3 | grep -q '"level":3' && fail "nâng nấc không có bằng chứng"
+# Bằng chứng giả (dữ liệu mẫu) không được tính: 10 ý kiến khớp nhưng đánh dấu sample.
+psql <<SQL
+INSERT INTO submission (app_key, data, submitter_id) SELECT '$APP', '{"so_tien": 1000}', 'smoke-user' FROM generate_series(1, 6);
+INSERT INTO ai_opinion (submission_id, step_key, level, decision, reason, human_action, matched, sample)
+  SELECT id, 'truong_phong', 2, 'approve', 'thử nghiệm', 'approve', true, true FROM (SELECT id FROM submission WHERE app_key = '$APP' ORDER BY no LIMIT 10) s
+  ON CONFLICT (submission_id, step_key) DO UPDATE SET level = 2, decision = 'approve', human_action = 'approve', matched = true, sample = true;
+SQL
+raise "$D1" director 3 | grep -q '"level":3' && fail "dữ liệu mẫu được tính làm bằng chứng"
+psql <<SQL
+UPDATE ai_opinion SET sample = false WHERE submission_id IN (SELECT id FROM submission WHERE app_key = '$APP');
+UPDATE ai_opinion SET matched = false, human_action = 'reject' WHERE id = (SELECT min(id) FROM ai_opinion WHERE submission_id IN (SELECT id FROM submission WHERE app_key = '$APP'));
+SQL
+raise "$D1" director 3 | grep -q '"level":3' || fail "đủ bằng chứng (9/10 khớp) mà giám đốc vẫn không nâng được"
+raise "$M1" manager 2 | grep -q '"level":2' || fail "trưởng phòng không hạ được nấc"
+psql <<SQL
+UPDATE ai_opinion SET matched = false, human_action = 'reject' WHERE id IN (SELECT id FROM ai_opinion WHERE submission_id IN (SELECT id FROM submission WHERE app_key = '$APP') ORDER BY id LIMIT 3);
+SQL
+raise "$D1" director 3 | grep -q '"level":3' && fail "nâng nấc khi chỉ khớp 7/10"
+has "$S1" staff '{submission(limit:1){opinions{level}}}' '"data"' || fail "nhân viên không đọc được hồ sơ khi có bảng ý kiến AI"
+
 curl -fsS http://localhost:3000/config.json | grep -q '"apiUrl":"http' || fail "ứng dụng web không phục vụ cấu hình"
 curl -fsS http://localhost:3000/apps | grep -q '<div id="app">' || fail "ứng dụng web không phục vụ trang"
 

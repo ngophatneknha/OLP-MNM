@@ -55,7 +55,22 @@ Những gì cộng đồng nguồn mở dùng để quản lý mã, ở đây d�
 
 ![Một đề xuất thay đổi: phần khác biệt viết bằng lời thường và kết quả chạy thử trên hồ sơ cũ](docs/images/de-xuat-thay-doi.jpg)
 
-### 3. Điều hành bằng số liệu thật
+### 3. Trợ lý AI phải "thử việc"
+
+Chuyển đổi số là chuyển dần quyền quyết định từ con người sang máy, nhưng không ai nên giao quyền cho máy theo cảm tính. Ở **mỗi bước duyệt**, trợ lý đi qua bốn nấc:
+
+1. **Người làm**: trợ lý đứng ngoài.
+2. **Chạy bóng**: trợ lý âm thầm cho ý kiến để so với quyết định thật của người; người duyệt chưa thấy ý kiến đó, nên không bị ảnh hưởng.
+3. **Gợi ý**: người duyệt thấy ý kiến của trợ lý kèm lý do, vẫn là người bấm.
+4. **Tự duyệt**: hồ sơ hợp lệ được duyệt luôn. Từ chối thì trợ lý **không bao giờ tự làm**; hồ sơ trở về cho người.
+
+Lên nấc không phải do ai muốn: cơ sở dữ liệu chỉ cho giám đốc nâng, từng nấc một, và chỉ khi có ít nhất 10 quyết định thật của người ở nấc hiện tại với từ 90% khớp. Dữ liệu mẫu và các lần trợ lý tự duyệt không được tính làm bằng chứng. Hạ nấc thì trưởng phòng hay giám đốc làm được bất cứ lúc nào. Trợ lý học cách làm của tổ chức từ chính các quyết định gần đây ở bước đó.
+
+![Trang Trợ lý AI: bốn nấc tự chủ và bằng chứng khớp ở từng bước](docs/images/tro-ly.jpg)
+
+Với mô hình nhỏ chạy thử, lần chạy bóng đầu đạt khoảng 7/12 khớp, chưa đủ để lên nấc; hệ thống làm đúng việc của nó là từ chối nâng quyền khi chưa có bằng chứng.
+
+### 4. Điều hành bằng số liệu thật
 
 Trưởng phòng và giám đốc có trang **Số liệu**: bao nhiêu hồ sơ đang chờ, mất bao lâu để xử lý xong, và **bước nào làm hồ sơ chờ lâu nhất**. Mọi con số tính từ chính hồ sơ và nhật ký ký duyệt bằng mã có kiểm thử, và dòng nào cũng bấm vào được hồ sơ gốc. Tệp đính kèm (báo giá, hóa đơn) lưu trong kho S3 và chỉ ai được xem hồ sơ mới tải được.
 
@@ -114,6 +129,8 @@ Lần khởi động đầu mất khoảng 1–2 phút. Sau đó nạp dữ li�
 ```bash
 docker compose exec workflow-bridge node seed.js
 ```
+
+Có trợ lý AI cấu hình thì có thể cho nó chạy bóng thật trên 12 hồ sơ để xem độ khớp: `docker compose exec workflow-bridge node seed.js --ai-demo`.
 
 Mở **http://localhost:3000** và đăng nhập.
 
@@ -182,11 +199,10 @@ docs/                       kiến trúc và kế hoạch
 
 ## Hiện trạng và hướng phát triển
 
-Đã chạy được, có kiểm thử: nền tảng lõi, bộ sinh ứng dụng, trợ lý AI phác thảo, quản lý phiên bản và đề xuất thay đổi quy trình, tệp đính kèm qua kho S3, trang Tài liệu, trang Số liệu (thời gian xử lý, điểm nghẽn), ứng dụng web.
+Đã chạy được, có kiểm thử: nền tảng lõi, bộ sinh ứng dụng, trợ lý AI phác thảo, quản lý phiên bản và đề xuất thay đổi quy trình, tệp đính kèm qua kho S3, trang Tài liệu, trang Số liệu (thời gian xử lý, điểm nghẽn), trợ lý AI thử việc bốn nấc, ứng dụng web.
 
 Còn lại, theo thứ tự:
 
-- **AI phải "thử việc"**: AI chạy song song với người ở từng bước duyệt, chỉ được giao thêm quyền khi tỷ lệ khớp với quyết định của con người đủ cao.
 - Xác thực hai yếu tố cho trưởng phòng và giám đốc; quét mã độc tệp tải lên; TLS khi triển khai trên Internet.
 - Bảng công việc dạng cột (Kanban) cho không gian [H].
 
