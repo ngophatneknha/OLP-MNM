@@ -1,0 +1,4 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+*.test.js
+Dockerfile

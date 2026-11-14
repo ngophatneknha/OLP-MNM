@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Phát hành image container của dự án lên GitHub Packages (ghcr.io) mỗi khi gắn thẻ phiên bản vX.Y.Z.
+# Chỉ đóng gói mã của chính dự án (ứng dụng web, workflow-bridge); các dịch vụ bên thứ ba vẫn lấy từ image chính thức.
+
+name: Phát hành gói
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Thẻ phiên bản cần phát hành lại (ví dụ v1.2.0)"
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - name: web
+            context: web
+          - name: workflow-bridge
+            context: services/workflow-bridge
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - id: v
+        run: echo "version=$(git describe --tags --exact-match | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/dxlab-${{ matrix.name }}:${{ steps.v.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/dxlab-${{ matrix.name }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.version=${{ steps.v.outputs.version }}
+            org.opencontainers.image.title=dxlab-${{ matrix.name }}
