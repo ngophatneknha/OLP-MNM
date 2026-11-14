@@ -1,12 +1,18 @@
 // SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 // SPDX-License-Identifier: Apache-2.0
 //
-// Cầu nối Hasura event trigger -> Flowable REST. Không phụ thuộc gói ngoài (Node >= 22).
-//   request INSERT          -> khởi tạo tiến trình `requestApproval` (businessKey = request.id)
-//   request.status thay đổi -> hoàn tất user task "xem xét" với biến `approved`
+// Dịch vụ nền nối Hasura với Flowable. Không phụ thuộc gói ngoài (Node >= 22).
+// Nhận Hasura event trigger tại POST / :
+//   app_publish       app được tạo / đổi spec      -> biên dịch, triển khai BPMN, tạo view phẳng
+//   submission_start  có hồ sơ mới                 -> khởi tạo tiến trình (businessKey = submission.id)
+//   submission_act    có hành động duyệt/từ chối   -> hoàn tất user task tương ứng
+// Nhận Hasura action tại POST /ai/spec : mô tả bằng lời -> bản mô tả ứng dụng (xem ai.js).
+// Sau mỗi bước, trạng thái hồ sơ trong DB được đồng bộ lại từ Flowable (Flowable là nguồn sự thật của quy trình).
 // Hasura tự gửi lại sự kiện khi nhận mã lỗi, nên mọi thao tác ở đây phải chạy lại được an toàn.
 
 import { createServer } from 'node:http'
+import { validateSpec, toBpmn, toViewSql } from './compile.js'
+import { generateApp } from './ai.js'
 
 const { BRIDGE_SECRET, FLOWABLE_URL, FLOWABLE_USER, FLOWABLE_PASSWORD, HASURA_URL, HASURA_ADMIN_SECRET } = process.env
 for (const name of ['BRIDGE_SECRET', 'FLOWABLE_URL', 'FLOWABLE_USER', 'FLOWABLE_PASSWORD', 'HASURA_URL', 'HASURA_ADMIN_SECRET']) {
@@ -15,56 +21,84 @@ for (const name of ['BRIDGE_SECRET', 'FLOWABLE_URL', 'FLOWABLE_USER', 'FLOWABLE_
 const flowableAuth = 'Basic ' + Buffer.from(`${FLOWABLE_USER}:${FLOWABLE_PASSWORD}`).toString('base64')
 
 async function flowable(method, path, body) {
+  const form = body instanceof FormData
   const res = await fetch(FLOWABLE_URL + path, {
     method,
-    headers: { authorization: flowableAuth, 'content-type': 'application/json' },
-    body: body && JSON.stringify(body),
+    headers: form ? { authorization: flowableAuth } : { authorization: flowableAuth, 'content-type': 'application/json' },
+    body: form ? body : body && JSON.stringify(body),
   })
   const text = await res.text()
   if (!res.ok) throw new Error(`Flowable ${method} ${path}: ${res.status} ${text}`)
   return text ? JSON.parse(text) : null
 }
 
-async function hasura(query, variables) {
-  const res = await fetch(HASURA_URL, {
+async function hasuraPost(path, body) {
+  const res = await fetch(HASURA_URL + path, {
     method: 'POST',
     headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify(body),
   })
   const json = await res.json()
-  if (json.errors) throw new Error(`Hasura: ${JSON.stringify(json.errors)}`)
+  if (!res.ok || json.errors) throw new Error(`Hasura ${path}: ${JSON.stringify(json)}`)
+  return json
+}
+const gql = (query, variables) => hasuraPost('/v1/graphql', { query, variables })
+
+const setAppStatus = (key, status, error = null) => gql(
+  'mutation($key: String!, $status: String!, $error: String) { update_app_by_pk(pk_columns: {key: $key}, _set: {status: $status, error: $error}) { key } }',
+  { key, status, error })
+
+async function publishApp(app) {
+  const errors = validateSpec(app.spec)
+  if (errors.length) return setAppStatus(app.key, 'error', errors.join('\n'))
+  const form = new FormData()
+  form.append('file', new Blob([toBpmn(app.key, app.name, app.spec)], { type: 'text/xml' }), `app_${app.key}.bpmn20.xml`)
+  await flowable('POST', '/repository/deployments', form)
+  await hasuraPost('/v2/query', { type: 'run_sql', args: { source: 'default', sql: toViewSql(app.key, app.spec) } })
+  await setAppStatus(app.key, 'published')
 }
 
-async function onCreated(request) {
-  const running = await flowable('GET', `/runtime/process-instances?businessKey=${request.id}`)
-  const instance = running.data[0] ?? await flowable('POST', '/runtime/process-instances', {
-    processDefinitionKey: 'requestApproval',
-    businessKey: request.id,
-    variables: [
-      { name: 'title', value: request.title },
-      { name: 'requesterId', value: request.requester_id },
-    ],
-  })
-  await hasura(
-    'mutation($id: uuid!, $pid: String!) { update_request_by_pk(pk_columns: {id: $id}, _set: {process_instance_id: $pid}) { id } }',
-    { id: request.id, pid: instance.id },
-  )
-}
-
-async function onDecided(request) {
-  const tasks = await flowable('GET', `/runtime/tasks?processInstanceBusinessKey=${request.id}`)
-  if (tasks.data.length === 0) {
-    // Đã kết thúc (sự kiện gửi lại) thì bỏ qua; chưa từng khởi tạo thì báo lỗi để Hasura gửi lại sau.
-    const done = await flowable('GET', `/history/historic-process-instances?businessKey=${request.id}&finished=true`)
-    if (done.data.length === 0) throw new Error(`Chưa có tiến trình cho yêu cầu ${request.id}`)
+/** Ghi bước đang chờ (hoặc kết quả cuối) của hồ sơ từ Flowable vào DB. */
+async function syncSubmission(id) {
+  const tasks = (await flowable('GET', `/runtime/tasks?processInstanceBusinessKey=${id}`)).data
+  let set
+  if (tasks.length) {
+    const links = await flowable('GET', `/runtime/tasks/${tasks[0].id}/identitylinks`)
+    set = { current_step: tasks[0].taskDefinitionKey.replace(/^step_/, ''), waiting_role: links.find((l) => l.group)?.group ?? null }
+  } else {
+    const done = (await flowable('GET', `/history/historic-process-instances?businessKey=${id}&finished=true`)).data
+    // Chưa có tiến trình nào: báo lỗi để Hasura gửi lại sự kiện sau.
+    if (!done.length) throw new Error(`Chưa có tiến trình cho hồ sơ ${id}`)
+    set = { current_step: null, waiting_role: null, status: done[0].endActivityId === 'approved' ? 'approved' : 'rejected', finished_at: new Date().toISOString() }
   }
-  for (const task of tasks.data) {
-    await flowable('POST', `/runtime/tasks/${task.id}`, {
-      action: 'complete',
-      variables: [{ name: 'approved', value: request.status === 'approved' }],
+  await gql('mutation($id: uuid!, $set: submission_set_input!) { update_submission_by_pk(pk_columns: {id: $id}, _set: $set) { id } }', { id, set })
+}
+
+async function startSubmission(sub) {
+  const started = (await flowable('GET', `/history/historic-process-instances?businessKey=${sub.id}`)).data
+  if (!started.length) {
+    await flowable('POST', '/runtime/process-instances', {
+      processDefinitionKey: `app_${sub.app_key}`,
+      businessKey: sub.id,
+      variables: Object.entries(sub.data).filter(([, value]) => value !== null).map(([name, value]) => ({ name, value })),
     })
   }
+  await syncSubmission(sub.id)
 }
+
+async function actOnSubmission(ev) {
+  // Chỉ hoàn tất đúng bước mà người dùng đã nhìn thấy; hành động cũ (bấm hai lần, quy trình đã đi tiếp) bị bỏ qua.
+  const tasks = (await flowable('GET', `/runtime/tasks?processInstanceBusinessKey=${ev.submission_id}&taskDefinitionKey=step_${encodeURIComponent(ev.step_key)}`)).data
+  for (const task of tasks) {
+    await flowable('POST', `/runtime/tasks/${task.id}`, {
+      action: 'complete',
+      variables: [{ name: 'approved', value: ev.action !== 'reject' }],
+    })
+  }
+  await syncSubmission(ev.submission_id)
+}
+
+const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission }
 
 createServer(async (req, res) => {
   try {
@@ -74,10 +108,21 @@ createServer(async (req, res) => {
     }
     let body = ''
     for await (const chunk of req) body += chunk
-    const { event } = JSON.parse(body)
-    if (event.op === 'INSERT') await onCreated(event.data.new)
-    else if (event.data.new.status !== 'pending') await onDecided(event.data.new)
-    res.writeHead(200, { 'content-type': 'application/json' }).end('{}')
+    const payload = JSON.parse(body)
+    let result = {}
+    if (req.url === '/ai/spec') {
+      // Lỗi của action trả về dạng { message } với mã 4xx để Hasura chuyển nguyên văn cho người dùng.
+      try {
+        result = await generateApp(payload.input.description)
+      } catch (err) {
+        console.error(err)
+        res.writeHead(400, { 'content-type': 'application/json' }).end(JSON.stringify({ message: String(err.message) }))
+        return
+      }
+    } else {
+      await handlers[payload.trigger.name](payload.event.data.new)
+    }
+    res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(result))
   } catch (err) {
     console.error(err)
     res.writeHead(500).end(String(err))

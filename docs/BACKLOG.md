@@ -29,13 +29,14 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 | ID — Tầng 1: Định danh & Cổng API (Keycloak, APISIX) | 4/9 | 4/7 | ████░░░░░░ 44% |
 | DA — Tầng 1: Dữ liệu (PostgreSQL, Hasura, SeaweedFS) | 2/9 | 2/8 | ██░░░░░░░░ 22% |
 | WF — Tầng 1: Workflow (Flowable) | 4/6 | 4/5 | ███████░░░ 66% |
+| GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo) | 5/10 | 5/9 | █████░░░░░ 50% |
 | UI — Tầng 2: Ứng dụng H-P-D-I (Nuxt 3) | 0/11 | 0/10 | ░░░░░░░░░░ 0% |
 | BI — Không gian [D]: Dashboard & tìm kiếm | 0/4 | 0/3 | ░░░░░░░░░░ 0% |
 | AI — Không gian [I]: Trí tuệ nhân tạo (Stretch) | 0/5 | 0/0 | ░░░░░░░░░░ 0% |
 | OPS — Hạ tầng & vận hành | 0/4 | 0/2 | ░░░░░░░░░░ 0% |
 | DOC — Tài liệu & trình diễn | 0/8 | 0/8 | ░░░░░░░░░░ 0% |
 | RISK — Rủi ro cần theo dõi | 0/5 | 0/5 | ░░░░░░░░░░ 0% |
-| **Tổng** | **15/85** | **15/72** | ██░░░░░░░░ 17% |
+| **Tổng** | **20/95** | **20/81** | ██░░░░░░░░ 21% |
 <!-- progress:end -->
 
 ## Mốc thời gian
@@ -166,6 +167,29 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
   - Hoàn thành khi: giao diện người gửi cập nhật không cần tải lại trang.
 - [ ] **WF-06** Quy trình phê duyệt 2 cấp / quy tắc theo giá trị — `B` · Tuần 5 · Stretch
   - Hoàn thành khi: có ít nhất một nhánh điều kiện, cấu hình không cần sửa mã.
+
+## GEN — Bộ sinh ứng dụng quy trình (điểm sáng tạo)
+
+- [x] **GEN-01** Bản mô tả ứng dụng (spec) và bộ kiểm tra hợp lệ — `ALL` · Tuần 5 · MVP
+  - Hoàn thành khi: có kiểm thử cho spec hợp lệ và các trường hợp chèn mã.
+- [x] **GEN-02** Biên dịch spec → BPMN (tuần tự, bước có điều kiện, từ chối, bước task) — `ALL` · Tuần 5 · MVP
+  - Hoàn thành khi: smoke test chạy đủ 3 nhánh trên Flowable.
+- [x] **GEN-03** Xuất bản động: tạo/sửa app → tự triển khai quy trình và view BI — `ALL` · Tuần 5 · MVP
+  - Hoàn thành khi: không cần khởi động lại dịch vụ nào.
+- [x] **GEN-04** Rào chắn dữ liệu tại DB theo spec, nhật ký hành động chỉ-thêm — `ALL` · Tuần 5 · MVP
+  - Hoàn thành khi: hồ sơ sai kiểu bị từ chối; người sai vai trò không hành động được.
+- [x] **GEN-05** Trợ lý AI: mô tả tiếng Việt → spec + câu hỏi làm rõ (Hasura action) — `ALL` · Tuần 5 · MVP
+  - Hoàn thành khi: gọi qua gateway với role manager trả spec hợp lệ; tắt AI hệ thống vẫn chạy.
+- [ ] **GEN-06** Giao diện tạo ứng dụng: mô tả → xem sơ đồ → chỉnh sửa → xuất bản — `ALL` · Tuần 6 · MVP
+  - Hoàn thành khi: người không biết kỹ thuật tạo được ứng dụng mà không đọc JSON.
+- [ ] **GEN-07** Form tự sinh từ spec và hộp việc chờ theo vai trò — `ALL` · Tuần 6 · MVP
+  - Hoàn thành khi: gửi và duyệt hồ sơ hoàn toàn trên giao diện.
+- [ ] **GEN-08** Sơ đồ quy trình sáng theo thời gian thực khi hồ sơ di chuyển — `ALL` · Tuần 6 · MVP
+  - Hoàn thành khi: hai trình duyệt cạnh nhau thấy trạng thái đổi không cần tải lại.
+- [ ] **GEN-09** Điểm trưởng thành H-P-D-I của tổ chức tính từ dữ liệu sử dụng thật — `ALL` · Tuần 7 · MVP
+  - Hoàn thành khi: dashboard có biểu đồ radar và gợi ý quy trình nên số hóa tiếp.
+- [ ] **GEN-10** Vòng hỏi-đáp với AI: trả lời câu hỏi làm rõ → spec được cập nhật — `ALL` · Tuần 7 · Stretch
+  - Hoàn thành khi: câu trả lời làm thay đổi đúng bước tương ứng.
 
 ## UI — Tầng 2: Ứng dụng H-P-D-I (Nuxt 3)
 

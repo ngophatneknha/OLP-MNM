@@ -100,17 +100,7 @@ services:
       postgres:
         condition: service_healthy
 
-  # Chạy một lần: triển khai quy trình BPMN trong infra/flowable (mỗi lần chạy tạo một phiên bản mới).
-  flowable-init:
-    image: curlimages/curl:8.10.1
-    restart: "no"
-    command: ["-fsS", "--retry", "40", "--retry-delay", "5", "--retry-all-errors", "-u", "${FLOWABLE_USER}:${FLOWABLE_PASSWORD}", "-F", "file=@/bpmn/request-approval.bpmn20.xml", "http://flowable:8080/flowable-rest/service/repository/deployments"]
-    volumes:
-      - ./infra/flowable:/bpmn:ro
-    depends_on:
-      - flowable
-
-  # Cầu nối sự kiện Hasura -> Flowable (mã nguồn: services/workflow-bridge).
+  # Biên dịch ứng dụng (spec -> BPMN + view) và nối sự kiện Hasura -> Flowable. Mã nguồn: services/workflow-bridge.
   workflow-bridge:
     image: node:22.19.0-alpine
     restart: unless-stopped
@@ -120,8 +110,12 @@ services:
       FLOWABLE_URL: http://flowable:8080/flowable-rest/service
       FLOWABLE_USER: ${FLOWABLE_USER}
       FLOWABLE_PASSWORD: ${FLOWABLE_PASSWORD}
-      HASURA_URL: http://hasura:8080/v1/graphql
+      HASURA_URL: http://hasura:8080
       HASURA_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
+      # Trợ lý AI (tùy chọn): mọi máy chủ tương thích OpenAI /chat/completions (Ollama, vLLM, Mistral...).
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
     volumes:
       - ./services/workflow-bridge:/app:ro
 
