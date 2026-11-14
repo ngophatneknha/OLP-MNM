@@ -129,3 +129,50 @@ CREATE VIEW bi.app_${appKey} AS
   SELECT id, status, submitter_id, created_at, finished_at, ${cols.join(', ')}
   FROM public.submission WHERE app_key = '${appKey}';`
 }
+
+/** Bước có diễn ra với dữ liệu hồ sơ này không (cùng ngữ nghĩa với biểu thức điều kiện trong BPMN). */
+export function stepApplies(step, data) {
+  if (!step.when) return true
+  const a = data[step.when.field], b = step.when.value
+  return { '>': a > b, '>=': a >= b, '<': a < b, '<=': a <= b, '==': a === b, '!=': a !== b }[step.when.op] ?? false
+}
+
+/**
+ * "Hầm gió": chạy thử spec mới trên các hồ sơ đã có để thấy tác động trước khi phát hành.
+ * submissions: [{ data, created_at, events: [{ step_key, created_at }] }]
+ * Trả về số hồ sơ đổi đường đi, số lượt qua từng bước trước/sau, và thời gian chờ ước tính tiết kiệm được
+ * (tính từ thời gian xử lý trung bình thực tế của từng bước; bước mới chưa có số liệu được tính là 0).
+ */
+export function simulate(oldSpec, newSpec, submissions) {
+  const durations = {} // step_key -> [giờ]
+  for (const s of submissions) {
+    let previous = Date.parse(s.created_at)
+    for (const e of [...(s.events ?? [])].sort((x, y) => Date.parse(x.created_at) - Date.parse(y.created_at))) {
+      const at = Date.parse(e.created_at)
+      ;(durations[e.step_key] ??= []).push((at - previous) / 3600000)
+      previous = at
+    }
+  }
+  const avgHours = (key) => durations[key]?.length ? durations[key].reduce((a, b) => a + b, 0) / durations[key].length : 0
+  const path = (spec, data) => spec.steps.filter((step) => stepApplies(step, data)).map((step) => step.key)
+
+  const count = {} // step_key -> { before, after }
+  let changed = 0
+  let savedHours = 0
+  for (const s of submissions) {
+    const before = path(oldSpec, s.data), after = path(newSpec, s.data)
+    for (const key of before) (count[key] ??= { before: 0, after: 0 }).before++
+    for (const key of after) (count[key] ??= { before: 0, after: 0 }).after++
+    if (before.join() !== after.join()) changed++
+    for (const key of before) if (!after.includes(key)) savedHours += avgHours(key)
+    for (const key of after) if (!before.includes(key)) savedHours -= avgHours(key)
+  }
+  const nameOf = (key) => (newSpec.steps.find((s) => s.key === key) ?? oldSpec.steps.find((s) => s.key === key)).name
+  const round = (n) => Math.round(n * 100) / 100
+  return {
+    total: submissions.length,
+    changed,
+    savedHoursPerSubmission: submissions.length ? round(savedHours / submissions.length) : 0,
+    steps: Object.entries(count).map(([key, c]) => ({ key, name: nameOf(key), ...c, avgHours: round(avgHours(key)) })),
+  }
+}

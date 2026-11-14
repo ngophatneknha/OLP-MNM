@@ -22,3 +22,13 @@ SPDX-License-Identifier: Apache-2.0
 
 ## Definition of Done
 Code + tiêu đề SPDX + tài liệu ngắn + chạy được bằng `docker compose up` + được review.
+
+## Đóng góp một quy trình vào kho mẫu
+
+Quy trình hay của tổ chức bạn có thể giúp tổ chức khác không phải làm lại từ đầu:
+
+1. Trong ứng dụng, mở "Tạo ứng dụng", soạn quy trình rồi bấm **Tải tệp JSON để chia sẻ**.
+2. Đặt tệp vào thư mục `library/` (tên tệp trùng với `key`), điền `category` và `description`.
+3. Chạy `node --test services/workflow-bridge/compile.test.js` để chắc tệp hợp lệ, rồi mở Pull Request.
+
+Không đưa dữ liệu thật hay tên riêng của tổ chức vào tệp mẫu.

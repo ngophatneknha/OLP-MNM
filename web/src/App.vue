@@ -9,6 +9,7 @@ import { auth, logout, ROLE_LABEL } from './lib.js'
 const nav = [
   { to: '/', label: 'Việc của tôi', space: 'P' },
   { to: '/apps', label: 'Ứng dụng', space: 'P' },
+  { to: '/processes', label: 'Quy trình', space: 'P' },
   { to: '/builder', label: 'Tạo ứng dụng', space: 'I', role: 'manager' },
 ]
 </script>

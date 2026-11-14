@@ -9,6 +9,7 @@ import { login } from './lib.js'
 import Inbox from './pages/Inbox.vue'
 import Apps from './pages/Apps.vue'
 import Builder from './pages/Builder.vue'
+import Processes from './pages/Processes.vue'
 
 // Đăng nhập trước khi dựng giao diện: mọi màn hình đều cần token.
 // Router tạo sau khi đăng nhập, để nó không giữ lại mã xác thực mà Keycloak vừa gỡ khỏi thanh địa chỉ.
@@ -19,6 +20,7 @@ login().then(() => {
       { path: '/', component: Inbox },
       { path: '/apps', component: Apps },
       { path: '/builder', component: Builder },
+      { path: '/processes', component: Processes },
       { path: '/:rest(.*)', redirect: '/' },
     ],
   })

@@ -54,3 +54,52 @@ export const formatValue = (field, value) =>
     : field.type === 'number' ? Number(value).toLocaleString('vi-VN') : String(value)
 
 export const formatTime = (iso) => new Date(iso).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+
+const OP_TEXT = { '>': 'trên', '>=': 'từ', '<': 'dưới', '<=': 'tối đa', '==': 'là', '!=': 'khác' }
+
+/** "Chỉ khi Số tiền trên 5.000.000" (rỗng nếu bước không có điều kiện). */
+export function conditionText(spec, step) {
+  if (!step.when) return ''
+  const field = spec.fields.find((f) => f.key === step.when.field)
+  const value = typeof step.when.value === 'number' ? step.when.value.toLocaleString('vi-VN') : step.when.value
+  return `Chỉ khi ${field?.label ?? step.when.field} ${OP_TEXT[step.when.op] ?? step.when.op} ${value}`
+}
+
+/** So sánh hai spec, trả về các dòng thay đổi để người không biết kỹ thuật đọc được: [{ kind: add|remove|change, text }]. */
+export function diffSpec(before, after) {
+  const out = []
+  const index = (list) => new Map(list.map((x) => [x.key, x]))
+  const changes = (pairs) => pairs.filter(([, a, b]) => a !== b).map(([what, a, b]) => `${what}: ${a || 'không'} → ${b || 'không'}`)
+
+  const oldFields = index(before.fields), newFields = index(after.fields)
+  for (const [key, f] of newFields) if (!oldFields.has(key)) out.push({ kind: 'add', text: `Thêm ô “${f.label}”` })
+  for (const [key, f] of oldFields) if (!newFields.has(key)) out.push({ kind: 'remove', text: `Bỏ ô “${f.label}”` })
+  for (const [key, f] of newFields) {
+    const o = oldFields.get(key)
+    if (!o) continue
+    const list = changes([
+      ['nhãn', o.label, f.label], ['kiểu', o.type, f.type],
+      ['bắt buộc', o.required ? 'có' : 'không', f.required ? 'có' : 'không'],
+      ['lựa chọn', (o.options ?? []).join(', '), (f.options ?? []).join(', ')],
+    ])
+    if (list.length) out.push({ kind: 'change', text: `Ô “${f.label}” — ${list.join('; ')}` })
+  }
+
+  const oldSteps = index(before.steps), newSteps = index(after.steps)
+  for (const [key, s] of newSteps) if (!oldSteps.has(key)) out.push({ kind: 'add', text: `Thêm bước “${s.name}” (${ROLE_LABEL[s.role] ?? s.role})` })
+  for (const [key, s] of oldSteps) if (!newSteps.has(key)) out.push({ kind: 'remove', text: `Bỏ bước “${s.name}”` })
+  for (const [key, s] of newSteps) {
+    const o = oldSteps.get(key)
+    if (!o) continue
+    const list = changes([
+      ['tên', o.name, s.name], ['người xử lý', ROLE_LABEL[o.role], ROLE_LABEL[s.role]],
+      ['loại', o.type === 'task' ? 'thực hiện' : 'duyệt', s.type === 'task' ? 'thực hiện' : 'duyệt'],
+      ['điều kiện', conditionText(before, o), conditionText(after, s)],
+    ])
+    if (list.length) out.push({ kind: 'change', text: `Bước “${s.name}” — ${list.join('; ')}` })
+  }
+  const common = (list, other) => list.filter((s) => other.has(s.key)).map((s) => s.key).join()
+  if (common(before.steps, newSteps) !== common(after.steps, oldSteps)) out.push({ kind: 'change', text: 'Đổi thứ tự các bước' })
+  if (!out.length) out.push({ kind: 'change', text: 'Không thay đổi cấu hình (chỉ đổi tên hoặc phát hành lại)' })
+  return out
+}

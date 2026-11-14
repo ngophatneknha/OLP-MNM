@@ -100,10 +100,29 @@ ID=$(gql "$M1" manager "mutation{insert_submission_one(object:{app_key:\\\"$APP\
 until_ok "hồ sơ của quản lý không vào bước duyệt" has "$M1" manager "{submission_by_pk(id:\\\"$ID\\\"){waiting_role}}" '"waiting_role":"manager"'
 act "$M1" manager "$ID" truong_phong approve | grep -q '"id"' && fail "quản lý tự duyệt được hồ sơ của mình"
 
+echo "Quy trình là mã nguồn: đề xuất thay đổi -> kiểm tra tự động -> người khác duyệt -> phiên bản mới"
+SPEC2=$(printf '%s' "$SPEC" | sed 's/value:5000000/value:10000000/')
+CID=$(gql "$M1" manager "mutation{insert_app_change_one(object:{app_key:\\\"$APP\\\",name:\\\"Tạm ứng\\\",spec:$SPEC2,note:\\\"Nâng ngưỡng giám đốc lên 10 triệu\\\"}){id}}" |
+  sed -n 's/.*"id":\([0-9]*\).*/\1/p')
+[ -n "$CID" ] || fail "quản lý không mở được đề xuất thay đổi"
+has "$S1" staff "mutation{insert_app_change_one(object:{app_key:\\\"$APP\\\",name:\\\"x\\\",spec:$SPEC2,note:\\\"thử nghiệm\\\"}){id}}" '"id"' &&
+  fail "nhân viên mở được đề xuất thay đổi"
+MERGE="mutation{update_app_change_by_pk(pk_columns:{id:$CID},_set:{status:\\\"merged\\\"}){id}}"
+# Chạy thử trên 4 hồ sơ đã có: chỉ hồ sơ 8 triệu đổi đường đi (không còn qua giám đốc).
+until_ok "đề xuất không được kiểm tra tự động" has "$S1" staff "{app_change_by_pk(id:$CID){checks}}" '"changed": *1'
+has "$M1" manager "$MERGE" '"id"' && fail "người đề xuất tự chấp nhận được đề xuất của mình"
+has "$D1" director "$MERGE" '"id"' || fail "giám đốc không chấp nhận được đề xuất"
+has "$D1" director "$MERGE" '"id"' && fail "chấp nhận được hai lần một đề xuất"
+until_ok "phiên bản 2 không được phát hành" has "$S1" staff "{app_by_pk(key:\\\"$APP\\\"){status versions(order_by:{version:desc},limit:1){version note}}}" 'published.*"version":2'
+ID=$(submit 8000000); waits "$ID" '"waiting_role":"manager"'
+act "$M1" manager "$ID" truong_phong approve | grep -q '"id"' || fail "trưởng phòng không duyệt được"
+waits "$ID" '"current_step":"chi_tien"'
+has "$S1" staff '{library{key}}' '"key":"tam_ung"' || fail "không đọc được kho quy trình mẫu"
+
 curl -fsS http://localhost:3000/config.json | grep -q '"apiUrl":"http' || fail "ứng dụng web không phục vụ cấu hình"
 curl -fsS http://localhost:3000/apps | grep -q '<div id="app">' || fail "ứng dụng web không phục vụ trang"
 
 docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT count(*) FROM bi.app_'"$APP"' WHERE so_tien >= 1000000"' |
-  grep -q '^4' || fail "view phẳng cho BI không có đủ 4 hồ sơ"
+  grep -q '^5' || fail "view phẳng cho BI không có đủ 5 hồ sơ"
 
 echo "OK: sinh ứng dụng từ bản mô tả, 3 nhánh quy trình, phân quyền và view BI đều đúng."

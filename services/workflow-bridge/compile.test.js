@@ -5,7 +5,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
-import { validateSpec, toBpmn, toViewSql, isKey } from './compile.js'
+import { validateSpec, toBpmn, toViewSql, isKey, simulate } from './compile.js'
 
 const spec = {
   fields: [
@@ -64,4 +64,22 @@ test('mọi quy trình trong kho mẫu library/ đều hợp lệ và biên dị
     assert.deepEqual(validateSpec(item.spec), [], file)
     toBpmn(item.key, item.name, item.spec)
   }
+})
+
+test('chạy thử thay đổi trên hồ sơ cũ: nâng ngưỡng giám đốc từ 5 lên 10 triệu', () => {
+  const next = structuredClone(spec)
+  next.steps[1].when.value = 10000000
+  const at = (h) => new Date(Date.UTC(2026, 0, 1, h)).toISOString()
+  const submissions = [
+    { data: { so_tien: 8000000 }, created_at: at(0), events: [{ step_key: 'truong_phong', created_at: at(1) }, { step_key: 'giam_doc', created_at: at(25) }] },
+    { data: { so_tien: 20000000 }, created_at: at(0), events: [{ step_key: 'truong_phong', created_at: at(3) }] },
+    { data: { so_tien: 1000000 }, created_at: at(0), events: [] },
+  ]
+  const result = simulate(spec, next, submissions)
+  assert.equal(result.total, 3)
+  assert.equal(result.changed, 1, 'chỉ hồ sơ 8 triệu đổi đường đi')
+  const director = result.steps.find((s) => s.key === 'giam_doc')
+  assert.deepEqual([director.before, director.after, director.avgHours], [2, 1, 24])
+  assert.equal(result.savedHoursPerSubmission, 8, '24 giờ chờ giám đốc / 3 hồ sơ')
+  assert.deepEqual(simulate(spec, spec, []), { total: 0, changed: 0, savedHoursPerSubmission: 0, steps: [] })
 })
