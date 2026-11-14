@@ -1,0 +1,18 @@
+{
+  "key": "nghi_phep",
+  "name": "Xin nghỉ phép",
+  "category": "Nhân sự",
+  "description": "Nhân viên xin nghỉ phép. Trưởng phòng duyệt; nghỉ từ 3 ngày trở lên cần thêm giám đốc đồng ý.",
+  "spec": {
+    "fields": [
+      { "key": "tu_ngay", "label": "Nghỉ từ ngày", "type": "date", "required": true },
+      { "key": "so_ngay", "label": "Số ngày nghỉ", "type": "number", "required": true },
+      { "key": "loai", "label": "Loại nghỉ", "type": "select", "required": true, "options": ["Phép năm", "Việc riêng", "Ốm đau"] },
+      { "key": "ly_do", "label": "Lý do", "type": "longtext", "required": false }
+    ],
+    "steps": [
+      { "key": "truong_phong", "name": "Trưởng phòng duyệt", "role": "manager", "type": "approve" },
+      { "key": "giam_doc", "name": "Giám đốc duyệt", "role": "director", "type": "approve", "when": { "field": "so_ngay", "op": ">=", "value": 3 } }
+    ]
+  }
+}

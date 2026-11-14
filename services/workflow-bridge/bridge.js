@@ -98,6 +98,18 @@ async function actOnSubmission(ev) {
   await syncSubmission(ev.submission_id)
 }
 
+// Tự lành: xuất bản lại mà nội dung không đổi thì Hasura không phát sự kiện (trigger chỉ bắn khi cột thay đổi),
+// và sự kiện cũng có thể hết lượt gửi lại. Quét định kỳ các ứng dụng còn 'pending' để không cái nào bị kẹt.
+async function sweepPendingApps() {
+  try {
+    const { data } = await gql('{ app(where: {status: {_eq: "pending"}}) { key name spec } }')
+    for (const app of data.app) await publishApp(app)
+  } catch (err) {
+    console.error('Quét ứng dụng đang chờ thất bại:', err.message)
+  }
+}
+setInterval(sweepPendingApps, 10000)
+
 const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission }
 
 createServer(async (req, res) => {
