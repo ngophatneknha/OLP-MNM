@@ -50,6 +50,20 @@
                     "columns": "*",
                     "filter": {}
                   }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {}
+                  }
                 }
               ],
               "insert_permissions": [
@@ -118,6 +132,28 @@
                     "columns": "*",
                     "filter": {}
                   }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "assignee_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "assignee_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
                 }
               ],
               "insert_permissions": [
@@ -148,6 +184,36 @@
                       "assignee_id"
                     ]
                   }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "project_id",
+                      "title",
+                      "status",
+                      "position"
+                    ],
+                    "set": {
+                      "assignee_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "project_id",
+                      "title",
+                      "status",
+                      "position"
+                    ],
+                    "set": {
+                      "assignee_id": "X-Hasura-User-Id"
+                    }
+                  }
                 }
               ],
               "update_permissions": [
@@ -177,6 +243,38 @@
                       "assignee_id"
                     ],
                     "filter": {},
+                    "check": null
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": [
+                      "title",
+                      "status",
+                      "position"
+                    ],
+                    "filter": {
+                      "assignee_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    },
+                    "check": null
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": [
+                      "title",
+                      "status",
+                      "position"
+                    ],
+                    "filter": {
+                      "assignee_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    },
                     "check": null
                   }
                 }
@@ -221,6 +319,28 @@
                     "columns": "*",
                     "filter": {}
                   }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "owner_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "owner_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
                 }
               ],
               "insert_permissions": [
@@ -242,6 +362,38 @@
                 },
                 {
                   "role": "manager",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "project_id",
+                      "name",
+                      "object_key",
+                      "content_type",
+                      "size"
+                    ],
+                    "set": {
+                      "owner_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "project_id",
+                      "name",
+                      "object_key",
+                      "content_type",
+                      "size"
+                    ],
+                    "set": {
+                      "owner_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
                   "permission": {
                     "check": {},
                     "columns": [
@@ -273,13 +425,33 @@
                   "permission": {
                     "filter": {}
                   }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "filter": {
+                      "owner_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "filter": {
+                      "owner_id": {
+                        "_eq": "X-Hasura-User-Id"
+                      }
+                    }
+                  }
                 }
               ]
             },
             {
               "table": {
                 "schema": "public",
-                "name": "request"
+                "name": "app"
               },
               "select_permissions": [
                 {
@@ -287,8 +459,8 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "requester_id": {
-                        "_eq": "X-Hasura-User-Id"
+                      "status": {
+                        "_eq": "published"
                       }
                     }
                   }
@@ -299,34 +471,42 @@
                     "columns": "*",
                     "filter": {}
                   }
-                }
-              ],
-              "insert_permissions": [
+                },
                 {
-                  "role": "staff",
+                  "role": "director",
                   "permission": {
-                    "check": {},
-                    "columns": [
-                      "title",
-                      "description",
-                      "amount"
-                    ],
-                    "set": {
-                      "requester_id": "X-Hasura-User-Id"
+                    "columns": "*",
+                    "filter": {
+                      "status": {
+                        "_eq": "published"
+                      }
                     }
                   }
                 },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "status": {
+                        "_eq": "published"
+                      }
+                    }
+                  }
+                }
+              ],
+              "insert_permissions": [
                 {
                   "role": "manager",
                   "permission": {
                     "check": {},
                     "columns": [
-                      "title",
-                      "description",
-                      "amount"
+                      "key",
+                      "name",
+                      "spec"
                     ],
                     "set": {
-                      "requester_id": "X-Hasura-User-Id"
+                      "owner_id": "X-Hasura-User-Id"
                     }
                   }
                 }
@@ -336,25 +516,20 @@
                   "role": "manager",
                   "permission": {
                     "columns": [
-                      "status",
-                      "decision_note",
-                      "decided_at"
+                      "name",
+                      "spec"
                     ],
-                    "filter": {
-                      "status": {
-                        "_eq": "pending"
-                      }
-                    },
+                    "filter": {},
                     "check": null,
                     "set": {
-                      "approver_id": "X-Hasura-User-Id"
+                      "status": "pending"
                     }
                   }
                 }
               ],
               "event_triggers": [
                 {
-                  "name": "request_workflow",
+                  "name": "app_publish",
                   "definition": {
                     "enable_manual": false,
                     "insert": {
@@ -362,7 +537,7 @@
                     },
                     "update": {
                       "columns": [
-                        "status"
+                        "spec"
                       ]
                     }
                   },
@@ -380,6 +555,533 @@
                   ]
                 }
               ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "submission"
+              },
+              "object_relationships": [
+                {
+                  "name": "app",
+                  "using": {
+                    "foreign_key_constraint_on": "app_key"
+                  }
+                }
+              ],
+              "array_relationships": [
+                {
+                  "name": "events",
+                  "using": {
+                    "foreign_key_constraint_on": {
+                      "column": "submission_id",
+                      "table": {
+                        "schema": "public",
+                        "name": "submission_event"
+                      }
+                    }
+                  }
+                }
+              ],
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "_or": [
+                        {
+                          "submitter_id": {
+                            "_eq": "X-Hasura-User-Id"
+                          }
+                        },
+                        {
+                          "waiting_role": {
+                            "_eq": "X-Hasura-Role"
+                          }
+                        },
+                        {
+                          "events": {
+                            "actor_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "_or": [
+                        {
+                          "submitter_id": {
+                            "_eq": "X-Hasura-User-Id"
+                          }
+                        },
+                        {
+                          "waiting_role": {
+                            "_eq": "X-Hasura-Role"
+                          }
+                        },
+                        {
+                          "events": {
+                            "actor_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "_or": [
+                        {
+                          "submitter_id": {
+                            "_eq": "X-Hasura-User-Id"
+                          }
+                        },
+                        {
+                          "waiting_role": {
+                            "_eq": "X-Hasura-Role"
+                          }
+                        },
+                        {
+                          "events": {
+                            "actor_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "_or": [
+                        {
+                          "submitter_id": {
+                            "_eq": "X-Hasura-User-Id"
+                          }
+                        },
+                        {
+                          "waiting_role": {
+                            "_eq": "X-Hasura-Role"
+                          }
+                        },
+                        {
+                          "events": {
+                            "actor_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "insert_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "app_key",
+                      "data"
+                    ],
+                    "set": {
+                      "submitter_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "app_key",
+                      "data"
+                    ],
+                    "set": {
+                      "submitter_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "app_key",
+                      "data"
+                    ],
+                    "set": {
+                      "submitter_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "check": {},
+                    "columns": [
+                      "app_key",
+                      "data"
+                    ],
+                    "set": {
+                      "submitter_id": "X-Hasura-User-Id"
+                    }
+                  }
+                }
+              ],
+              "event_triggers": [
+                {
+                  "name": "submission_start",
+                  "definition": {
+                    "enable_manual": false,
+                    "insert": {
+                      "columns": "*"
+                    }
+                  },
+                  "retry_conf": {
+                    "num_retries": 10,
+                    "interval_sec": 10,
+                    "timeout_sec": 30
+                  },
+                  "webhook": "http://workflow-bridge:3000/",
+                  "headers": [
+                    {
+                      "name": "x-bridge-secret",
+                      "value_from_env": "BRIDGE_SECRET"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "submission_event"
+              },
+              "object_relationships": [
+                {
+                  "name": "submission",
+                  "using": {
+                    "foreign_key_constraint_on": "submission_id"
+                  }
+                }
+              ],
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "_or": [
+                        {
+                          "actor_id": {
+                            "_eq": "X-Hasura-User-Id"
+                          }
+                        },
+                        {
+                          "submission": {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          }
+                        },
+                        {
+                          "submission": {
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "_or": [
+                        {
+                          "actor_id": {
+                            "_eq": "X-Hasura-User-Id"
+                          }
+                        },
+                        {
+                          "submission": {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          }
+                        },
+                        {
+                          "submission": {
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "_or": [
+                        {
+                          "actor_id": {
+                            "_eq": "X-Hasura-User-Id"
+                          }
+                        },
+                        {
+                          "submission": {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          }
+                        },
+                        {
+                          "submission": {
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "_or": [
+                        {
+                          "actor_id": {
+                            "_eq": "X-Hasura-User-Id"
+                          }
+                        },
+                        {
+                          "submission": {
+                            "submitter_id": {
+                              "_eq": "X-Hasura-User-Id"
+                            }
+                          }
+                        },
+                        {
+                          "submission": {
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "insert_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "check": {
+                      "submission": {
+                        "status": {
+                          "_eq": "running"
+                        },
+                        "waiting_role": {
+                          "_eq": "X-Hasura-Role"
+                        }
+                      }
+                    },
+                    "columns": [
+                      "submission_id",
+                      "step_key",
+                      "action",
+                      "note"
+                    ],
+                    "set": {
+                      "actor_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "check": {
+                      "submission": {
+                        "status": {
+                          "_eq": "running"
+                        },
+                        "waiting_role": {
+                          "_eq": "X-Hasura-Role"
+                        }
+                      }
+                    },
+                    "columns": [
+                      "submission_id",
+                      "step_key",
+                      "action",
+                      "note"
+                    ],
+                    "set": {
+                      "actor_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "check": {
+                      "submission": {
+                        "status": {
+                          "_eq": "running"
+                        },
+                        "waiting_role": {
+                          "_eq": "X-Hasura-Role"
+                        }
+                      }
+                    },
+                    "columns": [
+                      "submission_id",
+                      "step_key",
+                      "action",
+                      "note"
+                    ],
+                    "set": {
+                      "actor_id": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "check": {
+                      "submission": {
+                        "status": {
+                          "_eq": "running"
+                        },
+                        "waiting_role": {
+                          "_eq": "X-Hasura-Role"
+                        }
+                      }
+                    },
+                    "columns": [
+                      "submission_id",
+                      "step_key",
+                      "action",
+                      "note"
+                    ],
+                    "set": {
+                      "actor_id": "X-Hasura-User-Id"
+                    }
+                  }
+                }
+              ],
+              "event_triggers": [
+                {
+                  "name": "submission_act",
+                  "definition": {
+                    "enable_manual": false,
+                    "insert": {
+                      "columns": "*"
+                    }
+                  },
+                  "retry_conf": {
+                    "num_retries": 10,
+                    "interval_sec": 10,
+                    "timeout_sec": 30
+                  },
+                  "webhook": "http://workflow-bridge:3000/",
+                  "headers": [
+                    {
+                      "name": "x-bridge-secret",
+                      "value_from_env": "BRIDGE_SECRET"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "custom_types": {
+        "objects": [
+          {
+            "name": "GeneratedApp",
+            "fields": [
+              {
+                "name": "key",
+                "type": "String!"
+              },
+              {
+                "name": "name",
+                "type": "String!"
+              },
+              {
+                "name": "spec",
+                "type": "jsonb!"
+              },
+              {
+                "name": "questions",
+                "type": "[String!]!"
+              },
+              {
+                "name": "errors",
+                "type": "[String!]!"
+              }
+            ]
+          }
+        ]
+      },
+      "actions": [
+        {
+          "name": "generateApp",
+          "comment": "Trợ lý AI: mô tả quy trình bằng lời -> bản mô tả ứng dụng để người dùng xem lại",
+          "definition": {
+            "kind": "synchronous",
+            "type": "mutation",
+            "handler": "http://workflow-bridge:3000/ai/spec",
+            "timeout": 110,
+            "arguments": [
+              {
+                "name": "description",
+                "type": "String!"
+              }
+            ],
+            "output_type": "GeneratedApp!",
+            "headers": [
+              {
+                "name": "x-bridge-secret",
+                "value_from_env": "BRIDGE_SECRET"
+              }
+            ]
+          },
+          "permissions": [
+            {
+              "role": "manager"
             }
           ]
         }

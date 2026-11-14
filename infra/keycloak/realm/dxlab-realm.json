@@ -3,9 +3,26 @@
   "enabled": true,
   "roles": {
     "realm": [
-      { "name": "staff", "description": "Nhân viên" },
-      { "name": "manager", "description": "Quản lý – phê duyệt yêu cầu" },
-      { "name": "admin", "description": "Quản trị hệ thống" }
+      {
+        "name": "staff",
+        "description": "Nhân viên"
+      },
+      {
+        "name": "manager",
+        "description": "Quản lý – phê duyệt yêu cầu"
+      },
+      {
+        "name": "director",
+        "description": "Giám đốc"
+      },
+      {
+        "name": "accountant",
+        "description": "Kế toán"
+      },
+      {
+        "name": "admin",
+        "description": "Quản trị hệ thống"
+      }
     ]
   },
   "clients": [
@@ -15,9 +32,15 @@
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
-      "redirectUris": ["http://localhost:3000/*"],
-      "webOrigins": ["+"],
-      "attributes": { "pkce.code.challenge.method": "S256" }
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
     }
   ],
   "users": [
@@ -28,8 +51,16 @@
       "emailVerified": true,
       "firstName": "An",
       "lastName": "Nguyễn",
-      "credentials": [{ "type": "password", "value": "dxlab-dev", "temporary": false }],
-      "realmRoles": ["staff"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dxlab-dev",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "staff"
+      ]
     },
     {
       "username": "staff2",
@@ -38,8 +69,16 @@
       "emailVerified": true,
       "firstName": "Bình",
       "lastName": "Trần",
-      "credentials": [{ "type": "password", "value": "dxlab-dev", "temporary": false }],
-      "realmRoles": ["staff"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dxlab-dev",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "staff"
+      ]
     },
     {
       "username": "manager1",
@@ -48,8 +87,55 @@
       "emailVerified": true,
       "firstName": "Chi",
       "lastName": "Lê",
-      "credentials": [{ "type": "password", "value": "dxlab-dev", "temporary": false }],
-      "realmRoles": ["staff", "manager"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dxlab-dev",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "staff",
+        "manager"
+      ]
+    },
+    {
+      "username": "director1",
+      "enabled": true,
+      "email": "director1@dxlab.test",
+      "emailVerified": true,
+      "firstName": "Dũng",
+      "lastName": "Phạm",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dxlab-dev",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "staff",
+        "director"
+      ]
+    },
+    {
+      "username": "accountant1",
+      "enabled": true,
+      "email": "accountant1@dxlab.test",
+      "emailVerified": true,
+      "firstName": "Hà",
+      "lastName": "Vũ",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dxlab-dev",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "staff",
+        "accountant"
+      ]
     }
   ]
 }
