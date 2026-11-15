@@ -462,6 +462,20 @@
                   "using": {
                     "foreign_key_constraint_on": "submission_id"
                   }
+                },
+                {
+                  "name": "signature",
+                  "using": {
+                    "manual_configuration": {
+                      "remote_table": {
+                        "schema": "public",
+                        "name": "event_signature"
+                      },
+                      "column_mapping": {
+                        "id": "event_id"
+                      }
+                    }
+                  }
                 }
               ],
               "select_permissions": [
@@ -1801,6 +1815,164 @@
                     "filter": {
                       "id": {
                         "_eq": "X-Hasura-Org-Id"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "event_signature"
+              },
+              "object_relationships": [
+                {
+                  "name": "event",
+                  "using": {
+                    "foreign_key_constraint_on": "event_id"
+                  }
+                }
+              ],
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": [
+                      "event_id",
+                      "payload",
+                      "signature",
+                      "cert_pem",
+                      "cert_fingerprint",
+                      "signed_at"
+                    ],
+                    "filter": {
+                      "event": {
+                        "_and": [
+                          {
+                            "submission": {
+                              "org_id": {
+                                "_eq": "X-Hasura-Org-Id"
+                              }
+                            }
+                          },
+                          {
+                            "_or": [
+                              {
+                                "actor_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              },
+                              {
+                                "submission": {
+                                  "submitter_id": {
+                                    "_eq": "X-Hasura-User-Id"
+                                  }
+                                }
+                              },
+                              {
+                                "submission": {
+                                  "waiting_role": {
+                                    "_eq": "X-Hasura-Role"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": [
+                      "event_id",
+                      "payload",
+                      "signature",
+                      "cert_pem",
+                      "cert_fingerprint",
+                      "signed_at"
+                    ],
+                    "filter": {
+                      "event": {
+                        "submission": {
+                          "org_id": {
+                            "_eq": "X-Hasura-Org-Id"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": [
+                      "event_id",
+                      "payload",
+                      "signature",
+                      "cert_pem",
+                      "cert_fingerprint",
+                      "signed_at"
+                    ],
+                    "filter": {
+                      "event": {
+                        "submission": {
+                          "org_id": {
+                            "_eq": "X-Hasura-Org-Id"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": [
+                      "event_id",
+                      "payload",
+                      "signature",
+                      "cert_pem",
+                      "cert_fingerprint",
+                      "signed_at"
+                    ],
+                    "filter": {
+                      "event": {
+                        "_and": [
+                          {
+                            "submission": {
+                              "org_id": {
+                                "_eq": "X-Hasura-Org-Id"
+                              }
+                            }
+                          },
+                          {
+                            "_or": [
+                              {
+                                "actor_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              },
+                              {
+                                "submission": {
+                                  "submitter_id": {
+                                    "_eq": "X-Hasura-User-Id"
+                                  }
+                                }
+                              },
+                              {
+                                "submission": {
+                                  "waiting_role": {
+                                    "_eq": "X-Hasura-Role"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
                       }
                     }
                   }

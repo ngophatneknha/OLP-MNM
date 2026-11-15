@@ -9,7 +9,7 @@ import { live } from '../live.js'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeft, Download, Paperclip } from 'lucide-vue-next'
-import { auth, gql, formatValue, formatTime, whereIs, waitsOnMe, stepOf, suggestion, ROLE_LABEL, SUBMISSION_FIELDS, uploadFile, downloadFile, formatSize, toast } from '../lib.js'
+import { auth, gql, formatValue, formatTime, whereIs, waitsOnMe, stepOf, suggestion, ROLE_LABEL, SUBMISSION_FIELDS, uploadFile, downloadFile, getJson, formatSize, toast } from '../lib.js'
 import SignatureRow from '../components/SignatureRow.vue'
 import DecisionBar from '../components/DecisionBar.vue'
 import ProcessFlow from '../components/ProcessFlow.vue'
@@ -29,6 +29,13 @@ async function load() {
 onMounted(() => { load(); timer = live(load) })
 onUnmounted(() => timer?.())
 watch(() => route.params.id, load)
+
+// Chữ ký số: gọi bridge kiểm chứng lại từng chữ ký với CA của tổ chức mỗi khi hồ sơ đổi.
+const sigs = ref(null)
+watch(() => submission.value?.events?.length, async (n) => {
+  if (n === undefined) return
+  try { sigs.value = (await getJson(`/signatures/verify?submission=${route.params.id}`)).filter((e) => e.signed) } catch { sigs.value = null }
+}, { immediate: true })
 
 const canAttach = () => submission.value.submitter_id === auth.userId || waitsOnMe(submission.value)
 async function attach(event) {
@@ -103,6 +110,17 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
       <h2 id="sign-title" class="section-title">{{ t('sub.sign') }}</h2>
       <div class="mt-3"><SignatureRow :spec="submission.version.spec" :submission="submission" /></div>
       <p class="hint">{{ t('sub.version', { v: submission.app_version }) }}</p>
+    </section>
+
+    <section v-if="sigs?.length" class="mt-8" aria-labelledby="pki-title">
+      <h2 id="pki-title" class="section-title">{{ t('sub.pki') }}</h2>
+      <ul class="panel mt-3">
+        <li v-for="e in sigs" :key="e.event" class="panel-row items-baseline">
+          <span class="min-w-0 flex-1">{{ e.actor }} · <span class="num text-sm text-pencil">{{ e.fingerprint?.slice(0, 16) }}…</span></span>
+          <span :class="e.valid ? 'text-pen' : 'text-red-700'">{{ e.valid ? t('sub.pki.ok') : t('sub.pki.bad') }}</span>
+        </li>
+      </ul>
+      <p class="hint">{{ t('sub.pki.hint') }}</p>
     </section>
 
     <section class="mt-8" aria-labelledby="log-title">

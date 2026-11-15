@@ -77,6 +77,15 @@ export async function postJson(path, body) {
   return json
 }
 
+/** GET một điểm cuối JSON của gateway (kiểm chứng chữ ký số). */
+export async function getJson(path) {
+  await keycloak.updateToken(30)
+  const res = await fetch(`${apiUrl}${path}`, { headers: { authorization: `Bearer ${keycloak.token}`, 'x-hasura-role': auth.role } })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.message ?? t('err.http', { status: res.status }))
+  return json
+}
+
 /** "Số tiền tạm ứng" -> "so_tien_tam_ung" (mã hợp lệ cho trường / bước / ứng dụng). */
 export function slug(text) {
   const s = text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D') // i18n-ok: bỏ dấu tiếng Việt khi sinh mã

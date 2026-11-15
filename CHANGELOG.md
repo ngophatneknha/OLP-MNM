@@ -9,6 +9,16 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-16
+
+### Added
+- Chữ ký số PKI phần mềm cho phê duyệt: CA riêng từng tổ chức, chứng thư X.509 cho người ký, mỗi duyệt/từ chối được ký RSA-SHA256 và lưu ở `event_signature` (chỉ thêm); khóa riêng mã hóa AES-256-GCM.
+- `GET /signatures/verify`, `GET /pki/ca` qua cổng API; mục "Chữ ký số" trên trang hồ sơ; biến `PKI_MASTER_KEY`.
+- Bộ kiểm thử `tests/pki.test.js` (PKI-01..07) và kiểm thử đơn vị `pki.test.js`; migration `06-pki.sql`.
+
+### Changed
+- Z-07 không còn là `todo`; giới hạn còn lại (HSM, CRL/OCSP, ký phía máy chủ) ghi trong tài liệu.
+
 ## [1.9.1] - 2026-11-16
 
 ### Added

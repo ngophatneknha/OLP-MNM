@@ -127,6 +127,20 @@ Hai tổ chức dùng chung một hệ thống: tổ chức mặc định (`staf
 | ORG-10 | Cảm biến: ứng dụng sửa chữa phải cùng tổ chức; hồ sơ tự mở mang tổ chức của cảm biến | `/sensors`, `/telemetry` |
 | ORG-11 | Nạp hàng loạt đi bằng quyền người nạp nên không nạp chéo tổ chức | `POST /ingest` |
 
+### Chữ ký số (PKI)
+
+Tệp `tests/pki.test.js`. Mỗi hành động duyệt/từ chối của người được ký (RSA-SHA256) bằng chứng thư X.509 do CA của tổ chức cấp; chữ ký chỉ thêm, không sửa.
+
+| Mã | Kiểm tra | Cách thử |
+|---|---|---|
+| PKI-01 | Duyệt xong thì sự kiện có chữ ký; kiểm chứng trả về hợp lệ | `GET /signatures/verify` |
+| PKI-02 | Chứng thư do CA cấp, chữ ký kiểm chứng bằng thư viện mật mã chuẩn; sửa nội dung thì chữ ký sai | `node:crypto` X509 |
+| PKI-03 | Chữ ký và khóa không sửa/xóa được; khóa riêng luôn mã hóa và không mở qua Hasura | SQL, GraphQL |
+| PKI-04 | Mỗi tổ chức một CA riêng; tải được chứng thư CA | `GET /pki/ca` |
+| PKI-05 | Người ngoài tổ chức không đọc được chữ ký | GraphQL, `/signatures/verify` |
+| PKI-06 | Không token bị chặn tại biên; mã hồ sơ sai bị từ chối | cổng API |
+| PKI-07 | Hành động của AI không bị ký thay người | SQL |
+
 Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn hệ thống, nên tổ chức khác dùng trùng mã sẽ bị báo trùng (lộ việc mã đó đã tồn tại); chỉ lập tổ chức mới bằng SQL và quản trị Keycloak (chưa có màn hình quản trị tổ chức); chỉ mục tìm kiếm Meilisearch dùng chung nhưng mọi kết quả đều được kiểm quyền qua Hasura trước khi trả về; các view báo cáo `bi.*` chưa tách theo tổ chức; tài khoản mẫu của tổ chức B không bắt OTP trên API (cùng cách `dxlab-cli` của các tài khoản khác).
 
 ## Tìm kiếm và hỏi đáp (phiên bản 1.5.0)
@@ -158,7 +172,7 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 |---|---|---|
 | D-06 | Lakehouse định dạng Parquet/Iceberg, NGSI-LD, WebGIS [D] | Ngoài phạm vi hiện tại; kho lạnh JSONL, phả hệ và nạp hàng loạt đã có (COLD, LIN, ING) |
 | I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
-| Z-07 | Chữ ký số PKI có chứng thư cho phê duyệt | Hiện là xác nhận trong nhật ký bất biến |
+| Z-07 | HSM giữ khóa, thu hồi chứng thư (CRL/OCSP), ký ở trình duyệt | Chữ ký số PKI phần mềm đã có (PKI-01 đến PKI-07); khóa nằm trong CSDL (mã hóa), ký phía máy chủ |
 | Z-08 | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
 | Z-09 | WebSocket cho thời gian thực, MQTT/OPC UA cho thiết bị | Hiện là SSE (Z-03) và HTTP (IOT) |
 | Z-10 | GitOps thật (ArgoCD/Flux tự đồng bộ hạ tầng từ kho) | Cấu hình hạ tầng là mã trong kho và CI kiểm, nhưng áp dụng thủ công bằng `docker compose` |
@@ -186,7 +200,7 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh | Đạt ở mức tệp JSONL bất biến trong S3 (chưa phải bảng lakehouse Parquet/Iceberg) | COLD-01 đến COLD-04 |
 | Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | Đạt ở mức HTTP: cảm biến gửi số đo bằng token riêng, vượt ngưỡng tự mở hồ sơ sửa chữa qua quy trình của người | IOT-01 đến IOT-06 |
 | Nguyên lý (iii): phả hệ dữ liệu | Đạt: lấy tự động từ danh mục PostgreSQL, thêm luồng xuống kho lạnh và số liệu | LIN-01 |
-| Chứng thư số (PKI) cho chữ ký phê duyệt | **Chưa**: chữ ký là xác nhận trong nhật ký bất biến, không phải chữ ký số có chứng thư | Nói thẳng khi trình bày |
+| Chứng thư số (PKI) cho chữ ký phê duyệt | Đạt ở mức PKI phần mềm: mỗi duyệt/từ chối được ký bằng chứng thư X.509 do CA của tổ chức cấp. **Chưa** có HSM, CRL/OCSP; không phải chữ ký số có giá trị pháp lý theo luật | PKI-01 đến PKI-07; nói thẳng khi trình bày |
 
 Điều khoản của Thể lệ và Đề thi ngoài bảng điểm (hạn nộp, kho công khai, giấy phép OSI, không bí mật trong lịch sử, bản phát hành...) do nhóm `LUAT` kiểm. Hạn nộp trong Đề ghi năm 2025 trong khi cuộc thi là 2026: cần hỏi Ban tổ chức xác nhận.
 

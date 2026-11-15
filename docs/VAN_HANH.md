@@ -111,3 +111,12 @@ Nâng cấp hệ thống đang chạy (volume cũ): áp tệp SQL, khởi độn
 docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/05-org.sql
 docker compose up -d hasura hasura-init workflow-bridge
 ```
+
+## Chữ ký số (PKI)
+
+Mỗi hành động duyệt hoặc từ chối của người được ký bằng chứng thư X.509 (RSA-2048, SHA-256). Mỗi tổ chức có một CA riêng (tự cấp, hiệu lực 10 năm); chứng thư người ký hiệu lực 1 năm và tự cấp khi người đó duyệt lần đầu. Chữ ký nằm ở bảng `event_signature` (chỉ thêm), gồm nội dung được ký (hành động, bước, người, giờ, mã băm dữ liệu hồ sơ), chữ ký và chứng thư.
+
+- Kiểm chứng: trang chi tiết hồ sơ có mục "Chữ ký số"; hoặc `GET /signatures/verify?submission=<id>`; tải chứng thư CA: `GET /pki/ca`.
+- Khóa riêng được mã hóa AES-256-GCM (khóa dẫn xuất bằng scrypt từ `PKI_MASTER_KEY`, thiếu thì từ `HASURA_ADMIN_SECRET`) và không mở qua Hasura. **Đổi `PKI_MASTER_KEY` trước khi triển khai thật và không đổi sau khi đã ký**, vì khóa cũ sẽ không giải mã được.
+- Nâng cấp CSDL đang chạy: `docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/06-pki.sql`, rồi nạp lại metadata Hasura (`docker compose up -d --force-recreate hasura-init`) và khởi động lại bridge, cổng API.
+- Giới hạn (shortcut): ký phía máy chủ nên ai kiểm soát máy chủ có thể ký thay; không có HSM, không có CRL/OCSP; CA tự cấp nên không có giá trị pháp lý theo luật chữ ký số.
