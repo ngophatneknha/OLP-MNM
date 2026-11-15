@@ -42,22 +42,74 @@ Space hoặc bấm vào trang để chuyển slide; F để toàn màn hình; in
 <section class="slide on">
   <span class="tag">OLP Phần mềm nguồn mở 2026 · DX-OS Open-Core</span>
   <h1>DX-Lab Project Hub</h1>
-  <p class="lead">Nói ra quy trình làm việc, có ngay ứng dụng. Quy trình là mã nguồn mở, trợ lý AI phải thử việc trước khi được tin.</p>
+  <p class="lead">Nền tảng lõi không giao diện trên công nghệ nguồn mở, và một ứng dụng chạy trên nó: nói ra quy trình, có ngay ứng dụng.</p>
   <p>github.com/ngophatneknha/OLP-MNM · Apache-2.0</p>
 </section>
 
+<!-- Mục 1 của Đề: giải pháp thiết kế và lựa chọn công nghệ -->
 <section class="slide">
-  <span class="tag">Vấn đề</span>
-  <h2>Chuyển đổi số của doanh nghiệp nhỏ thất bại vì đâu?</h2>
+  <span class="tag">1 · Giải pháp thiết kế</span>
+  <h2>Bài toán: ốc đảo dữ liệu và "con tin" của nhà cung cấp</h2>
   <ul>
-    <li>Phần mềm có sẵn <b>không khớp cách họ làm việc</b>: vài tháng sau mọi người quay lại nhắn tin và bảng tính.</li>
-    <li>Thuê viết riêng thì <b>quá đắt</b>, mà mỗi phòng ban một quy trình.</li>
-    <li>Quy trình đổi thì <b>không ai biết hệ quả</b>, và không còn dấu vết ai đã đổi gì.</li>
+    <li>Mua phần mềm rời rạc cho từng phòng ban thì dữ liệu <b>phân mảnh</b>; mua một khối nguyên khối thì <b>bị trói</b> vào một nhà cung cấp.</li>
+    <li>Lời giải của Đề: tháp 3 tầng DX-OS, và nguồn mở là ưu tiên số một để giữ <b>chủ quyền số</b>.</li>
+    <li>Chúng tôi dựng <b>Tầng 1</b> (nền tảng lõi chạy ngầm) bằng các thành phần nguồn mở có sẵn, và một ứng dụng <b>Tầng 2</b> trên đó.</li>
   </ul>
 </section>
 
 <section class="slide">
-  <span class="tag">Ý tưởng</span>
+  <span class="tag">1 · Giải pháp thiết kế</span>
+  <h2>Ba tầng của DX-OS, chúng tôi đặt gì ở đâu</h2>
+  <table>
+    <tr><th>Tầng</th><th>Trong sản phẩm</th></tr>
+    <tr><td><b>Tầng 3</b> Kinh doanh số</td><td>Để ngỏ: ứng dụng ngành cắm vào Tầng 2 (kho quy trình mẫu <span class="kbd">library/</span>)</td></tr>
+    <tr><td><b>Tầng 2</b> Năng lực số H-P-D-I</td><td>Ứng dụng web: soạn và vận hành quy trình, bảng việc, số liệu, hỏi đáp, trợ lý AI</td></tr>
+    <tr><td><b>Tầng 1</b> Nền tảng lõi, headless</td><td>Đăng nhập một lần, cổng API, dữ liệu, tệp, luồng công việc, kho lạnh, cảm biến, đa tổ chức</td></tr>
+  </table>
+  <p class="lead">Giao diện chỉ gọi lõi qua cổng API; lõi không có giao diện.</p>
+</section>
+
+<section class="slide">
+  <span class="tag">1 · Lựa chọn công nghệ</span>
+  <h2>Mỗi yêu cầu của Đề, một thành phần nguồn mở</h2>
+  <table>
+    <tr><th>Yêu cầu của Đề</th><th>Thành phần</th><th>Giấy phép</th></tr>
+    <tr><td>Định danh, SSO, MFA</td><td>Keycloak</td><td>Apache-2.0</td></tr>
+    <tr><td>Cổng API, zero-trust</td><td>Apache APISIX (+ Coraza WAF tùy chọn)</td><td>Apache-2.0</td></tr>
+    <tr><td>Dữ liệu có cấu trúc</td><td>PostgreSQL + Hasura (API tự sinh, quyền theo dòng)</td><td>PostgreSQL / Apache-2.0</td></tr>
+    <tr><td>Dữ liệu phi cấu trúc</td><td>SeaweedFS (S3) + ClamAV kiểm dịch</td><td>Apache-2.0 / GPL-2.0 (container riêng)</td></tr>
+    <tr><td>Luồng công việc</td><td>Flowable (BPMN)</td><td>Apache-2.0</td></tr>
+    <tr><td>Két bí mật</td><td>OpenBao (tùy chọn)</td><td>MPL-2.0</td></tr>
+  </table>
+  <p class="lead">Không thành phần AGPL; thành phần bên thứ ba chạy là container riêng, không sửa mã.</p>
+</section>
+
+<!-- Mục 2 của Đề: tính năng nền tảng và bài toán minh họa -->
+<section class="slide">
+  <span class="tag">2 · Tính năng của nền tảng</span>
+  <h2>Tầng 1 cung cấp gì cho mọi ứng dụng</h2>
+  <div class="grid">
+    <div class="card"><b>Danh tính và bảo mật</b><span>SSO, MFA cho trưởng phòng và giám đốc; mọi token kiểm ở cổng; che thông tin cá nhân trước khi gửi AI; két bí mật.</span></div>
+    <div class="card"><b>Đa tổ chức</b><span>Nhiều tổ chức dùng chung một hệ thống, cách ly bằng <span class="kbd">org_id</span> trong token, Hasura và CSDL.</span></div>
+    <div class="card"><b>Dữ liệu và tệp</b><span>API tự sinh, quyền tới cấp dòng, nhật ký bất biến; tệp S3 có chữ ký, quét mã độc trước khi nhận.</span></div>
+    <div class="card"><b>Quy trình và thời gian thực</b><span>Biên dịch quy trình thành BPMN; màn hình tự cập nhật (SSE); nạp hàng loạt CSV/JSON.</span></div>
+  </div>
+</section>
+
+<section class="slide">
+  <span class="tag">2 · Bốn nguyên lý của Đề</span>
+  <h2>Từng nguyên lý, một bằng chứng chạy được</h2>
+  <table>
+    <tr><th>Nguyên lý</th><th>Đã làm</th></tr>
+    <tr><td>(i) Phân tách theo vòng đời dữ liệu</td><td>Hồ sơ đã kết thúc xuống <b>kho lạnh</b> JSONL, sổ cái băm nối chuỗi không sửa xóa được</td></tr>
+    <tr><td>(ii) Hội tụ IT và OT</td><td><b>Cảm biến</b> gửi số đo bằng token thiết bị; vượt ngưỡng tự mở hồ sơ sửa chữa trong quy trình duyệt</td></tr>
+    <tr><td>(iii) Phả hệ và nguồn gốc dữ liệu</td><td><b>Phả hệ</b> báo cáo đọc từ bảng nào, lấy tự động từ danh mục PostgreSQL</td></tr>
+    <tr><td>(iv) Zero-Trust, kiểm dịch, tự phục hồi</td><td>Token kiểm tại biên, ClamAV, WAF; <b>tự khởi động lại</b> và khôi phục từ sao lưu có kiểm thử</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <span class="tag">2 · Bài toán ứng dụng minh họa</span>
   <h2>Từ một câu nói thành một ứng dụng chạy được</h2>
   <p class="lead">“Nhân viên xin tạm ứng, trưởng phòng duyệt, trên 5 triệu phải thêm giám đốc, kế toán chi tiền.”</p>
   <div class="grid">
@@ -69,41 +121,53 @@ Space hoặc bấm vào trang để chuyển slide; F để toàn màn hình; in
 </section>
 
 <section class="slide">
-  <span class="tag">Điểm khác biệt</span>
+  <span class="tag">2 · Điểm khác biệt</span>
   <h2>Quy trình là mã nguồn mở</h2>
   <table>
     <tr><th>Trong dự án nguồn mở</th><th>Trong DX-Lab Project Hub</th></tr>
     <tr><td>Commit, bản phát hành</td><td>Mỗi lần phát hành quy trình là một <b>phiên bản</b> bất biến</td></tr>
     <tr><td>Pull request + CI</td><td><b>Đề xuất thay đổi</b>, tự chạy thử trên hồ sơ cũ</td></tr>
     <tr><td>Review bắt buộc</td><td>Người duyệt phải <b>khác người đề xuất</b></td></tr>
-    <tr><td>Issue</td><td>Ai cũng góp ý, báo lỗi quy trình</td></tr>
-    <tr><td>Fork</td><td>Lấy từ <b>kho quy trình mẫu</b>, xuất để đóng góp lại</td></tr>
+    <tr><td>Issue, Fork</td><td>Ai cũng góp ý; lấy từ <b>kho quy trình mẫu</b>, đóng góp lại</td></tr>
   </table>
 </section>
 
+<!-- Mục 3 của Đề: kết quả và trình diễn -->
 <section class="slide">
-  <span class="tag">Demo · P</span>
+  <span class="tag">3 · Demo nền tảng</span>
+  <h2>Hai phút trên dòng lệnh: Tầng 1 chạy ngầm</h2>
+  <p class="lead"><span class="kbd">node scripts/demo-platform.mjs</span></p>
+  <ul>
+    <li>Cảm biến gửi 12 °C, vượt ngưỡng 8: hệ thống <b>tự mở hồ sơ sửa chữa</b>.</li>
+    <li>Xuất kho lạnh rồi <b>kiểm chứng sổ cái</b>; xem phả hệ dữ liệu.</li>
+    <li>Tổ chức B <b>không thấy</b> dữ liệu của tổ chức mặc định.</li>
+    <li>Không token, token giả: <b>bị chặn 401</b> tại cổng API.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <span class="tag">3 · Demo · P</span>
   <h2>Đổi quy trình có kiểm soát</h2>
   <img src="../images/de-xuat-thay-doi.jpg" alt="Đề xuất thay đổi: phần khác biệt bằng lời thường và kết quả chạy thử trên hồ sơ cũ">
   <p class="lead">Khác biệt bằng lời thường, kết quả chạy thử: bao nhiêu hồ sơ sẽ đổi đường đi.</p>
 </section>
 
 <section class="slide">
-  <span class="tag">Demo · H</span>
+  <span class="tag">3 · Demo · H</span>
   <h2>Dùng ngay: hàng ô ký</h2>
   <img src="../images/chu-ky.jpg" alt="Hàng ô ký: ai đã ký có dấu đỏ kèm tên và giờ">
   <p class="lead">Ai đã ký có dấu đỏ kèm tên và giờ, ô đang chờ sáng lên. Từ chối bắt buộc có lý do. Nhật ký bất biến ở tầng cơ sở dữ liệu.</p>
 </section>
 
 <section class="slide">
-  <span class="tag">Demo · D</span>
+  <span class="tag">3 · Demo · D</span>
   <h2>Số liệu từ dữ liệu thật</h2>
   <img src="../images/so-lieu.jpg" alt="Trang Số liệu: thời gian xử lý trung bình, bước chậm nhất">
-  <p class="lead">Mọi con số tính từ nhật ký ký duyệt, dòng nào cũng bấm vào được hồ sơ gốc. Có điểm trưởng thành H-P-D-I với công thức công bố. Đối chiếu độc lập bằng SQL trong kiểm thử.</p>
+  <p class="lead">Mọi con số tính từ nhật ký ký duyệt, dòng nào cũng bấm vào được hồ sơ gốc. Điểm trưởng thành H-P-D-I có công thức công bố.</p>
 </section>
 
 <section class="slide">
-  <span class="tag">Demo · I</span>
+  <span class="tag">3 · Demo · I</span>
   <h2>Trí tuệ có kiểm soát</h2>
   <div class="grid">
     <div class="card"><b>Hỏi đáp có dẫn nguồn</b><span>Chỉ trả lời từ tài liệu người hỏi được xem. Quyền do Hasura quyết định, không phải chỉ mục tìm kiếm.</span></div>
@@ -113,47 +177,24 @@ Space hoặc bấm vào trang để chuyển slide; F để toàn màn hình; in
 </section>
 
 <section class="slide">
-  <span class="tag">Kiến trúc</span>
-  <h2>DX-OS: lõi không giao diện, ứng dụng ở tầng trên</h2>
-  <table>
-    <tr><th>Yêu cầu của đề</th><th>Thành phần</th><th>Giấy phép</th></tr>
-    <tr><td>Định danh, SSO</td><td>Keycloak (MFA cho trưởng phòng, giám đốc)</td><td>Apache-2.0</td></tr>
-    <tr><td>Cổng API</td><td>Apache APISIX</td><td>Apache-2.0</td></tr>
-    <tr><td>Dữ liệu có cấu trúc</td><td>PostgreSQL + Hasura</td><td>PostgreSQL / Apache-2.0</td></tr>
-    <tr><td>Dữ liệu phi cấu trúc</td><td>SeaweedFS + ClamAV</td><td>Apache-2.0 / GPL-2.0 (container riêng)</td></tr>
-    <tr><td>Luồng công việc</td><td>Flowable (BPMN)</td><td>Apache-2.0</td></tr>
-  </table>
-  <p class="lead">Chỉ ba cổng mở ra ngoài. Lõi chạy ngầm, giao diện chỉ gọi qua cổng API.</p>
-</section>
-
-<section class="slide">
-  <span class="tag">Chất lượng</span>
-  <h2>Kiểm thử trên hệ thống thật, đối chiếu đề và thể lệ</h2>
+  <span class="tag">3 · Kết quả</span>
+  <h2>Kiểm thử trên hệ thống thật, mã nguồn mở đúng nghĩa</h2>
   <div class="grid">
-    <div class="card"><b class="big" style="font-size:2.6rem">120+</b><span>ca kiểm thử trên Keycloak, APISIX, Hasura, Flowable, SeaweedFS, ClamAV, AI thật</span></div>
-    <div class="card"><b>Ca nghịch</b><span>Token giả, sai quyền, tiêm mã, tệp mã độc, 20 hồ sơ đồng thời</span></div>
-    <div class="card"><b>Chưa làm khai báo thẳng</b><span>Ca <span class="kbd">todo</span> hiện trong báo cáo, không tô hồng</span></div>
+    <div class="card"><b class="big" style="font-size:2.6rem">150+</b><span>ca đối chiếu đề thi và thể lệ trên Keycloak, APISIX, Hasura, Flowable, SeaweedFS, ClamAV, AI thật; ca nghịch: token giả, tiêm mã, mã độc, đồng thời</span></div>
+    <div class="card"><b>Giấy phép và phát hành</b><span>Apache-2.0, SPDX từng tệp, REUSE trong CI; mỗi lần đẩy là một bản SemVer <span class="kbd">.tar.gz</span></span></div>
+    <div class="card"><b>Cộng đồng</b><span>Bug tracker dùng thật, Discussions, CONTRIBUTING, nhãn <span class="kbd">good first issue</span>, trang web tài liệu</span></div>
   </div>
 </section>
 
+<!-- Mục 4 của Đề: định hướng phát triển -->
 <section class="slide">
-  <span class="tag">Mã nguồn mở đúng nghĩa</span>
-  <h2>Sẵn sàng cho cộng đồng</h2>
+  <span class="tag">4 · Định hướng</span>
+  <h2>Việc tiếp theo, nói thẳng điều chưa làm</h2>
   <ul>
-    <li>Apache-2.0, SPDX trong từng tệp, kiểm bằng REUSE trong CI; không thành phần AGPL.</li>
-    <li>Mỗi lần đẩy là một phiên bản SemVer, bản phát hành <span class="kbd">.tar.gz</span> và image trên GitHub Packages.</li>
-    <li>Dựng từ mã nguồn bằng một lệnh <span class="kbd">docker compose up -d --build</span>; bug tracker dùng thật.</li>
-    <li>Tài liệu: người dùng, kỹ thuật, vận hành, kiến trúc; việc nhỏ gắn nhãn <span class="kbd">good first issue</span>.</li>
-  </ul>
-</section>
-
-<section class="slide">
-  <span class="tag">Định hướng</span>
-  <h2>Việc tiếp theo, nói thẳng</h2>
-  <ul>
-    <li>Tìm kiếm véc-tơ ngữ nghĩa, đọc PDF và OCR cho hỏi đáp tài liệu.</li>
-    <li>Két bí mật, WAF, ẩn thông tin định danh, sao lưu theo lịch.</li>
-    <li>Kho quy trình mẫu do cộng đồng đóng góp; dịch giao diện sang nhiều ngôn ngữ.</li>
+    <li><b>Chữ ký số PKI</b> có chứng thư cho phê duyệt (hiện là xác nhận trong nhật ký bất biến).</li>
+    <li><b>Lakehouse</b> Parquet/Iceberg cho kho lạnh; NGSI-LD và WebGIS cho dữ liệu cảm biến; MQTT/OPC UA thay HTTP.</li>
+    <li>Tìm kiếm véc-tơ, đọc PDF và OCR; WebSocket; sao lưu theo lịch; quản trị tổ chức bằng giao diện.</li>
+    <li>Tầng 3: ứng dụng ngành cắm vào nền tảng, kho quy trình mẫu do cộng đồng đóng góp.</li>
   </ul>
   <p class="lead">Cảm ơn ban giám khảo. Xin mời đặt câu hỏi.</p>
 </section>

@@ -158,7 +158,9 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 |---|---|---|
 | D-06 | Lakehouse định dạng Parquet/Iceberg, NGSI-LD, WebGIS [D] | Ngoài phạm vi hiện tại; kho lạnh JSONL, phả hệ và nạp hàng loạt đã có (COLD, LIN, ING) |
 | I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
-| Z-05b | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
+| Z-07 | Chữ ký số PKI có chứng thư cho phê duyệt | Hiện là xác nhận trong nhật ký bất biến |
+| Z-08 | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
+| Z-09 | WebSocket cho thời gian thực, MQTT/OPC UA cho thiết bị | Hiện là SSE (Z-03) và HTTP (IOT) |
 
 ## Zero-Trust: các ca đã làm (nguyên lý iv của đề)
 

@@ -48,7 +48,7 @@ Không muốn dựng từ mã nguồn: tải `.tar.gz` ở [bản phát hành](h
 
 Các dịch vụ còn lại chỉ nằm trong mạng nội bộ của Docker. Dừng: `docker compose down` (thêm `-v` để xóa dữ liệu). Dựng lại sạch trước mỗi lần diễn tập: `sh scripts/demo-reset.sh`.
 
-Hướng dẫn từng màn hình: [docs/HUONG_DAN.md](docs/HUONG_DAN.md). Kịch bản trình diễn 15 phút: [docs/KICH_BAN_DEMO.md](docs/KICH_BAN_DEMO.md), kèm [slide](docs/slides/index.html).
+Hướng dẫn từng màn hình: [docs/HUONG_DAN.md](docs/HUONG_DAN.md). Kịch bản trình diễn 15 phút: [docs/KICH_BAN_DEMO.md](docs/KICH_BAN_DEMO.md), kèm [slide](docs/slides/index.html). Xem nền tảng Tầng 1 chạy trong hai phút (cảm biến, kho lạnh, phả hệ, đa tổ chức, cổng API): `node scripts/demo-platform.mjs`.
 
 ## Vấn đề và cách giải
 
