@@ -55,6 +55,8 @@ Mọi tệp được quét bằng ClamAV (chạy container riêng) **trước kh
 
 Cách ly theo tổ chức nằm ở dữ liệu, không ở giao diện. Keycloak đặt thuộc tính `org_id` của người dùng vào token; Hasura đọc thành `x-hasura-org-id` (thiếu thì `default`) và thêm điều kiện tổ chức vào mọi quyền đọc, ghi của mọi vai trò. `app` và `submission` mang cột `org_id` (hồ sơ lấy `org_id` từ quy trình nhận nó bằng trigger, người gửi không chọn được); các bảng còn lại cách ly qua quan hệ tới `app` hoặc `submission`. Các đường đi bằng quyền người dùng (tệp, tìm kiếm, nạp hàng loạt) kế thừa cách ly này. Các đường dùng quyền quản trị tự lọc theo tổ chức lấy từ token: kho lạnh (mỗi tổ chức một chuỗi sổ cái, một thư mục trong kho) và cảm biến. Giới hạn: mã ứng dụng vẫn duy nhất toàn hệ thống. Chi tiết kiểm thử: [KIEM_THU.md](KIEM_THU.md).
 
+Quản trị người dùng: giám đốc dùng `/orgs/users` (bridge gọi Keycloak Admin API, ép `org_id` theo token người gọi). BI theo tổ chức: mỗi tổ chức có vai trò CSDL `bi_<mã>` chỉ được cấp quyền đọc các view `bi.app_*` của ứng dụng thuộc tổ chức đó (cấp khi xuất bản ứng dụng).
+
 ## Trợ lý AI thử việc
 
 Bảng `step_autonomy` giữ nấc tự chủ (1 đến 4) của từng bước duyệt; bảng `ai_opinion` giữ ý kiến của AI và quyết định thật của người để đo độ khớp.

@@ -145,3 +145,67 @@ describe('ORG: cách ly dữ liệu giữa các tổ chức', () => {
     assert.equal(sql(`select count(*) from submission where app_key = '${appA}'`), '1', 'chỉ còn hồ sơ của chính tổ chức A')
   })
 })
+
+describe('ORG-ADMIN: quản trị người dùng và BI theo tổ chức', () => {
+  const name = () => `tn.${uid()}`
+  const make = (user, body) => call(user, '/orgs/users', { method: 'POST', body: JSON.stringify({ name: 'Người Dùng Thử', role: 'accountant', password: 'matkhau-thu-1', temporary: false, ...body }) })
+  let a1
+  let b1
+
+  test('ORG-12 giám đốc thêm người vào chính tổ chức của mình: đăng nhập được, token mang đúng org_id, vai trò đúng', async () => {
+    a1 = name()
+    b1 = name()
+    const ra = await make('director1', { username: a1 })
+    assert.equal(ra.status, 201, await ra.clone().text())
+    assert.equal((await make('directorb1', { username: b1, role: 'manager' })).status, 201)
+    const ta = JSON.parse(Buffer.from((await login(a1, 'matkhau-thu-1')).split('.')[1], 'base64url').toString())
+    const tb = JSON.parse(Buffer.from((await login(b1, 'matkhau-thu-1')).split('.')[1], 'base64url').toString())
+    assert.ok([undefined, 'default'].includes(ta.org_id))
+    assert.equal(tb.org_id, 'orgb')
+    assert.ok(ta.realm_access.roles.includes('accountant') && !ta.realm_access.roles.includes('director'))
+    assert.ok(tb.realm_access.roles.includes('manager'))
+  })
+
+  test('ORG-13 danh sách chỉ có người của tổ chức mình; người gọi không chọn được tổ chức của người mới', async () => {
+    const la = await (await call('director1', '/orgs/users')).json()
+    const lb = await (await call('directorb1', '/orgs/users')).json()
+    assert.ok(la.some((u) => u.username === a1) && !la.some((u) => u.username === b1), 'danh sách A lẫn người của B')
+    assert.ok(lb.some((u) => u.username === b1) && !lb.some((u) => u.username === a1), 'danh sách B lẫn người của A')
+    assert.ok(lb.every((u) => ['directorb1', 'managerb1', 'staffb1'].includes(u.username) || u.username.startsWith('tn.')))
+    assert.equal(lb.find((u) => u.username === b1).role, 'manager')
+    // Gửi kèm org_id hoặc đổi tiêu đề x-hasura-org-id không đổi được tổ chức của người mới.
+    const sneaky = name()
+    const r = await call('director1', '/orgs/users', { method: 'POST', headers: { 'x-hasura-org-id': 'orgb' }, body: JSON.stringify({ username: sneaky, name: 'X Y', role: 'staff', password: 'matkhau-thu-1', temporary: false, org_id: 'orgb' }) })
+    assert.equal(r.status, 201)
+    assert.ok([undefined, 'default'].includes(JSON.parse(Buffer.from((await login(sneaky, 'matkhau-thu-1')).split('.')[1], 'base64url').toString()).org_id))
+  })
+
+  test('ORG-14 chỉ giám đốc; đầu vào xấu bị từ chối; trùng tên đăng nhập 409; không token 401', async () => {
+    for (const u of ['staff1', 'manager1', 'accountant1']) assert.equal((await call(u, '/orgs/users')).status, 403, u)
+    assert.equal((await fetch(`${GW}/orgs/users`)).status, 401)
+    for (const bad of [{ username: 'A B' }, { role: 'admin' }, { password: 'ngan' }, { name: '' }]) assert.equal((await make('director1', { username: name(), ...bad })).status, 400, JSON.stringify(bad))
+    assert.equal((await make('director1', { username: a1 })).status, 409)
+  })
+
+  test('ORG-15 khóa và mở lại: chỉ người cùng tổ chức; người bị khóa không đăng nhập được; không tự khóa mình', async () => {
+    const id = (await (await call('director1', '/orgs/users')).json()).find((u) => u.username === a1).id
+    assert.equal((await call('directorb1', `/orgs/users/${id}/disable`, { method: 'POST' })).status, 404, 'B khóa được người của A')
+    assert.equal((await call('director1', `/orgs/users/${id}/disable`, { method: 'POST' })).status, 200)
+    await assert.rejects(() => login(a1, 'matkhau-thu-1'), 'người bị khóa vẫn đăng nhập được')
+    assert.equal((await call('director1', `/orgs/users/${id}/enable`, { method: 'POST' })).status, 200)
+    assert.ok(await login(a1, 'matkhau-thu-1'))
+    const me = (await (await call('director1', '/orgs/users')).json()).find((u) => u.username === 'director1').id
+    assert.equal((await call('director1', `/orgs/users/${me}/disable`, { method: 'POST' })).status, 400)
+  })
+
+  test('ORG-16 BI theo tổ chức: vai trò bi_<tổ chức> chỉ đọc được view báo cáo của ứng dụng thuộc tổ chức mình', async () => {
+    const appA = await publishApp()
+    const appB = await publishApp(ONE_STEP, 'managerb1')
+    const read = (role, app) => sql(`SET ROLE "${role}"; SELECT count(*) FROM bi.app_${app}`).split(String.fromCharCode(10)).pop()
+    assert.equal(read('bi_default', appA), '0')
+    assert.equal(read('bi_orgb', appB), '0')
+    assert.throws(() => read('bi_orgb', appA), 'tổ chức B đọc được view của A')
+    assert.throws(() => read('bi_default', appB), 'tổ chức mặc định đọc được view của B')
+    assert.throws(() => sql(`SET ROLE "bi_orgb"; SELECT count(*) FROM public.submission`), 'vai trò BI đọc được bảng gốc')
+  })
+})

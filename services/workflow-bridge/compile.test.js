@@ -51,6 +51,8 @@ test('view phẳng ép kiểu số', () => {
   assert.match(sql, /CREATE VIEW bi\.app_tam_ung/)
   assert.match(sql, /\(data->>'so_tien'\)::numeric AS so_tien/)
   assert.throws(() => toViewSql('x; drop', spec))
+  assert.throws(() => toViewSql('tam_ung', spec, "x'; drop"))
+  assert.match(toViewSql('tam_ung', spec, 'orgb'), /GRANT SELECT ON bi\.app_tam_ung TO "bi_orgb"/)
 })
 
 test('mọi quy trình trong kho mẫu library/ đều hợp lệ và biên dịch được', () => {

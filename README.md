@@ -157,7 +157,7 @@ node --test --test-reporter=spec tests/*.test.js           # đối chiếu đ�
 (cd web && npm ci) && node --test services/workflow-bridge/*.test.js web/src/*.test.js   # đơn vị, không cần hệ thống chạy
 ```
 
-Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kho lạnh (`cold`), cảm biến (`iot`), đa tổ chức (`tenant`), chữ ký số (`pki`), vận hành và khôi phục (`ops`, `recovery`, `restore`), tìm kiếm (`search`), tiêu chí PoF và điều khoản ngoài bảng điểm (`pof`, `luat`). Bảng đối chiếu từng ca và kết quả: [docs/KIEM_THU.md](docs/KIEM_THU.md).
+Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kho lạnh (`cold`), cảm biến (`iot`), đa tổ chức và nâng cấp (`tenant`, `upgrade`), chữ ký số (`pki`), vận hành và khôi phục (`ops`, `recovery`, `restore`), tìm kiếm (`search`), tiêu chí PoF và điều khoản ngoài bảng điểm (`pof`, `luat`). Bảng đối chiếu từng ca và kết quả: [docs/KIEM_THU.md](docs/KIEM_THU.md).
 
 ## Còn thiếu gì (nói thẳng)
 
@@ -168,7 +168,7 @@ Các mục dưới đây khai báo là `todo` trong báo cáo kiểm thử, khô
 - Chữ ký số là PKI phần mềm (chứng thư X.509 do CA của từng tổ chức cấp, ký phía máy chủ, khóa mã hóa trong CSDL): **chưa có HSM, CRL/OCSP** và chưa phải chữ ký số có giá trị pháp lý theo luật.
 - Thời gian thực dùng SSE (chưa WebSocket); thiết bị gọi HTTP (chưa MQTT/OPC UA).
 - Sao lưu tự động chỉ gồm CSDL (kho tệp dùng script); két bí mật mới có một khóa mở; GitOps chỉ ở mức một máy, chưa phải ArgoCD/Flux.
-- Đa tổ chức đã cách ly ở CSDL, nhưng mã ứng dụng vẫn duy nhất toàn hệ thống, chưa có màn hình quản trị tổ chức, các view báo cáo `bi.*` chưa tách theo tổ chức.
+- Đa tổ chức đã cách ly ở CSDL, có quản trị người dùng theo tổ chức và vai trò BI riêng; còn thiếu: mã ứng dụng (`app.key`) vẫn duy nhất toàn hệ thống, bước Keycloak của nâng cấp từ bản cũ làm tay.
 
 ## Đóng góp
 

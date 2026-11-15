@@ -133,6 +133,17 @@ Hai tổ chức dùng chung một hệ thống: tổ chức mặc định (`staf
 | ORG-10 | Cảm biến: ứng dụng sửa chữa phải cùng tổ chức; hồ sơ tự mở mang tổ chức của cảm biến | `/sensors`, `/telemetry` |
 | ORG-11 | Nạp hàng loạt đi bằng quyền người nạp nên không nạp chéo tổ chức | `POST /ingest` |
 
+### Quản trị tổ chức, BI và nâng cấp (phiên bản 1.14.0)
+
+| Mã | Kiểm tra | Cách thử |
+|---|---|---|
+| ORG-12 | Giám đốc thêm người vào tổ chức của mình; đăng nhập được, token mang đúng `org_id` và vai trò | Keycloak Admin API qua `/orgs/users` |
+| ORG-13 | Danh sách chỉ có người cùng tổ chức; gửi kèm `org_id` hay tiêu đề `x-hasura-org-id` không đổi được tổ chức của người mới | hai tổ chức |
+| ORG-14 | Chỉ giám đốc; đầu vào xấu 400; trùng tên 409; không token 401 | cổng API |
+| ORG-15 | Khóa/mở lại chỉ với người cùng tổ chức; người bị khóa không đăng nhập được; không tự khóa mình | đăng nhập thật |
+| ORG-16 | Vai trò `bi_<tổ chức>` chỉ đọc được view báo cáo của tổ chức mình, không đọc được bảng gốc | `SET ROLE` trong PostgreSQL |
+| UPG-01 | Nâng cấp CSDL từ lược đồ 1.8.2 có dữ liệu: áp migration 05..08 hai lần không lỗi, dữ liệu cũ còn nguyên thuộc tổ chức mặc định | CSDL tạm |
+
 ### Chữ ký số (PKI)
 
 Tệp `tests/pki.test.js`. Mỗi hành động duyệt/từ chối của người được ký (RSA-SHA256) bằng chứng thư X.509 do CA của tổ chức cấp; chữ ký chỉ thêm, không sửa.
@@ -147,7 +158,7 @@ Tệp `tests/pki.test.js`. Mỗi hành động duyệt/từ chối của ngườ
 | PKI-06 | Không token bị chặn tại biên; mã hồ sơ sai bị từ chối | cổng API |
 | PKI-07 | Hành động của AI không bị ký thay người | SQL |
 
-Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn hệ thống, nên tổ chức khác dùng trùng mã sẽ bị báo trùng (lộ việc mã đó đã tồn tại); chỉ lập tổ chức mới bằng SQL và quản trị Keycloak (chưa có màn hình quản trị tổ chức); chỉ mục tìm kiếm Meilisearch dùng chung nhưng mọi kết quả đều được kiểm quyền qua Hasura trước khi trả về; các view báo cáo `bi.*` chưa tách theo tổ chức; tài khoản mẫu của tổ chức B không bắt OTP trên API (cùng cách `dxlab-cli` của các tài khoản khác).
+Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn hệ thống, nên tổ chức khác dùng trùng mã sẽ bị báo trùng (lộ việc mã đó đã tồn tại); tên đăng nhập duy nhất toàn realm; chỉ mục tìm kiếm Meilisearch dùng chung nhưng mọi kết quả đều được kiểm quyền qua Hasura trước khi trả về; tài khoản mẫu của tổ chức B không bắt OTP trên API (cùng cách `dxlab-cli` của các tài khoản khác).
 
 ## Tìm kiếm và hỏi đáp (phiên bản 1.5.0)
 

@@ -115,9 +115,10 @@ export function toBpmn(appKey, appName, spec) {
 `
 }
 
-/** Sinh SQL tạo view phẳng bi.app_<key> để công cụ BI đọc mà không cần hiểu JSON. */
-export function toViewSql(appKey, spec) {
+/** Sinh SQL tạo view phẳng bi.app_<key> để công cụ BI đọc mà không cần hiểu JSON, và cấp quyền đọc cho vai trò BI của tổ chức sở hữu (bi_<org>). */
+export function toViewSql(appKey, spec, org = 'default') {
   if (!KEY.test(appKey)) throw new Error('Mã ứng dụng không hợp lệ')
+  if (!/^[a-z][a-z0-9_-]{1,30}$/.test(org)) throw new Error('Mã tổ chức không hợp lệ')
   const cols = spec.fields.map((f) => {
     if (!KEY.test(f.key)) throw new Error('Mã trường không hợp lệ')
     const raw = `data->>'${f.key}'`
@@ -127,7 +128,13 @@ export function toViewSql(appKey, spec) {
 DROP VIEW IF EXISTS bi.app_${appKey};
 CREATE VIEW bi.app_${appKey} AS
   SELECT id, status, submitter_id, created_at, finished_at, ${cols.join(', ')}
-  FROM public.submission WHERE app_key = '${appKey}';`
+  FROM public.submission WHERE app_key = '${appKey}';
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'bi_${org}') THEN
+    GRANT USAGE ON SCHEMA bi TO "bi_${org}";
+    GRANT SELECT ON bi.app_${appKey} TO "bi_${org}";
+  END IF;
+END $$;`
 }
 
 /** Bước có diễn ra với dữ liệu hồ sơ này không (cùng ngữ nghĩa với biểu thức điều kiện trong BPMN). */

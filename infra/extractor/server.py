@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 MAX_BYTES = 12 * 1024 * 1024
 MAX_PAGES = 10
-TIMEOUT = 60
+TIMEOUT = 120
 MIN_TEXT = 20  # ít hơn từng này ký tự không khoảng trắng thì coi PDF là bản quét
 IMAGE = ("image/png", "image/jpeg", "image/tiff", "image/bmp", "image/gif")
 
