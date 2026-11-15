@@ -48,7 +48,7 @@ describe('IOT: cảm biến (OT) mở yêu cầu sửa chữa trong quy trình n
     assert.ok(firstRequest)
     const s = await waitStatus('manager1', firstRequest, { status: 'running', current_step: 'truong_phong', waiting_role: 'manager' })
     assert.ok(s)
-    assert.equal(sql(`select data->>'cam_bien' || '|' || data->>'gia_tri' from submission where id = '${firstRequest}'`), `${key}|11.5`)
+    assert.equal(sql(`select (data->>'cam_bien') || '|' || (data->>'gia_tri') from submission where id = '${firstRequest}'`), `${key}|11.5`)
   })
   test('IOT-03 số đo vượt ngưỡng liên tục không ngập hồ sơ: còn hồ sơ đang chạy thì dùng lại, không mở thêm', async () => {
     const again = await (await send(key, token, [{ value: 12 }, { value: 13 }])).json()
