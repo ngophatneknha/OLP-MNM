@@ -3,18 +3,37 @@ SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 -->
 
+<div align="center">
+
 # DX-Lab Project Hub
+
+### Nói ra quy trình công việc, nhận lại một ứng dụng chạy được.
+
+Hệ điều hành chuyển đổi số mã nguồn mở cho doanh nghiệp nhỏ: AI soạn, người duyệt, một cú bấm là chạy.
 
 [![CI](https://github.com/ngophatneknha/OLP-MNM/actions/workflows/ci.yml/badge.svg)](https://github.com/ngophatneknha/OLP-MNM/actions/workflows/ci.yml)
 [![Phiên bản](https://img.shields.io/github/v/release/ngophatneknha/OLP-MNM?label=phi%C3%AAn%20b%E1%BA%A3n)](https://github.com/ngophatneknha/OLP-MNM/releases)
 [![Giấy phép](https://img.shields.io/badge/gi%E1%BA%A5y%20ph%C3%A9p-Apache--2.0-blue.svg)](LICENSE)
 [![REUSE](https://img.shields.io/badge/REUSE-compliant-green.svg)](https://reuse.software)
 
+[**Chạy thử trong 5 phút**](#cài-đặt-và-chạy-thử-trong-5-phút) · [Kịch bản demo](docs/KICH_BAN_DEMO.md) · [Slide](docs/slides/index.html) · [Kiến trúc](#kiến-trúc) · [Còn thiếu gì](#còn-thiếu-gì-nói-thẳng)
+
+![Bàn làm việc: việc đang chờ bạn ký duyệt và hồ sơ bạn đã gửi](docs/images/ban-lam-viec.jpg)
+
+</div>
+
+| | Điểm nổi bật |
+|---|---|
+| **Nói là có** | Mô tả quy trình bằng lời thường, AI soạn bản nháp, người duyệt, một cú bấm xuất bản thành quy trình BPMN chạy thật |
+| **Quy trình là mã nguồn mở** | Mỗi lần phát hành là một phiên bản bất biến; đề xuất thay đổi được chạy thử trên hồ sơ cũ, người duyệt phải khác người đề xuất |
+| **AI phải thử việc** | Bốn nấc tự chủ: người làm, chạy bóng, gợi ý, tự làm; chỉ được nâng nấc khi bằng chứng khớp |
+| **Tin được** | Chữ ký số X.509 cho từng phê duyệt, kho lạnh băm nối chuỗi, đa tổ chức cách ly bằng `org_id`, Zero-Trust tại cổng API |
+| **Nhẹ và tự chủ** | Toàn bộ thành phần nguồn mở, bản lõi chạy trong khoảng 3 GiB RAM, thành phần nặng là tùy chọn |
+| **Kiểm chứng được** | Hơn 200 ca kiểm thử chạy trên hệ thống thật trong CI, báo cáo đối chiếu từng điều khoản của đề thi |
+
 **Mô tả cách công việc đang diễn ra, nhận lại một ứng dụng chạy được. Quy trình của tổ chức được quản lý như mã nguồn mở: có phiên bản, đề xuất thay đổi, người duyệt và nhật ký bất biến.**
 
 > *English:* an open-core "Digital Transformation OS" (DX-OS). Describe a business process in plain words; an AI assistant drafts it, a human reviews it, and one click publishes a working BPMN workflow with forms, role-based access, audit trail and reports. Processes are versioned and changed through pull-request-style proposals. Everything runs from one `docker compose up` on Apache-2.0 / OSI-licensed components (Keycloak, APISIX, PostgreSQL + Hasura, Flowable, SeaweedFS, ClamAV). Entry for the Vietnam Open Source Software Olympiad (OLP) 2026.
-
-![Bàn làm việc: việc đang chờ bạn ký duyệt và hồ sơ bạn đã gửi](docs/images/ban-lam-viec.jpg)
 
 ## Cài đặt và chạy thử trong 5 phút
 

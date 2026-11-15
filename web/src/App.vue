@@ -31,7 +31,7 @@ const active = (to, path) => (to === '/' ? path === '/' || path.startsWith('/ho-
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2">{{ t('nav.skip') }}</a>
 
     <!-- Thanh điều hướng màu mực xanh: bên trái trên màn hình rộng, dưới đáy trên điện thoại. -->
-    <aside class="fixed inset-x-0 bottom-0 z-30 bg-pen text-white md:static md:flex md:min-h-screen md:w-60 md:shrink-0 md:flex-col">
+    <aside class="sidebar fixed inset-x-0 bottom-0 z-30 text-white md:static md:flex md:min-h-screen md:w-60 md:shrink-0 md:flex-col">
       <div class="hidden items-center gap-3 px-5 py-5 md:flex">
         <div class="grid h-9 w-9 place-items-center rounded-md bg-white font-serif text-sm font-bold text-pen">DX</div>
         <div class="leading-tight">
@@ -77,7 +77,7 @@ const active = (to, path) => (to === '/' ? path === '/' || path.startsWith('/ho-
         </div>
       </header>
       <main id="main" class="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10">
-        <RouterView />
+        <RouterView v-slot="{ Component }"><component :is="Component" class="fade-up" /></RouterView>
       </main>
     </div>
 

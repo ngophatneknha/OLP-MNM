@@ -9,6 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-16
+
+### Changed
+- Giao diện: khối chào có số liệu nhanh ở Bàn làm việc, nền chuyển sắc, thanh điều hướng chuyển sắc, thẻ có đổ bóng, hiệu ứng vào trang (tắt khi người dùng chọn giảm chuyển động).
+- README: phần đầu có tiêu đề, khẩu hiệu, lối tắt và bảng điểm nổi bật.
+
 ## [2.0.0] - 2026-11-16
 
 Bản đóng băng nộp bài: gom các đợt 1.10.0 đến 1.14.0 và rà soát cuối; không đổi tính năng so với 1.14.0.
