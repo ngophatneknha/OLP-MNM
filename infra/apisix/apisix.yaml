@@ -62,4 +62,9 @@ routes:
     plugins:
       proxy-rewrite:
         regex_uri: ["^/auth/(.*)", "/$1"]
+global_rules:
+  - id: metrics
+    plugins:
+      prometheus:
+        prefer_name: true
 #END

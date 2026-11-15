@@ -20,6 +20,8 @@ Các thành phần chạy dưới dạng **container độc lập, không sửa 
 | SeaweedFS | 4.53 | Apache-2.0 | `LICENSE` trong github.com/seaweedfs/seaweedfs | ☑ |
 | Flowable (REST) | 7.2.0 | Apache-2.0 | `LICENSE` trong github.com/flowable/flowable-engine | ☑ |
 | ClamAV (trạm kiểm dịch mã độc) | 1.4.3 | GPL-2.0 | `COPYING.txt` trong github.com/Cisco-Talos/clamav (GitHub báo GPL-2.0) | ☑ |
+| Caddy (TLS tại biên, tùy chọn) | 2.8.4 | Apache-2.0 | `LICENSE` trong github.com/caddyserver/caddy | ☑ |
+| Prometheus (giám sát, tùy chọn) | 2.55.1 | Apache-2.0 | `LICENSE` trong github.com/prometheus/prometheus | ☑ |
 | Node.js (image `node`) | 22.19.0 | MIT | `LICENSE` trong github.com/nodejs/node | ☑ |
 | nginx (image phục vụ tệp tĩnh) | 1.28.0 | BSD-2-Clause | `LICENSE` trong github.com/nginx/nginx | ☑ |
 | curl (image `curlimages/curl`, nạp cấu hình Hasura) | 8.10.1 | giấy phép curl (kiểu MIT) | `COPYING` trong github.com/curl/curl | ☑ |
@@ -50,7 +52,7 @@ Toàn bộ cây phụ thuộc cài lúc build (khoảng 80 gói) chỉ gồm cá
 
 ## Kết luận về tương thích giấy phép
 
-- Có đúng **một** thành phần copyleft: ClamAV (GPL-2.0), chạy trong container riêng, không sửa, không đính kèm mã vào kho, và chỉ giao tiếp với hệ thống qua cổng mạng (giao thức clamd). Vì vậy GPL-2.0 không lan sang mã Apache-2.0 của dự án (đây là việc chạy một chương trình riêng, không phải liên kết hay trộn mã). Không thành phần nào dùng AGPL hay giấy phép không được OSI chấp thuận; MinIO (AGPL-3.0) đã được thay bằng SeaweedFS (Apache-2.0).
+- Có đúng **một** thành phần copyleft: ClamAV (GPL-2.0), chạy trong container riêng, không sửa, không đính kèm mã vào kho, và chỉ giao tiếp với hệ thống qua cổng mạng (giao thức clamd). Vì vậy GPL-2.0 không lan sang mã Apache-2.0 của dự án (đây là việc chạy một chương trình riêng, không phải liên kết hay trộn mã). Không thành phần nào dùng AGPL hay giấy phép không được OSI chấp thuận; MinIO (AGPL-3.0) đã được thay bằng SeaweedFS (Apache-2.0), và Grafana (AGPL-3.0) không được dùng: giám sát dùng giao diện truy vấn của Prometheus (Apache-2.0).
 - Mã tự viết của dự án phát hành theo Apache-2.0; phông chữ OFL-1.1 được phép đóng gói kèm miễn là không bán riêng, và dự án không làm vậy.
 - Dự án không phát hành cùng gói đính kèm của dự án khác và không chỉnh sửa mã của bất kỳ gói nào.
 

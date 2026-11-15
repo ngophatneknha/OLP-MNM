@@ -9,6 +9,23 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-15
+
+An toàn và vận hành.
+
+### Added
+- **MFA**: trưởng phòng và giám đốc phải nhập OTP (TOTP) sau mật khẩu; nhân viên và kế toán chỉ cần mật khẩu (luồng `browser-mfa` của Keycloak, ca T1-SSO-10 đi qua trang đăng nhập thật).
+- **Sao lưu và khôi phục**: `scripts/backup.sh`, `scripts/restore.sh` (ba cơ sở dữ liệu và kho tệp, kiểm mã băm trước khi ghi đè), ca `tests/restore.test.js` chạy trọn vòng trên hệ thống thật.
+- **TLS tại biên** bằng Caddy và **giám sát** bằng Prometheus (số đo của cổng API), tách trong `docker-compose.optional.yml` với profile `tls` và `monitoring`; bản lõi không đổi.
+- `docs/VAN_HANH.md`: hướng dẫn vận hành, `tests/ops.test.js`.
+
+### Changed
+- Keycloak tin header `X-Forwarded-*` để chạy sau proxy TLS.
+- Ca Z-05 và Z-06 từ "todo" thành ca có kiểm chứng.
+
+### Chưa làm
+- Két bí mật (OpenBao), WAF, ẩn thông tin định danh (PII), sao lưu tự động theo lịch, Grafana (giấy phép AGPL-3.0, trái chính sách của dự án).
+
 ## [1.3.0] - 2026-11-15
 
 Không gian [H] Con người số hoàn thiện hơn và giao diện nói rõ kiến trúc H-P-D-I.

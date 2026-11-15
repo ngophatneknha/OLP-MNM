@@ -162,6 +162,8 @@ Mật khẩu dùng chung cho các tài khoản mẫu nằm trong [`infra/keycloa
 | Keycloak | http://localhost:8081 | Trang đăng nhập; tài khoản quản trị trong `.env` |
 
 Chỉ ba cổng trên được mở ra máy chủ. PostgreSQL, Hasura, Flowable, kho S3 và `workflow-bridge` chỉ nằm trong mạng nội bộ của Docker; mọi truy cập đều đi qua cổng API, nơi token được kiểm tra trước.
+Sao lưu, khôi phục, TLS (Caddy), giám sát (Prometheus) và xác thực nhiều yếu tố: xem [docs/VAN_HANH.md](docs/VAN_HANH.md).
+
 Dừng hệ thống: `docker compose down`. Dừng và xóa toàn bộ dữ liệu: `docker compose down -v`.
 
 ## Cấu hình
@@ -194,13 +196,14 @@ Kiểm thử đối chiếu trực tiếp với tài liệu của Ban tổ chứ
 ```bash
 docker compose up -d --build && node tests/wait-ready.js   # dựng hệ thống và chờ sẵn sàng (cần Node.js 22)
 node --test --test-reporter=spec tests/*.test.js          # toàn bộ kiểm thử đối chiếu (khoảng 4 phút)
-node --test services/workflow-bridge/*.test.js web/src/metrics.test.js   # kiểm thử đơn vị (không cần hệ thống chạy)
+node --test services/workflow-bridge/*.test.js web/src/metrics.test.js web/src/i18n.test.js   # kiểm thử đơn vị (không cần hệ thống chạy)
 ```
 
 | Tệp | Đối chiếu với | Nội dung |
 |---|---|---|
 | `tests/tang1.test.js` | Đề thi mục 3-4: Tầng 1 | SSO/OIDC, cổng API (giả mạo token, CORS, giới hạn tần suất), headless, dữ liệu cấu trúc, kho tệp, kiểm dịch mã độc, luồng BPMN, tải đồng thời |
 | `tests/hpdi.test.js` | Đề thi mục 3: ứng dụng H-P-D-I | Bộ sinh quy trình (kể cả tiêm mã), đề xuất thay đổi, số liệu đối chiếu SQL, AI thật, nấc tự chủ |
+| `tests/ops.test.js`, `tests/restore.test.js` | Vận hành | Script sao lưu, TLS, giám sát (cần bật thành phần tùy chọn), vòng sao lưu rồi khôi phục thảm họa (`RESTORE_TEST=1`) |
 | `tests/pof.test.js` | Thể lệ: 6 tiêu chí PoF | Kho công khai, giấy phép từng tệp, bản phát hành `.tar.gz`, dựng từ bản phát hành, thư viện đính kèm, tài liệu, bug tracker |
 
 Kết quả và các điểm chưa làm: [docs/KIEM_THU.md](docs/KIEM_THU.md). Các điểm chưa làm khai báo bằng `todo` nên báo cáo không tô hồng. CI chạy toàn bộ trên mỗi pull request.

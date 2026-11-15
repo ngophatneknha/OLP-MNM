@@ -5,3 +5,10 @@ deployment:
   role: data_plane
   role_data_plane:
     config_provider: yaml
+
+# Số đo cho Prometheus (docker-compose.optional.yml, profile monitoring). Cổng 9091 chỉ nằm trong mạng nội bộ, không công bố ra máy chủ.
+plugin_attr:
+  prometheus:
+    export_addr:
+      ip: 0.0.0.0
+      port: 9091

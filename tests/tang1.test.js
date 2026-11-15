@@ -76,6 +76,28 @@ describe('T1-SSO: Định danh và đăng nhập một lần (Keycloak, OIDC)', 
     const execs = await (await fetch(`${KC}/admin/realms/dxlab/authentication/flows/browser/executions`, { headers: h })).json()
     assert.ok(execs.some((e) => /otp/i.test(`${e.providerId} ${e.displayName}`) && e.requirement !== 'DISABLED'), 'không có bước OTP đang bật')
   })
+  test('T1-SSO-10 MFA bắt buộc cho trưởng phòng và giám đốc, nhân viên chỉ cần mật khẩu (đi qua luồng đăng nhập trình duyệt thật)', async () => {
+    // Đăng nhập bằng mật khẩu ở trang đăng nhập của Keycloak rồi xem bước kế tiếp là gì.
+    const next = async (username) => {
+      const jar = new Map()
+      const keep = (res) => { for (const c of res.headers.getSetCookie()) jar.set(c.split('=')[0], c.split(';')[0]) }
+      const cookie = () => [...jar.values()].join('; ')
+      const auth = await fetch(`${KC}/realms/dxlab/protocol/openid-connect/auth?client_id=dxlab-app&response_type=code&scope=openid&redirect_uri=http://localhost:3000/&code_challenge=${createHash('sha256').update('x'.repeat(43)).digest('base64url')}&code_challenge_method=S256`, { redirect: 'manual' })
+      keep(auth)
+      const html = await auth.text()
+      const action = html.match(/action="([^"]+)"/)[1].replaceAll('&amp;', '&')
+      const res = await fetch(action, { method: 'POST', redirect: 'manual', headers: { cookie: cookie(), 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ username, password: 'dxlab-dev', credentialId: '' }) })
+      return { status: res.status, location: res.headers.get('location') ?? '', body: res.status === 200 ? await res.text() : '' }
+    }
+    for (const user of ['manager1', 'director1']) {
+      const r = await next(user)
+      assert.match(r.location, /required-action\?execution=CONFIGURE_TOTP/, `${user} phải bị chuyển sang bước thiết lập OTP, nhận ${r.status} ${r.location}`)
+      assert.ok(!/code=/.test(r.location), `${user} không được nhận mã đăng nhập khi chưa có OTP`)
+    }
+    const staff = await next('staff1')
+    assert.equal(staff.status, 302)
+    assert.match(staff.location, /code=/, 'nhân viên đăng nhập thẳng bằng mật khẩu')
+  })
   test('T1-SSO-09 đăng xuất thu hồi phiên làm mới', async () => {
     const { refresh_token } = await (await fetch(tokenUrl, form({ grant_type: 'password', client_id: 'dxlab-cli', username: 'staff2', password: 'dxlab-dev' }))).json()
     const out = await fetch(`${KC}/realms/dxlab/protocol/openid-connect/logout`, form({ client_id: 'dxlab-cli', refresh_token }))

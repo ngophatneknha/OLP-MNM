@@ -8,7 +8,8 @@
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { ROOT, WEB, as, publishApp, submit, act, waitStatus, sql, until, uid, SPEC } from './lib.js'
 import { validateSpec, simulate, toBpmn } from '../services/workflow-bridge/compile.js'
 
@@ -254,6 +255,6 @@ describe('Z: Nguyên lý Zero-Trust và vận hành (đề thi mục 4, nguyên 
   test('Z-02 [todo] tường lửa ứng dụng web (WAF) tại biên', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
   test('Z-03 [todo] truyền phát sự kiện thời gian thực (streaming) và WebSocket', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
   test('Z-04 [todo] ẩn thông tin định danh cá nhân (PII masking)', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
-  test('Z-05 [todo] sao lưu và khôi phục thảm họa tự động (Velero/pg_dump định kỳ)', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
-  test('Z-06 [todo] TLS tại biên mạng và giám sát (Prometheus/Grafana)', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
+  test('Z-05 sao lưu và khôi phục thảm họa: script thủ công đã có (ca chạy thật ở tests/restore.test.js), chưa có lịch tự động', () => assert.ok(existsSync(join(ROOT, 'scripts/restore.sh'))))
+  test('Z-06 TLS tại biên và giám sát: thành phần tùy chọn đã có (ca chạy thật ở tests/ops.test.js)', () => assert.match(readFileSync(join(ROOT, 'docker-compose.optional.yml'), 'utf8'), /caddy:[\s\S]*prometheus:/))
 })

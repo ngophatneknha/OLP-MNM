@@ -152,5 +152,125 @@
         "accountant"
       ]
     }
-  ]
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "browser-mfa",
+      "description": "Đăng nhập trình duyệt, bắt buộc OTP với vai trò quản lý và giám đốc",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "ALTERNATIVE",
+          "userSetupAllowed": false,
+          "authenticatorFlow": false,
+          "authenticator": "auth-cookie",
+          "priority": 10
+        },
+        {
+          "requirement": "ALTERNATIVE",
+          "userSetupAllowed": false,
+          "authenticatorFlow": true,
+          "flowAlias": "browser-mfa forms",
+          "priority": 20
+        }
+      ]
+    },
+    {
+      "alias": "browser-mfa forms",
+      "description": "Mật khẩu rồi OTP theo vai trò",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "REQUIRED",
+          "userSetupAllowed": false,
+          "authenticatorFlow": false,
+          "authenticator": "auth-username-password-form",
+          "priority": 10
+        },
+        {
+          "requirement": "CONDITIONAL",
+          "userSetupAllowed": false,
+          "authenticatorFlow": true,
+          "flowAlias": "mfa manager",
+          "priority": 20
+        },
+        {
+          "requirement": "CONDITIONAL",
+          "userSetupAllowed": false,
+          "authenticatorFlow": true,
+          "flowAlias": "mfa director",
+          "priority": 30
+        }
+      ]
+    },
+    {
+      "alias": "mfa manager",
+      "description": "OTP cho trưởng phòng",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "REQUIRED",
+          "userSetupAllowed": false,
+          "authenticatorFlow": false,
+          "authenticator": "conditional-user-role",
+          "authenticatorConfig": "role-manager",
+          "priority": 10
+        },
+        {
+          "requirement": "REQUIRED",
+          "userSetupAllowed": false,
+          "authenticatorFlow": false,
+          "authenticator": "auth-otp-form",
+          "priority": 20
+        }
+      ]
+    },
+    {
+      "alias": "mfa director",
+      "description": "OTP cho giám đốc",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "REQUIRED",
+          "userSetupAllowed": false,
+          "authenticatorFlow": false,
+          "authenticator": "conditional-user-role",
+          "authenticatorConfig": "role-director",
+          "priority": 10
+        },
+        {
+          "requirement": "REQUIRED",
+          "userSetupAllowed": false,
+          "authenticatorFlow": false,
+          "authenticator": "auth-otp-form",
+          "priority": 20
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "role-manager",
+      "config": {
+        "condUserRole": "manager",
+        "negate": "false"
+      }
+    },
+    {
+      "alias": "role-director",
+      "config": {
+        "condUserRole": "director",
+        "negate": "false"
+      }
+    }
+  ],
+  "browserFlow": "browser-mfa"
 }

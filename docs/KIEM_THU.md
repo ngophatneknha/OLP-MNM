@@ -67,6 +67,16 @@ node --test --test-reporter=spec tests/*.test.js
 
 Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải nén ở thư mục tạm, 73 đạt, 0 lỗi; quét bí mật trên toàn bộ lịch sử không thấy gì. Điều khoản về con người (số thành viên, giảng viên, đăng ký qua trường, hạn nộp) không kiểm bằng máy: xem `docs/NOP_BAI.md`.
 
+## Vận hành và an toàn (phiên bản 1.4.0)
+
+| Mã ca | Kiểm cái gì |
+|---|---|
+| T1-SSO-10 | Đi qua trang đăng nhập thật: trưởng phòng và giám đốc bị chuyển sang thiết lập OTP, không nhận mã đăng nhập khi chưa có OTP; nhân viên đăng nhập thẳng |
+| OPS-01, 02 | Có script sao lưu và khôi phục (kiểm mã băm); thành phần tùy chọn không lẫn vào compose lõi |
+| OPS-03 | HTTPS qua Caddy cho web, API, đăng nhập; có HSTS; qua TLS cổng vẫn trả 401 khi không token |
+| OPS-04 | Prometheus thu được số đo APISIX và thấy yêu cầu thật |
+| OPS-RESTORE | Sao lưu, xóa bảng và thêm hồ sơ mới, khôi phục: hồ sơ trở về đúng lúc sao lưu, tệp đính kèm giống từng byte (chạy bằng `RESTORE_TEST=1`) |
+
 ## Lỗi bộ kiểm thử tìm ra và đã sửa (phiên bản 1.1.0)
 
 | # | Phát hiện | Cách sửa |
@@ -87,11 +97,10 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | D-06 | Lakehouse, NGSI-LD, WebGIS, phả hệ dữ liệu [D] | Ngoài phạm vi hiện tại |
 | I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
 | Z-01 | Két bí mật (Vault) | Bí mật hiện nằm trong `.env` |
+| Z-05b | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
 | Z-02 | WAF tại biên | Chưa làm |
 | Z-03 | Truyền phát sự kiện, WebSocket | Chưa làm |
 | Z-04 | Che thông tin định danh (PII) | Chưa làm |
-| Z-05 | Sao lưu, khôi phục thảm họa tự động | Chưa làm |
-| Z-06 | TLS tại biên, giám sát Prometheus/Grafana | Chưa làm |
 
 ## Giới hạn của chính bộ kiểm thử
 
