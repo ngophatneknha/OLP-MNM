@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 # SPDX-License-Identifier: Apache-2.0
 #
-# Phát hành image container của dự án lên GitHub Packages (ghcr.io) mỗi khi gắn thẻ phiên bản vX.Y.Z.
+# Mỗi khi gắn thẻ phiên bản vX.Y.Z: (1) tạo bản phát hành trên GitHub kèm tệp .tar.gz (git archive, giải nén vào thư mục có số phiên bản)
+# và ghi chú lấy từ CHANGELOG.md; (2) phát hành image container của dự án lên GitHub Packages (ghcr.io).
 # Chỉ đóng gói mã của chính dự án (ứng dụng web, workflow-bridge); các dịch vụ bên thứ ba vẫn lấy từ image chính thức.
 
 name: Phát hành gói
@@ -16,6 +17,30 @@ on:
         required: true
 
 jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Tạo hoặc cập nhật bản phát hành kèm tệp .tar.gz
+        run: |
+          v="${TAG#v}"
+          file="dxlab-project-hub-$v.tar.gz"
+          git archive --format=tar.gz --prefix="dxlab-project-hub-$v/" -o "$file" HEAD
+          awk -v h="## [$v]" 'index($0, h) == 1 {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "Phiên bản $v. Chi tiết: CHANGELOG.md." > notes.md
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$file" --clobber
+          else
+            gh release create "$TAG" "$file" --title "$TAG" --notes-file notes.md --verify-tag
+          fi
+
   publish:
     runs-on: ubuntu-latest
     permissions:

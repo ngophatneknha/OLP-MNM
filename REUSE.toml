@@ -5,7 +5,7 @@ version = 1
 
 # Các tệp không thể chứa chú thích SPDX trực tiếp (hoặc công cụ reuse không đọc được).
 [[annotations]]
-path = ["infra/keycloak/realm/**.json", "infra/hasura/**.json", "docs/images/**", "library/**.json", "web/package.json", "web/package-lock.json", "web/public/config.json", ".gitignore", ".gitattributes", "LICENSE", "README.md", "CHANGELOG.md", "docs/KIEM_THU.md", "docs/architecture.md", "docs/VAN_HANH.md", "REUSE.toml"]
+path = ["infra/keycloak/realm/**.json", "infra/hasura/**.json", "docs/images/**", "library/**.json", "web/package.json", "web/package-lock.json", "web/public/config.json", ".gitignore", ".gitattributes", "LICENSE", "README.md", "CHANGELOG.md", "docs/KIEM_THU.md", "docs/architecture.md", "docs/VAN_HANH.md", "docs/BACKLOG.md", "docs/KY_THUAT.md", "REUSE.toml"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 DX-Lab Project Hub contributors"
 SPDX-License-Identifier = "Apache-2.0"

@@ -161,6 +161,8 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | Z-07 | Chữ ký số PKI có chứng thư cho phê duyệt | Hiện là xác nhận trong nhật ký bất biến |
 | Z-08 | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
 | Z-09 | WebSocket cho thời gian thực, MQTT/OPC UA cho thiết bị | Hiện là SSE (Z-03) và HTTP (IOT) |
+| Z-10 | GitOps thật (ArgoCD/Flux tự đồng bộ hạ tầng từ kho) | Cấu hình hạ tầng là mã trong kho và CI kiểm, nhưng áp dụng thủ công bằng `docker compose` |
+| Z-11 | Gom nhật ký truy vết phân tán; trục sự kiện streaming | Hiện có nhật ký kiểm toán bất biến trong CSDL, SSE và Prometheus |
 
 ## Zero-Trust: các ca đã làm (nguyên lý iv của đề)
 

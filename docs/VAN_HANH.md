@@ -105,7 +105,7 @@ docker compose exec -T postgres psql -U dxlab -d dxlab -c "INSERT INTO org (id, 
 
 Rồi trong Keycloak (realm `dxlab`) tạo người dùng và đặt thuộc tính `org_id = congtyc`. Giám đốc của tổ chức đó tự có kho lạnh và cảm biến riêng.
 
-Nâng cấp hệ thống đang chạy (volume cũ): áp tệp SQL, khởi động lại Hasura để nhận cấu hình token mới, và thêm vào Keycloak thuộc tính người dùng `org_id` cùng một "mapper" thuộc tính vào token cho hai client `dxlab-app` và `dxlab-cli` (hoặc nhập lại realm trên Keycloak trống: `dxlab-realm.json` đã khai báo sẵn). Không có claim thì mọi người vẫn ở tổ chức mặc định nên hệ thống cũ chạy như trước.
+Nâng cấp hệ thống đang chạy (volume cũ): áp tệp SQL, khởi động lại Hasura để nhận cấu hình token mới, và thêm vào Keycloak thuộc tính người dùng `org_id` cùng một "mapper" thuộc tính vào token cho hai client `dxlab-app` và `dxlab-cli` (hoặc nhập lại realm trên Keycloak trống: `dxlab-realm.json` đã khai báo sẵn). Không có claim thì mọi người vẫn ở tổ chức mặc định nên hệ thống cũ chạy như trước. Phần SQL đã được thử trên CSDL có dữ liệu từ trước 1.8.4: dòng cũ nhận `org_id = 'default'`, hồ sơ mới vẫn nhận tổ chức từ quy trình, chạy lại tệp lần hai không lỗi; phần Keycloak thì chưa thử trên realm đã có.
 
 ```bash
 docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/05-org.sql
