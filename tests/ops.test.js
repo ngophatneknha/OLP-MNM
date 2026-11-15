@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import https from 'node:https'
 import { join } from 'node:path'
-import { ROOT, GW, until } from './lib.js'
+import { ROOT, GW, until, run } from './lib.js'
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
 const skip = process.env.OPS_OPTIONAL ? false : 'đặt OPS_OPTIONAL=1 sau khi bật profile tls và monitoring'
@@ -31,6 +31,16 @@ describe('OPS: sao lưu, khôi phục và cấu hình vận hành', () => {
     assert.ok(!/^\s*(caddy|prometheus):/m.test(core))
     assert.match(read('docker-compose.optional.yml'), /profiles: \["tls"\]/)
     assert.match(read('docker-compose.optional.yml'), /profiles: \["monitoring"\]/)
+  })
+})
+
+describe('OPS: tự phục hồi khi sự cố (đề thi: Zero-Trust gắn với tự phục hồi tức thì)', () => {
+  const services = Object.entries(JSON.parse(run('docker', ['compose', 'config', '--format', 'json'])).services).filter(([name]) => name !== 'hasura-init')
+  test('OPS-06 mọi dịch vụ chạy lâu của luồng chính có chính sách khởi động lại và kiểm tra sức khỏe', () => {
+    for (const [name, svc] of services) {
+      assert.ok(['unless-stopped', 'always'].includes(svc.restart), `${name} thiếu restart`)
+      assert.ok(svc.healthcheck?.test, `${name} thiếu healthcheck`)
+    }
   })
 })
 
