@@ -9,6 +9,15 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.4] - 2026-11-15
+
+### Added
+- Bàn làm việc của giám đốc báo "N bước duyệt đã đủ bằng chứng để nâng nấc tự chủ của trợ lý AI" kèm liên kết tới trang Trợ lý AI. Luật bằng chứng (10 quyết định thật, 90% khớp) dùng chung một mô-đun `web/src/autonomy.js` có kiểm thử; cơ sở dữ liệu vẫn là nơi chặn thật (`autonomy_guard`).
+- Trang Số liệu (giám đốc) hiện độ khớp chung giữa trợ lý AI và người, hoặc hướng dẫn bắt đầu thu bằng chứng khi chưa có.
+
+### Changed
+- Trang Trợ lý AI dùng chung mô-đun bằng chứng thay vì bản sao trong trang.
+
 ## [1.7.3] - 2026-11-15
 
 ### Added

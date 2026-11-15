@@ -11,6 +11,7 @@ import { auth, gql, ago, givenName, initials, headline, whereIs, waitsOnMe, step
 import DecisionBar from '../components/DecisionBar.vue'
 import CategoryIcon from '../components/CategoryIcon.vue'
 import { t } from '../i18n.js'
+import { readyToPromote } from '../autonomy.js'
 
 const submissions = ref(null)
 const apps = ref([])
@@ -32,7 +33,16 @@ async function load() {
 }
 // shortcut: hỏi lại máy chủ mỗi 3 giây thay cho GraphQL subscription, vì trình duyệt không gửi được
 // header Authorization khi mở WebSocket qua gateway; chuyển sang subscription khi gateway nhận token qua giao thức con.
-onMounted(() => { load(); timer = setInterval(load, 3000) })
+const ready = ref([])
+async function loadReady() {
+  if (auth.role !== 'director') return
+  try {
+    const d = await gql(`{ app(where: {status: {_eq: "published"}}) { key spec } step_autonomy { app_key step_key level }
+      ai_opinion(order_by: {id: desc}, limit: 400) { step_key level matched sample submission { app_key } } }`)
+    ready.value = readyToPromote(d.app, d.step_autonomy, d.ai_opinion)
+  } catch { ready.value = [] } // banner phụ: lỗi thì thôi, không ảnh hưởng việc chính
+}
+onMounted(() => { load(); loadReady(); timer = setInterval(load, 3000) })
 onUnmounted(() => clearInterval(timer))
 
 const waiting = computed(() => (submissions.value ?? []).filter(waitsOnMe))
@@ -54,6 +64,11 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
 <template>
   <h1 class="page-title">{{ greeting() }}, {{ givenName(auth.name) }}</h1>
   <p class="page-lead">{{ summary }}</p>
+
+  <p v-if="ready.length" class="mt-4 flex flex-wrap items-center gap-3 rounded-md bg-pen-wash px-4 py-3 text-sm">
+    <span>{{ t('ai.ready', { n: ready.length }) }}</span>
+    <RouterLink to="/tro-ly" class="font-medium text-pen hover:underline">{{ t('ai.review') }}</RouterLink>
+  </p>
 
   <p v-if="failed" class="mt-6 rounded-md bg-seal-wash px-4 py-3 text-sm text-seal" role="alert">
     {{ t('home.failed', { err: failed }) }}

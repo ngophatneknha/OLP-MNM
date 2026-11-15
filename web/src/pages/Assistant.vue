@@ -9,9 +9,7 @@ khớp với quyết định của người. Giám đốc nâng nấc; trưởng
 import { computed, onMounted, ref } from 'vue'
 import { ArrowDown, ArrowUp, Check, X } from 'lucide-vue-next'
 import { auth, gql, ago, toast, ROLE_LABEL, AUTONOMY } from '../lib.js'
-
-const MIN_DECISIONS = 10
-const MIN_RATE = 0.9
+import { MIN_DECISIONS, MIN_RATE, canRaise, evidence as evidenceOf } from '../autonomy.js'
 
 const apps = ref(null)
 const rows = ref([])
@@ -31,12 +29,7 @@ async function load() {
 onMounted(load)
 
 const levelOf = (appKey, stepKey) => rows.value.find((r) => r.app_key === appKey && r.step_key === stepKey)
-/** Bằng chứng ở đúng nấc hiện tại: các quyết định thật của người, không tính dữ liệu mẫu hay lần AI tự duyệt. */
-function evidence(appKey, stepKey, level) {
-  const list = opinions.value.filter((o) => o.submission.app_key === appKey && o.step_key === stepKey && o.level === level && o.matched !== null && !o.sample)
-  return { total: list.length, hits: list.filter((o) => o.matched).length }
-}
-const canRaise = (e, level) => level === 1 || (level < 4 && e.total >= MIN_DECISIONS && e.hits >= e.total * MIN_RATE)
+const evidence = (appKey, stepKey, level) => evidenceOf(opinions.value, appKey, stepKey, level)
 
 const sections = computed(() => (apps.value ?? []).map((app) => ({
   app,
