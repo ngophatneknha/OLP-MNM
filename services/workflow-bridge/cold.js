@@ -56,7 +56,7 @@ export async function archiveFinished(days = Number(ARCHIVE_AFTER_DAYS), org = '
       AND NOT EXISTS (SELECT 1 FROM cold_item c WHERE c.submission_id = s.id) ORDER BY s.finished_at, s.id LIMIT ${BATCH}`)).map((r) => r[0])
     if (!ids.length) return { archived: 0 }
     if (!ids.every((id) => UUID.test(id))) throw new Error('Mã hồ sơ lạ')
-    const lines = (await sql(`SELECT row_to_json(t)::text FROM (SELECT s.*, (SELECT coalesce(json_agg(e ORDER BY e.created_at, e.id), '[]'::json) FROM submission_event e WHERE e.submission_id = s.id) AS events
+    const lines = (await sql(`SELECT row_to_json(t)::text FROM (SELECT s.*, (SELECT coalesce(jsonb_agg(e ORDER BY e.created_at, e.id), '[]'::jsonb) FROM submission_event e WHERE e.submission_id = s.id) AS events
       FROM submission s WHERE s.id = ANY(ARRAY[${idList(ids)}]::uuid[]) ORDER BY s.finished_at, s.id) t`)).map((r) => r[0])
     const body = Buffer.from(`${lines.join(String.fromCharCode(10))}${String.fromCharCode(10)}`)
     const key = `${org}/${new Date().toISOString().slice(0, 7).replace('-', '/')}/${randomUUID()}.jsonl`

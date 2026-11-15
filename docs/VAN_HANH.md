@@ -97,6 +97,27 @@ curl -X POST "$API/telemetry/lanh_kho1" -H "x-sensor-token: $DEVICE_TOKEN" -H "c
 
 Có thể gửi mảng tới 100 số đo kèm `at` (ISO 8601, trong 7 ngày qua). Vượt ngưỡng thì hồ sơ sửa chữa tự mở và hiện ở trưởng phòng. Token đi qua HTTP thường nên môi trường thật cần bật TLS. Máy đang chạy cần áp `infra/postgres/init/04-iot.sql` bằng psql (hoặc dựng lại CSDL).
 
+### Vị trí, NGSI-LD và bản đồ
+
+Đăng ký cảm biến có thể kèm `"lat": 10.8231, "lon": 106.6297` (WGS84, cả hai hoặc không có). Bản đồ nằm ở mục "Bản đồ cảm biến" (trưởng phòng, giám đốc): chấm xanh bình thường, chấm đỏ vượt ngưỡng. Hệ thống ngoài đọc theo chuẩn NGSI-LD (kiểu `Device`, `Property`, `GeoProperty`, `observedAt`):
+
+```bash
+curl "$API/ngsi-ld/v1/entities?type=Device" -H "authorization: Bearer $TOKEN" -H "x-hasura-role: manager"
+```
+
+Giới hạn (shortcut): NGSI-LD chỉ đọc (không có POST/PATCH thực thể hay đăng ký thuê bao); bản đồ chiếu phẳng, không có nền bản đồ; thêm cột vị trí vào CSDL đang chạy: `docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/07-geo.sql`.
+
+## SQL trên kho lạnh (DuckDB)
+
+DuckDB đọc trực tiếp các tệp JSONL trong S3, không cần nạp lại vào PostgreSQL. Lần đầu dựng một ảnh nhỏ (Python và DuckDB):
+
+```bash
+sh scripts/cold-sql.sh "SELECT org, status, count(*) AS n FROM cold GROUP BY ALL"
+sh scripts/cold-sql.sh "SELECT app_key, avg(date_diff('hour', created_at, finished_at)) AS gio FROM cold GROUP BY ALL"
+```
+
+Bảng ảo `cold` có mọi cột của hồ sơ, thêm `org`, `object_key`, `events`. Tệp hỏng hoặc bị sửa bị bỏ qua và báo ở stderr (kiểm chứng sửa đổi dùng `GET /archive/verify`). Giới hạn (shortcut): tệp JSONL, chưa phải bảng Parquet/Iceberg; chạy bằng quyền vận hành (không theo token người dùng) nên chỉ người vận hành dùng.
+
 ## Giám sát (Prometheus)
 
 ```bash

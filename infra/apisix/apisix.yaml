@@ -81,7 +81,7 @@ routes:
       nodes:
         "workflow-bridge:3000": 1
   - id: data
-    uris: ["/archive", "/archive/*", "/lineage", "/ingest", "/sensors", "/signatures/*", "/pki/*"]
+    uris: ["/archive", "/archive/*", "/lineage", "/ingest", "/sensors", "/signatures/*", "/pki/*", "/ngsi-ld/*"]
     plugins:
       cors:
         allow_origins: "${{APP_ORIGIN}}"

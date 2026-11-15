@@ -34,6 +34,15 @@ describe('COLD: kho dữ liệu lạnh (hồ sơ đã kết thúc xuống kho S3
     await call('director1', '/archive?days=0', { method: 'POST' })
     assert.equal(sql(`select count(*) from cold_item where submission_id = '${s}'`), '1')
   })
+  test('COLD-05 mỗi dòng của tệp JSONL là một JSON hợp lệ, có nhật ký sự kiện đủ (đọc được bằng công cụ SQL như DuckDB)', async () => {
+    const key = sql(`select a.object_key from cold_archive a join cold_item i on i.archive_id = a.id join submission s on s.id = i.submission_id where s.app_key = '${app}' limit 1`)
+    const script = `
+      import { s3fetch } from '/app/s3.js'
+      const text = await (await s3fetch('/dxlab-cold/${key}')).text()
+      console.log(JSON.stringify(text.trim().split(String.fromCharCode(10)).map((l) => { const r = JSON.parse(l); return [r.id, r.events.length] })))`
+    const rows = JSON.parse(run('docker', ['compose', 'exec', '-T', 'workflow-bridge', 'node', '--input-type=module', '-e', script]).trim())
+    assert.ok(rows.length >= 1 && rows.some(([, n]) => n >= 2), 'hồ sơ có từ hai sự kiện trở lên mà dòng vẫn là một JSON')
+  })
   test('COLD-02 kiểm chứng sổ cái: chuỗi băm liền mạch và mọi tệp còn nguyên', async () => {
     const v = await (await call('director1', '/archive/verify')).json()
     assert.equal(v.ok, true, JSON.stringify(v.problems))

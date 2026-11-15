@@ -24,6 +24,7 @@ import { handleCold, archiveAll } from './cold.js'
 import { handleIngest } from './ingest.js'
 import { handleSensors } from './sensors.js'
 import { handlePki, signEvent } from './pki.js'
+import { handleNgsi } from './ngsi.js'
 import { handleSearch, syncIndex } from './search.js'
 import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
@@ -177,6 +178,7 @@ createServer(async (req, res) => {
   if (req.url.startsWith('/events')) return handleEvents(req, res)
   if (req.url.startsWith('/archive') || req.url.startsWith('/lineage')) return handleCold(req, res)
   if (req.url.startsWith('/ingest')) return handleIngest(req, res)
+  if (req.url.startsWith('/ngsi-ld/')) return handleNgsi(req, res)
   if (req.url.startsWith('/signatures') || req.url.startsWith('/pki')) return handlePki(req, res)
   if (req.url.startsWith('/sensors') || req.url.startsWith('/telemetry')) return handleSensors(req, res)
   if (req.url.startsWith('/files')) return handleFiles(req, res)

@@ -91,7 +91,9 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | COLD-01 | Hồ sơ đã kết thúc được xuất ra tệp JSONL (kèm nhật ký) trong bucket `dxlab-cold`, ghi vào sổ cái; chạy lại không xuất trùng | Chạy hồ sơ tới `approved`, giám đốc gọi `POST /archive?days=0` |
 | COLD-02 | Sổ cái nối chuỗi mã băm liền mạch và mọi tệp khớp mã băm | `GET /archive/verify` |
 | COLD-03 | Sổ cái không sửa/xóa được kể cả bằng SQL của chủ sở hữu; sửa một tệp thì kiểm chứng báo lỗi, trả lại thì hết lỗi | Trigger `forbid_change`; ghi đè tệp thật trong S3 rồi kiểm |
+| COLD-05 | Mỗi dòng tệp JSONL là một JSON hợp lệ có đủ sự kiện (từng bị lỗi xuống dòng trong `json_agg`, đã sửa) | đọc tệp trong S3 |
 | COLD-04 | Chỉ giám đốc vận hành kho lạnh | Nhân viên, trưởng phòng bị 403; không token bị 401 |
+| LAKE-01 | SQL trên kho lạnh bằng DuckDB (`scripts/cold-sql.sh`): hồ sơ đã xuất hiện trong bảng ảo `cold` theo đúng tổ chức, đọc được dữ liệu và nhật ký sự kiện | DuckDB đọc S3 bằng SigV4 |
 | LIN-01 | Phả hệ lấy tự động từ danh mục PostgreSQL: view báo cáo của ứng dụng vừa xuất bản truy ngược về bảng nguồn | `GET /lineage` |
 | ING-01 | Nạp CSV nhiều dòng: dòng đúng được nhận, dòng sai bị từ chối kèm số dòng, rào chắn của CSDL vẫn nguyên | `POST /ingest?app=<mã>` bằng token nhân viên |
 | ING-02 | Nạp JSON; ứng dụng lạ 404; quá 500 dòng 413; không token 401 | như trên |
@@ -107,6 +109,7 @@ Giới hạn nói thẳng: kho lạnh là tệp JSONL, chưa phải bảng Parqu
 | IOT-03 | Vượt ngưỡng liên tục không ngập hồ sơ: còn hồ sơ đang chạy thì dùng lại | nhiều số đo trong một lần gửi |
 | IOT-04 | Không token, sai token và cảm biến không tồn tại cùng bị 401; số đo sai, quá cũ, ở tương lai, quá 100 bị 400 | như trên |
 | IOT-05 | Số đo bất biến ở tầng CSDL; "bản sao số" `GET /sensors` phản ánh trạng thái hiện tại; nhân viên bị 403 | trigger `forbid_change` |
+| IOT-08 | Vị trí lat/lon hợp lệ; thực thể NGSI-LD `Device` có `GeoProperty`, `observedAt`; chỉ trưởng phòng/giám đốc cùng tổ chức đọc được | `GET /ngsi-ld/v1/entities` |
 | IOT-06 | Hồ sơ sửa chữa đi hết quy trình (trưởng phòng duyệt, kỹ thuật viên xác nhận); vượt ngưỡng lại thì mở hồ sơ mới | luồng thật qua Flowable |
 | IOT-07 | Nhiều số đo vượt ngưỡng đến cùng lúc chỉ mở một hồ sơ (khóa theo cảm biến) | 8 yêu cầu song song |
 
@@ -165,6 +168,7 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | 3 | Tệp mã độc (EICAR) được nhận và lưu | Trạm kiểm dịch ClamAV; lỗi trạm thì từ chối (T1-OBJ-08) |
 | 4 | Keycloak không chống dò mật khẩu | Bật brute-force detection trong realm (T1-SSO-07) |
 | 5 | Ứng dụng web thiếu tiêu đề bảo mật (CSP, chống nhúng khung, nosniff) | Thêm vào nginx (T1-WEB-02) |
+| 7 | Tệp kho lạnh JSONL có dòng bị ngắt giữa chừng khi hồ sơ có từ hai sự kiện (`json_agg` chèn xuống dòng); lộ ra khi đọc bằng DuckDB | Dùng `jsonb_agg` (COLD-05); tệp cũ vẫn kiểm chứng băm được, công cụ SQL bỏ qua tệp hỏng và báo |
 | 6 | Kho thiếu mẫu PR, quy tắc ứng xử; THIRD_PARTY thiếu thành phần copyleft sẽ thêm | Bổ sung (PoF-6.5, PoF-2.6) |
 
 ## Điểm chưa làm (khai báo `todo`, nói thẳng)
@@ -173,7 +177,7 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 
 | Mã | Thiếu | Ghi chú |
 |---|---|---|
-| D-06 | Lakehouse định dạng Parquet/Iceberg, NGSI-LD, WebGIS [D] | Ngoài phạm vi hiện tại; kho lạnh JSONL, phả hệ và nạp hàng loạt đã có (COLD, LIN, ING) |
+| D-06 | Bảng lakehouse Parquet/Iceberg có lược đồ phiên bản; NGSI-LD ghi và thuê bao; bản đồ có nền (tile) [D] | Đã có: SQL DuckDB trên tệp JSONL (LAKE-01), NGSI-LD chỉ đọc và bản đồ SVG tối giản (IOT-08), phả hệ, nạp hàng loạt (LIN, ING) |
 | I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
 | Z-07 | HSM giữ khóa, thu hồi chứng thư (CRL/OCSP), ký ở trình duyệt | Chữ ký số PKI phần mềm đã có (PKI-01 đến PKI-07); khóa nằm trong CSDL (mã hóa), ký phía máy chủ |
 | Z-09 | WebSocket cho thời gian thực, MQTT/OPC UA cho thiết bị | Hiện là SSE (Z-03) và HTTP (IOT) |

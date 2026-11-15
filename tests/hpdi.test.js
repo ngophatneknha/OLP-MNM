@@ -179,7 +179,7 @@ describe('D: Không gian Dữ liệu số — số liệu thực chứng', () =>
     assert.equal(sql("select count(*) from submission_event where created_at > now() + interval '1 minute'"), '0')
     assert.equal(sql('select count(*) from (select created_at, lag(created_at) over (partition by submission_id order by id) p from submission_event) t where created_at < p'), '0')
   })
-  test('D-06 [todo] lakehouse bảng Iceberg/Parquet, NGSI-LD, WebGIS (kho lạnh JSONL, phả hệ, nạp hàng loạt đã có: tests/cold.test.js)', { todo: 'chưa làm: ngoài phạm vi sản phẩm hiện tại' }, () => assert.fail('chưa có'))
+  test('D-06 [todo] bảng lakehouse Parquet/Iceberg có lược đồ phiên bản; NGSI-LD ghi/đăng ký thuê bao; bản đồ có nền (đã có: SQL DuckDB trên JSONL, NGSI-LD đọc, bản đồ SVG: LAKE-01, IOT-08)', { todo: 'chưa làm: Parquet/Iceberg, NGSI-LD ghi, nền bản đồ' }, () => assert.fail('chưa có'))
 })
 
 describe('H: Không gian Con người số — tài liệu và hộp việc', () => {
