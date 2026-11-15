@@ -9,7 +9,7 @@ import { applies } from './flow.js'
 import { stepWaits } from './metrics.js'
 
 export const MIN_SUBMISSIONS = 5 // dưới ngưỡng này thì chưa đủ dữ liệu để chấm
-const WAIT_LIMIT_HOURS = 48
+export const WAIT_LIMIT_HOURS = 48
 const MIN_SAMPLE_PER_PROCESS = 5
 
 const ratio = (n, d) => (d ? n / d : null)

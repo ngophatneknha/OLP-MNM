@@ -9,6 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.5] - 2026-11-15
+
+### Added
+- Mục "Gợi ý cải tiến quy trình" trên trang Số liệu: bước chờ trung bình quá 48 giờ hoặc bị từ chối từ 40% (ít nhất 3 hồ sơ) được nêu cùng con số căn cứ, kèm cảnh báo vai trò chưa từng ký hồ sơ nào. Tính từ dữ liệu thật, không dùng AI (`web/src/hints.js`, có kiểm thử).
+- Bàn làm việc đánh nhãn "Quá N giờ" cho hồ sơ chờ người xem quá 48 giờ.
+
 ## [1.7.4] - 2026-11-15
 
 ### Added
