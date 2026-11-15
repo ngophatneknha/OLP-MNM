@@ -49,4 +49,4 @@ jobs:
       - name: Sao lưu và khôi phục thảm họa
         run: RESTORE_TEST=1 node --test --test-reporter=spec tests/restore.test.js
       - if: failure()
-        run: docker compose ps -a && docker compose logs --tail=80
+        run: docker compose -f docker-compose.yml -f docker-compose.optional.yml ps -a && docker compose -f docker-compose.yml -f docker-compose.optional.yml logs --tail=80 workflow-bridge meilisearch

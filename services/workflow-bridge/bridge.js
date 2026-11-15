@@ -145,7 +145,11 @@ setInterval(async () => { if (!autonomyReady) autonomyReady = await ensureAllAut
 const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission, app_change_check: checkChange }
 
 // Chỉ mục tìm kiếm tự đuổi kịp dữ liệu; chưa bật Meilisearch thì bỏ qua lặng lẽ.
-setInterval(() => syncIndex().catch(() => {}), 10000)
+let lastSyncError = ''
+setInterval(() => syncIndex().then(() => { lastSyncError = '' }, (err) => {
+  if (err.message !== lastSyncError) console.error('Nạp chỉ mục tìm kiếm thất bại:', err.message) // chỉ ghi khi lỗi đổi, khỏi ngập nhật ký
+  lastSyncError = err.message
+}), 10000)
 
 createServer(async (req, res) => {
   if (req.url.startsWith('/files')) return handleFiles(req, res)
