@@ -349,4 +349,6 @@ describe('Z: Nguyên lý Zero-Trust và vận hành (đề thi mục 4, nguyên 
   test('Z-07 [todo] chữ ký số PKI có chứng thư cho phê duyệt (hiện là xác nhận trong nhật ký bất biến, chưa phải chữ ký số)', { todo: 'chưa làm: PKI, HSM' }, () => assert.fail('chưa có'))
   test('Z-08 [todo] sao lưu tự động theo lịch (script thủ công và khôi phục đã có: Z-05)', { todo: 'chưa làm: lịch sao lưu' }, () => assert.fail('chưa có'))
   test('Z-09 [todo] truyền thông thời gian thực bằng WebSocket và thiết bị bằng MQTT/OPC UA (hiện là SSE và HTTP: Z-03, IOT)', { todo: 'chưa làm: WebSocket, MQTT' }, () => assert.fail('chưa có'))
+  test('Z-10 [todo] GitOps thật (bộ điều khiển như ArgoCD tự đồng bộ hạ tầng từ kho); hiện cấu hình hạ tầng là mã trong kho và CI kiểm, nhưng việc áp dụng là thủ công', { todo: 'chưa làm: ArgoCD/Flux' }, () => assert.fail('chưa có'))
+  test('Z-11 [todo] nhật ký truy vết phân tán (như Vector/Parseable) và trục sự kiện streaming (như Redpanda); hiện có nhật ký kiểm toán bất biến trong CSDL, SSE và số đo Prometheus', { todo: 'chưa làm: gom nhật ký tập trung, Kafka/Redpanda' }, () => assert.fail('chưa có'))
 })

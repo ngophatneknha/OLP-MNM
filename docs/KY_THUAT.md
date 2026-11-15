@@ -86,7 +86,7 @@ Ca chạy thật cho thành phần tùy chọn: `OPS_OPTIONAL=1`, `SEARCH_OPTION
 
 ## Phát hành
 
-Mỗi lần đẩy lên `main` là một phiên bản SemVer mới: cập nhật `CHANGELOG.md`, `web/package.json`, gắn thẻ `vX.Y.Z`, tạo bản phát hành kèm `.tar.gz`. Quy trình chi tiết: [CONTRIBUTING.md](../CONTRIBUTING.md). Image container được GitHub Actions đưa lên GitHub Packages khi có thẻ phiên bản.
+Mỗi lần đẩy lên `main` là một phiên bản SemVer mới: cập nhật `CHANGELOG.md`, `web/package.json`, gắn thẻ `vX.Y.Z`. Khi thẻ được đẩy lên, workflow `packages.yml` tự tạo bản phát hành trên GitHub kèm `.tar.gz` (ghi chú lấy từ mục tương ứng trong `CHANGELOG.md`) và đưa image lên GitHub Packages; có thể chạy lại bằng `workflow_dispatch` với thẻ cần phát hành. Quy trình chi tiết: [CONTRIBUTING.md](https://github.com/ngophatneknha/OLP-MNM/blob/main/CONTRIBUTING.md). Image container được GitHub Actions đưa lên GitHub Packages khi có thẻ phiên bản.
 
 ## Các điểm vào của cổng API
 

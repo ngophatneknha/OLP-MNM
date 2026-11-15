@@ -9,6 +9,19 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-11-16
+
+### Added
+- Workflow `packages.yml` tự tạo bản phát hành GitHub kèm `.tar.gz` khi gắn thẻ phiên bản (trước đây tạo thủ công); chạy lại được bằng `workflow_dispatch`.
+- Hai ca `todo` trung thực: Z-10 (GitOps thật), Z-11 (gom nhật ký truy vết phân tán, trục sự kiện streaming).
+
+### Fixed
+- Hai liên kết trong tài liệu trỏ ra ngoài thư mục `docs/` bị 404 trên trang web (nay trỏ tới GitHub).
+
+### Verified
+- Slide trên trang GitHub Pages vừa khít màn hình 1280x720 (15 slide), mọi trang tài liệu trên Pages mở được.
+- Áp `05-org.sql` lên CSDL có dữ liệu cũ: dòng cũ thành tổ chức mặc định, chạy lại không lỗi.
+
 ## [1.9.0] - 2026-11-15
 
 ### Added
