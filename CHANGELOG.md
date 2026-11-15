@@ -9,6 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.8.3] - 2026-11-15
+
+### Changed
+- README viết lại: chạy thử đặt lên đầu, thêm tóm tắt tiếng Anh, gom phần tính năng, bỏ các bảng trùng với tài liệu (bảng điểm vào của cổng API chuyển sang `docs/KY_THUAT.md`), nói thẳng các điểm chưa làm.
+
+### Fixed
+- `tests/cold.test.js` COLD-01: không còn giả định không có hồ sơ khác kết thúc cùng lúc (các tệp kiểm thử chạy song song).
+
 ## [1.8.2] - 2026-11-15
 
 ### Added
