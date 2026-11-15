@@ -92,4 +92,17 @@ describe('LUAT: Thể lệ và Đề thi — điều khoản ngoài bảng đi�
     const d = read('docs/NOP_BAI.md')
     for (const kw of ['BÀI THI PMNM 2026', 'olpvietnam@vaip.vn', 'thuky@vfossa.vn', 'Người hướng dẫn', 'Kho mã nguồn dự thi', '17:00', '06/12', 'github.com/ngophatneknha/OLP-MNM']) assert.ok(d.includes(kw), kw)
   })
+  test('LUAT-12 tài liệu cho người dùng, kỹ thuật, trình diễn và slide đều có và được README dẫn tới; liên kết trong docs không gãy', () => {
+    const docs = ['docs/HUONG_DAN.md', 'docs/KY_THUAT.md', 'docs/KICH_BAN_DEMO.md', 'docs/VAN_HANH.md', 'docs/TRI_TUE.md', 'docs/architecture.md', 'docs/slides/index.html']
+    const readme = read('README.md')
+    for (const d of docs) {
+      assert.ok(existsSync(join(ROOT, d)), `thiếu ${d}`)
+      if (d !== 'docs/VAN_HANH.md' && d !== 'docs/TRI_TUE.md') assert.ok(readme.includes(d), `README chưa dẫn tới ${d}`)
+    }
+    for (const d of docs.filter((x) => x.endsWith('.md'))) {
+      for (const m of read(d).matchAll(/\]\((?!https?:|#|mailto:)([^)#\s]+)/g)) {
+        assert.ok(existsSync(join(ROOT, 'docs', '..', d, '..', decodeURI(m[1]))), `${d}: liên kết gãy ${m[1]}`)
+      }
+    }
+  })
 })

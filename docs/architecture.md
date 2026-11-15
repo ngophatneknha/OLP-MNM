@@ -15,6 +15,9 @@ flowchart TB
   BR --> FL["Flowable BPMN"]
   BR -- "ghi bước đang chờ" --> HS
   BR -- "tệp đính kèm" --> S3[("SeaweedFS S3<br/>không mở ra ngoài")]
+  BR -- "quét mã độc" --> AV["ClamAV"]
+  GW -- "/search, /ask" --> BR
+  BR -. "tùy chọn" .-> MS["Meilisearch"]
 ```
 
 Nguyên tắc: tầng lõi **headless** – chỉ cung cấp dịch vụ qua API; mọi giao diện nằm ở tầng ứng dụng.
@@ -23,10 +26,12 @@ Nguyên tắc: tầng lõi **headless** – chỉ cung cấp dịch vụ qua API
 
 | Không gian | Màn hình | Dữ liệu |
 |---|---|---|
-| [H] Con người | Bàn làm việc, Tài liệu (mọi tệp tôi được xem) | `submission`, `attachment` |
+| [H] Con người | Bàn làm việc, Bảng công việc (Kanban), Lịch, Tài liệu, Cá nhân và thông báo | `submission`, `attachment`, `submission_event` |
 | [P] Quy trình | Gửi hồ sơ, trang hồ sơ (ô ký, nhật ký), Quy trình (phiên bản, đề xuất, góp ý), Soạn quy trình | `app`, `app_version`, `app_change`, `app_issue`, `submission_event` |
 | [D] Dữ liệu | Số liệu: thời gian xử lý, điểm nghẽn, trạng thái, theo loại hồ sơ | tính từ `submission` và `submission_event` (`web/src/metrics.js`, có kiểm thử) |
-| [I] Trí tuệ | Trợ lý phác thảo quy trình trong Soạn quy trình | Hasura action `generateApp` |
+| [I] Trí tuệ | Hỏi đáp tài liệu có dẫn nguồn, Trợ lý AI thử việc, trợ lý phác thảo trong Soạn quy trình | `/ask`, `/search`, `step_autonomy`, `ai_opinion`, Hasura action `generateApp` |
+
+Ứng dụng web có nhãn H/P/D/I cạnh từng mục điều hướng và hai ngôn ngữ vi/en (`web/src/i18n.js`).
 
 ## Tệp đính kèm
 
@@ -37,7 +42,7 @@ Nội dung tệp nằm trong kho S3 (SeaweedFS); bảng `attachment` giữ tên,
 3. Dòng dữ liệu được ghi trước, rồi mới ghi tệp vào S3; nếu ghi S3 lỗi thì dòng bị xóa để không có bản ghi trỏ vào tệp không tồn tại.
 4. Tải về luôn là `attachment` kèm `nosniff`: tệp do người dùng gửi không bao giờ được trình duyệt mở như trang web.
 
-Giới hạn hiện tại: mỗi tệp tối đa 10 MB, chưa quét mã độc (backlog ID-09).
+Mọi tệp được quét bằng ClamAV (chạy container riêng) **trước khi** ghi vào cơ sở dữ liệu hay kho S3; tệp nhiễm bị từ chối (422), trạm quét lỗi thì từ chối luôn (503) thay vì cho qua. Mỗi tệp tối đa 10 MB.
 
 ## Trợ lý AI thử việc
 
@@ -50,12 +55,18 @@ Bảng `step_autonomy` giữ nấc tự chủ (1 đến 4) của từng bước 
 
 AI lỗi hoặc chưa cấu hình thì mọi thứ chạy như nấc 1.
 
+## Tìm kiếm và hỏi đáp có kiểm quyền
+
+Thành phần tùy chọn (profile `search`). `workflow-bridge` nạp nội dung hồ sơ và tệp văn bản vào Meilisearch. Khi người dùng hỏi (`POST /ask`) hoặc tìm (`POST /search`): chỉ mục trả các đoạn khớp, rồi **Hasura kiểm lại từng kết quả bằng chính token của người hỏi**, nên quyền xem chỉ có một nơi định nghĩa. AI chỉ nhận các đoạn đã qua kiểm quyền và chỉ được trả lời từ đó, ghi số nguồn. Chi tiết và giới hạn: [TRI_TUE.md](TRI_TUE.md).
+
 ## Bảo mật khi triển khai
 
-- Chỉ ba cổng mở ra máy chủ: ứng dụng web, cổng API, trang đăng nhập Keycloak. Cơ sở dữ liệu, Hasura, Flowable, kho S3 chỉ nằm trong mạng nội bộ.
-- Console Hasura tắt; Keycloak chạy chế độ production (`start`).
-- Ứng dụng web chỉ đăng nhập bằng luồng chuyển hướng có PKCE. Đăng nhập bằng mật khẩu trực tiếp chỉ bật cho client `dxlab-cli` (kiểm thử và nạp dữ liệu mẫu); smoke test kiểm tra điều này.
-- Chưa có: TLS (đặt reverse proxy phía trước), xác thực hai yếu tố, quét mã độc, đổi mật khẩu tài khoản mẫu. Đây là việc phải làm trước khi đưa lên Internet.
+- Chỉ ba cổng mở ra máy chủ: ứng dụng web, cổng API, trang đăng nhập Keycloak. Cơ sở dữ liệu, Hasura, Flowable, kho S3, ClamAV, Meilisearch chỉ nằm trong mạng nội bộ.
+- Console Hasura tắt; Keycloak chạy chế độ production (`start`), chống dò mật khẩu, **MFA (OTP) bắt buộc cho trưởng phòng và giám đốc**.
+- Ứng dụng web chỉ đăng nhập bằng luồng chuyển hướng có PKCE. Đăng nhập bằng mật khẩu trực tiếp chỉ bật cho client `dxlab-cli` (kiểm thử và nạp dữ liệu mẫu).
+- Tiêu đề bảo mật cho web (CSP, chống nhúng khung, nosniff); nhật ký ký duyệt bất biến ở tầng cơ sở dữ liệu; mọi tệp được quét mã độc.
+- TLS tại biên bằng Caddy (profile `tls`), giám sát bằng Prometheus (profile `monitoring`), sao lưu và khôi phục bằng `scripts/backup.sh`, `scripts/restore.sh`: xem [VAN_HANH.md](VAN_HANH.md).
+- Chưa có: két bí mật (bí mật hiện nằm trong `.env`), WAF, ẩn thông tin định danh (PII), sao lưu tự động theo lịch. Trước khi đưa lên Internet phải đổi mọi mật khẩu mẫu và bật TLS.
 
 ## Bộ sinh ứng dụng
 

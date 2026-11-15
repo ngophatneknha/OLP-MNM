@@ -9,6 +9,20 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-15
+
+Tài liệu và trình diễn.
+
+### Added
+- `docs/HUONG_DAN.md`: hướng dẫn người dùng theo bốn không gian H/P/D/I.
+- `docs/KY_THUAT.md`: sổ tay kỹ thuật và vận hành (dịch vụ, khởi động, cấu hình, dữ liệu nằm đâu, bảng sự cố thường gặp).
+- `docs/KICH_BAN_DEMO.md`: kịch bản trình diễn 15 phút theo từng cảnh, danh sách chuẩn bị, câu hỏi thường gặp của ban giám khảo, xử lý sự cố trên sân khấu.
+- `docs/slides/index.html`: slide 12 trang, một tệp HTML không thư viện ngoài.
+- Ca kiểm thử LUAT-12: tài liệu có đủ, README dẫn tới, liên kết không gãy.
+
+### Changed
+- `docs/architecture.md` và README cập nhật theo hiện trạng (quét mã độc, MFA, TLS, giám sát, hỏi đáp có kiểm quyền, Kanban, lịch, vi/en); phần "Thử trong 3 phút" dùng đúng tên màn hình hiện tại; mục Định hướng phát triển và các việc gắn nhãn `good first issue`.
+
 ## [1.5.0] - 2026-11-15
 
 Không gian [I]: hỏi đáp tài liệu có dẫn nguồn và kiểm quyền.
