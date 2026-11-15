@@ -9,7 +9,7 @@ Mọi con số tính từ hồ sơ và nhật ký bằng mã (metrics.js), mỗi
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { auth, gql, ROLE_LABEL } from '../lib.js'
 import { computeMetrics, formatHours } from '../metrics.js'
-import { computeMaturity, incompleteLogs, maturityLevel } from '../maturity.js'
+import { computeMaturity, incompleteLogs, maturityLevel, nextStep, weeklyTrend } from '../maturity.js'
 import { download, toCsv, toJson } from '../exporter.js'
 import { agreement } from '../autonomy.js'
 import { improvementHints, missingRoles } from '../hints.js'
@@ -46,6 +46,7 @@ const hints = computed(() => (submissions.value ? improvementHints(submissions.v
 const roleGaps = computed(() => (submissions.value && extra.value ? missingRoles(submissions.value, extra.value.apps) : []))
 const missingLogs = computed(() => (submissions.value ? incompleteLogs(submissions.value) : []))
 const stamp = () => new Date().toISOString().slice(0, 10)
+const trend = computed(() => (submissions.value && extra.value ? weeklyTrend({ submissions: submissions.value, apps: extra.value.apps }) : []))
 const SPACES = ['H', 'P', 'D', 'I']
 const maxHours = computed(() => Math.max(...(m.value?.steps.map((s) => s.avgHours) ?? [0]), 0.0001))
 const STATUS = [
@@ -100,6 +101,7 @@ const percent = (n) => (m.value.total ? Math.round((n / m.value.total) * 100) : 
               <div class="h-full rounded-full bg-pen" :style="{ width: `${maturity.spaces[space].score ?? 0}%` }" />
             </div>
             <p class="mt-1 text-xs text-pencil">{{ t('mat.level.' + maturityLevel(maturity.spaces[space].score)) }}</p>
+            <p v-if="nextStep(maturity.spaces[space])" class="mt-3 border-t border-line pt-2 text-xs"><strong>{{ t('mat.next') }}:</strong> {{ t('mat.next.' + space + '.' + nextStep(maturity.spaces[space]).key) }}</p>
             <ul class="mt-3 space-y-1 text-xs text-pencil">
               <li v-for="part in maturity.spaces[space].parts" :key="part.key" class="flex justify-between gap-2">
                 <span>{{ t('mat.' + space + '.' + part.key) }} <span class="num">({{ part.weight }}%)</span></span>
@@ -108,6 +110,18 @@ const percent = (n) => (m.value.total ? Math.round((n / m.value.total) * 100) : 
             </ul>
           </li>
         </ul>
+        <h3 class="mt-5 text-sm font-semibold">{{ t('mat.trend') }}</h3>
+        <div class="panel mt-2 overflow-x-auto">
+          <table class="num w-full text-left text-sm">
+            <thead class="text-pencil"><tr><th class="px-4 py-2 font-medium">{{ t('mat.week') }}</th><th class="px-4 py-2 text-right font-medium">H</th><th class="px-4 py-2 text-right font-medium">D</th></tr></thead>
+            <tbody>
+              <tr v-for="(w, i) in trend" :key="w.at" class="border-t border-line">
+                <th scope="row" class="px-4 py-2 font-medium">{{ i === trend.length - 1 ? t('mat.now') : t('mat.ago', { n: trend.length - 1 - i }) }}</th>
+                <td class="px-4 py-2 text-right">{{ w.H ?? '–' }}</td><td class="px-4 py-2 text-right">{{ w.D ?? '–' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </template>
     </section>
 
