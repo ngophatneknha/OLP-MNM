@@ -92,6 +92,7 @@ describe('I-SEARCH: tìm kiếm và hỏi đáp có kiểm quyền', { skip }, (
   })
 
   test('I-SEARCH-06 đọc PDF có lớp chữ, ảnh (OCR) và PDF quét (OCR): nội dung tìm được, vẫn kiểm quyền', async () => {
+    // Ảnh/PDF quét tìm theo tiền tố cố định (OCR có thể đọc sai vài ký tự của phần ngẫu nhiên), gắn với hồ sơ của ca này.
     // Chỉ dùng chữ cái, đủ dài và không dễ đọc nhầm: OCR hay tách chữ lẫn số (0/O, 1/I).
     const letters = () => uid().replace(/[0-9a-f]/g, (c) => 'GHJKMNPQRSTUVWXY'['0123456789abcdef'.indexOf(c)])
     const word = `HOPDONG${letters()}`
@@ -105,8 +106,8 @@ describe('I-SEARCH: tìm kiếm và hỏi đáp có kiểm quyền', { skip }, (
     assert.equal((await upload('staff1', id, 'ban-quet.pdf', scannedPdf(rasterise(textPdf(scanPdfWord), 'pgm')), 'application/pdf')).status, 200)
     const find = (q) => until(async () => { const { hits } = await (await call('staff1', '/search', { q })).json(); return hits.length ? hits : null }, `tìm thấy ${q}`, 180_000)
     assert.ok((await find(word)).some((h) => h.name === 'hop-dong.pdf'), 'PDF có lớp chữ')
-    assert.ok((await find(scanWord)).some((h) => h.name === 'anh-chup.png'), 'ảnh qua OCR')
-    assert.ok((await find(scanPdfWord)).some((h) => h.name === 'ban-quet.pdf'), 'PDF quét qua OCR')
+    assert.ok((await find('QUETANH')).some((h) => h.submission_id === id && h.name === 'anh-chup.png'), 'ảnh qua OCR')
+    assert.ok((await find('BANQUET')).some((h) => h.submission_id === id && h.name === 'ban-quet.pdf'), 'PDF quét qua OCR')
     assert.deepEqual((await (await call('staff2', '/search', { q: word })).json()).hits, [], 'người khác không thấy')
   })
 })
