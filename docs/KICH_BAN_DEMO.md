@@ -91,9 +91,9 @@ Nếu được hỏi về tự phục hồi: `docker compose kill hasura` rồi 
 | Dữ liệu có bị gửi ra ngoài không? | Chỉ khi cấu hình dịch vụ AI ngoài, và thông tin cá nhân (email, số điện thoại, CCCD, số thẻ) đã bị thay bằng nhãn; có thể chạy mô hình tại chỗ bằng Ollama |
 | Giấy phép? | Apache-2.0; SPDX trong từng tệp, kiểm bằng REUSE trong CI; không thành phần AGPL; thành phần bên thứ ba là container riêng, không sửa |
 | Kiểm thử thế nào? | `node --test tests/*.test.js`: kiểm đối chiếu đề thi và thể lệ trên hệ thống thật, xem `docs/KIEM_THU.md` |
-| Điều gì chưa làm? | Nói thẳng: chữ ký số PKI có chứng thư, lakehouse Parquet/Iceberg, NGSI-LD và WebGIS, tìm kiếm véc-tơ, OCR/PDF, WebSocket, MQTT; nằm trong báo cáo kiểm thử dưới dạng `todo` hoặc mục giới hạn |
+| Điều gì chưa làm? | Nói thẳng: HSM và thu hồi chứng thư (PKI mới ở mức phần mềm), lakehouse Parquet/Iceberg, NGSI-LD và WebGIS, tìm kiếm véc-tơ, OCR/PDF, WebSocket, MQTT; nằm trong báo cáo kiểm thử dưới dạng `todo` hoặc mục giới hạn |
 | Đa tổ chức làm thế nào? | `org_id` trong token Keycloak, Hasura thêm điều kiện tổ chức vào mọi quyền, trigger gắn tổ chức cho hồ sơ; kho lạnh và cảm biến theo tổ chức; có 11 ca kiểm thử |
-| Chữ ký phê duyệt có giá trị pháp lý không? | Chưa: là xác nhận trong nhật ký bất biến, chưa phải chữ ký số PKI có chứng thư; đó là việc tiếp theo |
+| Chữ ký phê duyệt có giá trị pháp lý không? | Chưa theo luật: mỗi duyệt được ký bằng chứng thư X.509 do CA của tổ chức cấp (PKI phần mềm, kiểm chứng được trên trang hồ sơ), nhưng chưa có HSM, CRL/OCSP và chưa dùng CA được cấp phép |
 | Cài đặt có khó không? | Ba lệnh: sao chép `.env`, `docker compose up -d --build`, nạp dữ liệu mẫu |
 | Triển khai thật? | Bật TLS qua Caddy, đổi mật khẩu mẫu, két bí mật OpenBao, sao lưu theo `docs/VAN_HANH.md` |
 

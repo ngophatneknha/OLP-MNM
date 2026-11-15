@@ -135,3 +135,7 @@ Phân quyền chỉ đặt ở một nơi (Hasura); Flowable là nguồn sự th
 ## Xác thực
 
 Keycloak cấp JWT; APISIX kiểm tra chữ ký tại biên (JWKS), Hasura kiểm tra lại và lấy role từ `realm_access.roles`, mã người dùng từ `sub`.
+
+## Chữ ký số
+
+Sau khi `actOnSubmission` hoàn tất tác vụ, bridge ký sự kiện duyệt (`signEvent`): nội dung chuẩn hóa (JSON, thứ tự khóa cố định) gồm mã băm SHA-256 của dữ liệu hồ sơ được ký bằng khóa của người duyệt; chứng thư người ký do CA của tổ chức cấp. Chữ ký ghi vào `event_signature` (chỉ thêm, có trigger chặn sửa/xóa); Hasura chỉ mở quyền đọc theo đúng quyền xem sự kiện, còn `pki_key` (khóa riêng mã hóa) chỉ bridge đọc. Kiểm chứng ở `GET /signatures/verify` đối chiếu với CA của tổ chức và thời điểm ký.

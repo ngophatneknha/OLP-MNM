@@ -157,7 +157,7 @@ node --test --test-reporter=spec tests/*.test.js           # đối chiếu đ�
 (cd web && npm ci) && node --test services/workflow-bridge/*.test.js web/src/*.test.js   # đơn vị, không cần hệ thống chạy
 ```
 
-Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kho lạnh (`cold`), cảm biến (`iot`), đa tổ chức (`tenant`), vận hành và khôi phục (`ops`, `recovery`, `restore`), tìm kiếm (`search`), tiêu chí PoF và điều khoản ngoài bảng điểm (`pof`, `luat`). Bảng đối chiếu từng ca và kết quả: [docs/KIEM_THU.md](docs/KIEM_THU.md).
+Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kho lạnh (`cold`), cảm biến (`iot`), đa tổ chức (`tenant`), chữ ký số (`pki`), vận hành và khôi phục (`ops`, `recovery`, `restore`), tìm kiếm (`search`), tiêu chí PoF và điều khoản ngoài bảng điểm (`pof`, `luat`). Bảng đối chiếu từng ca và kết quả: [docs/KIEM_THU.md](docs/KIEM_THU.md).
 
 ## Còn thiếu gì (nói thẳng)
 
@@ -165,7 +165,7 @@ Các mục dưới đây khai báo là `todo` trong báo cáo kiểm thử, khô
 
 - Kho lạnh là tệp JSONL, chưa phải bảng lakehouse Parquet/Iceberg; chưa có NGSI-LD, WebGIS.
 - Chưa có tìm kiếm véc-tơ ngữ nghĩa, đọc PDF, OCR.
-- Chữ ký phê duyệt là xác nhận trong nhật ký bất biến, **chưa phải chữ ký số PKI có chứng thư**.
+- Chữ ký số là PKI phần mềm (chứng thư X.509 do CA của từng tổ chức cấp, ký phía máy chủ, khóa mã hóa trong CSDL): **chưa có HSM, CRL/OCSP** và chưa phải chữ ký số có giá trị pháp lý theo luật.
 - Thời gian thực dùng SSE (chưa WebSocket); thiết bị gọi HTTP (chưa MQTT/OPC UA).
 - Chưa có sao lưu tự động theo lịch (script có); két bí mật mới có một khóa mở.
 - Đa tổ chức đã cách ly ở CSDL, nhưng mã ứng dụng vẫn duy nhất toàn hệ thống, chưa có màn hình quản trị tổ chức, các view báo cáo `bi.*` chưa tách theo tổ chức.
