@@ -10,8 +10,9 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { s3fetch } from './s3.js'
 import { HttpError } from './files.js'
+import { sql } from './db.js'
 
-const { HASURA_URL, HASURA_ADMIN_SECRET, ARCHIVE_AFTER_DAYS = '90' } = process.env
+const { ARCHIVE_AFTER_DAYS = '90' } = process.env
 const BUCKET = 'dxlab-cold'
 const GENESIS = '0'.repeat(64)
 const BATCH = 2000
@@ -19,25 +20,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const sha = (data) => createHash('sha256').update(data).digest('hex')
 export const entryHash = (prev, objectSha, rows, key) => sha(`${prev}:${objectSha}:${rows}:${key}`)
 
-/** Chạy SQL bằng quyền quản trị; trả về các dòng (bỏ dòng tên cột), giá trị là chuỗi. Chỉ ghép vào đây giá trị đã kiểm tra chặt. */
-async function sql(query) {
-  const res = await fetch(`${HASURA_URL}/v2/query`, {
-    method: 'POST',
-    headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
-    body: JSON.stringify({ type: 'run_sql', args: { source: 'default', sql: query } }),
-  })
-  const json = await res.json()
-  if (!res.ok || json.error) throw new Error(`run_sql: ${JSON.stringify(json)}`)
-  return (json.result ?? []).slice(1)
+/** Nội dung token (chữ ký đã được cổng API xác thực; bridge không mở ra ngoài cổng). Token hỏng thì trả {}. */
+export function claimsOf(req) {
+  try { return JSON.parse(Buffer.from(req.headers.authorization.split('.')[1], 'base64url').toString()) } catch { return {} }
 }
-
-/** Vai trò trong token (chữ ký đã được cổng API xác thực; bridge không mở ra ngoài cổng). */
-export function rolesOf(req) {
-  try {
-    const payload = JSON.parse(Buffer.from(req.headers.authorization.split('.')[1], 'base64url').toString())
-    return payload.realm_access?.roles ?? []
-  } catch { return [] }
-}
+export const rolesOf = (req) => claimsOf(req).realm_access?.roles ?? []
 const requireDirector = (req) => { if (!rolesOf(req).includes('director')) throw new HttpError(403, 'Chỉ giám đốc xem và vận hành kho lạnh') }
 
 let busy = false

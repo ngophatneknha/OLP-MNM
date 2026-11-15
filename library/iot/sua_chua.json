@@ -1,0 +1,18 @@
+{
+  "key": "sua_chua",
+  "name": "Yêu cầu sửa chữa thiết bị",
+  "category": "Vận hành",
+  "description": "Hồ sơ do cảm biến tự mở khi số đo vượt ngưỡng (xem docs/VAN_HANH.md, mục Cảm biến). Trưởng phòng duyệt rồi kỹ thuật viên xác nhận đã sửa.",
+  "spec": {
+    "fields": [
+      { "key": "thiet_bi", "label": "Thiết bị", "type": "text", "required": true },
+      { "key": "cam_bien", "label": "Mã cảm biến", "type": "text", "required": true },
+      { "key": "gia_tri", "label": "Giá trị đo được", "type": "number", "required": true },
+      { "key": "mo_ta", "label": "Mô tả", "type": "longtext", "required": false }
+    ],
+    "steps": [
+      { "key": "truong_phong", "name": "Trưởng phòng duyệt sửa chữa", "role": "manager", "type": "approve" },
+      { "key": "ky_thuat", "name": "Kỹ thuật viên sửa và xác nhận", "role": "staff", "type": "task" }
+    ]
+  }
+}

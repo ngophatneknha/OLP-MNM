@@ -9,6 +9,15 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-11-15
+
+### Added
+- **Hội tụ IT/OT** (nguyên lý (ii) của Đề): `POST /sensors` đăng ký cảm biến (giám đốc), `POST /telemetry/<mã>` nhận số đo bằng token thiết bị, `GET /sensors` là bản sao số. Số đo vượt ngưỡng tự mở hồ sơ sửa chữa đi qua quy trình duyệt của người; không mở trùng khi còn hồ sơ đang chạy. Bảng mới `infra/postgres/init/04-iot.sql`; mẫu `library/iot/sua_chua.json`.
+- Bộ kiểm thử `tests/iot.test.js` (IOT-01..06) và kiểm thử đơn vị `sensors.test.js`.
+
+### Changed
+- `services/workflow-bridge/db.js`: hàm chạy SQL dùng chung (kho lạnh và cảm biến); giá trị NULL trả về `null` thay vì chuỗi "NULL".
+
 ## [1.8.1] - 2026-11-15
 
 ### Added

@@ -81,7 +81,7 @@ routes:
       nodes:
         "workflow-bridge:3000": 1
   - id: data
-    uris: ["/archive", "/archive/*", "/lineage", "/ingest"]
+    uris: ["/archive", "/archive/*", "/lineage", "/ingest", "/sensors"]
     plugins:
       cors:
         allow_origins: "${{APP_ORIGIN}}"
@@ -105,6 +105,20 @@ routes:
         connect: 6
         send: 60
         read: 120
+      nodes:
+        "workflow-bridge:3000": 1
+  # Thiết bị OT không có tài khoản Keycloak: tự xác thực bằng token riêng của từng cảm biến (kiểm ở workflow-bridge), cổng chỉ giới hạn tần suất.
+  - id: telemetry
+    uris: ["/telemetry/*"]
+    plugins:
+      limit-count:
+        count: 600
+        time_window: 60
+        key_type: var
+        key: remote_addr
+        rejected_code: 429
+    upstream:
+      type: roundrobin
       nodes:
         "workflow-bridge:3000": 1
   - id: search

@@ -206,6 +206,7 @@ node --test services/workflow-bridge/*.test.js web/src/metrics.test.js web/src/i
 | `tests/hpdi.test.js` | Đề thi mục 3: ứng dụng H-P-D-I | Bộ sinh quy trình (kể cả tiêm mã), đề xuất thay đổi, số liệu đối chiếu SQL, AI thật, nấc tự chủ |
 | `tests/ops.test.js`, `tests/restore.test.js` | Vận hành | Script sao lưu, TLS, giám sát (cần bật thành phần tùy chọn), vòng sao lưu rồi khôi phục thảm họa (`RESTORE_TEST=1`) |
 | `tests/cold.test.js` | Đề thi mục 4 (i), (iii) | Kho lạnh JSONL bất biến có sổ cái băm nối chuỗi, phả hệ dữ liệu tự động, nạp hàng loạt CSV/JSON |
+| `tests/iot.test.js` | Đề thi mục 4 (ii) | Cảm biến OT gửi số đo bằng token thiết bị, vượt ngưỡng tự mở hồ sơ sửa chữa trong quy trình duyệt |
 | `tests/search.test.js` | Đề thi [I] | Tìm kiếm toàn văn và hỏi đáp có dẫn nguồn, kiểm quyền từng kết quả (cần bật profile `search`) |
 | `tests/pof.test.js` | Thể lệ: 6 tiêu chí PoF | Kho công khai, giấy phép từng tệp, bản phát hành `.tar.gz`, dựng từ bản phát hành, thư viện đính kèm, tài liệu, bug tracker |
 
