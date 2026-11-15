@@ -49,7 +49,7 @@ node --test --test-reporter=spec tests/*.test.js
 | [P] Quy trình số | P-01…08 | Bản mô tả sai không bao giờ được xuất bản; chống tiêm mã SQL/XML/JUEL qua mã và nhãn; thoát ký tự đặc biệt trong BPMN; mọi quy trình mẫu hợp lệ; chỉ trưởng phòng được tạo; phiên bản bất biến; đề xuất thay đổi có mô phỏng, người đề xuất không tự chấp nhận, hồ sơ cũ giữ phiên bản cũ |
 | [D] Dữ liệu số | D-01…05 | View BI khớp dữ liệu gốc bằng SQL độc lập; không lộ qua API; phạm vi nhìn của từng vai trò; dấu thời gian xử lý đúng; chuỗi thời gian đơn điệu |
 | [H] Con người số | H-01…03 | Tệp theo quyền hồ sơ; hộp việc theo vai trò; bản web phát hành có Kanban, lịch, trang cá nhân, nhãn H/P/D/I |
-| [I] Trí tuệ số | I-01…06 | Chỉ trưởng phòng/giám đốc dùng trợ lý soạn; AI thật sinh bản mô tả hợp lệ, đúng vai trò và điều kiện; mô tả tiêm lệnh không lọt vai trò lạ; không giả được danh tính AI; nâng nấc tự chủ cần bằng chứng thật (≥ 10, ≥ 90%, dữ liệu mẫu không tính); AI lỗi không chặn luồng người |
+| [I] Trí tuệ số | I-01…06, I-SEARCH-01…05 | Chỉ trưởng phòng/giám đốc dùng trợ lý soạn; AI thật sinh bản mô tả hợp lệ, đúng vai trò và điều kiện; mô tả tiêm lệnh không lọt vai trò lạ; không giả được danh tính AI; nâng nấc tự chủ cần bằng chứng thật (≥ 10, ≥ 90%, dữ liệu mẫu không tính); AI lỗi không chặn luồng người |
 
 ## Điều khoản của Thể lệ và Đề thi ngoài bảng điểm (LUAT)
 
@@ -76,6 +76,16 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | OPS-03 | HTTPS qua Caddy cho web, API, đăng nhập; có HSTS; qua TLS cổng vẫn trả 401 khi không token |
 | OPS-04 | Prometheus thu được số đo APISIX và thấy yêu cầu thật |
 | OPS-RESTORE | Sao lưu, xóa bảng và thêm hồ sơ mới, khôi phục: hồ sơ trở về đúng lúc sao lưu, tệp đính kèm giống từng byte (chạy bằng `RESTORE_TEST=1`) |
+
+## Tìm kiếm và hỏi đáp (phiên bản 1.5.0)
+
+| Mã ca | Kiểm cái gì |
+|---|---|
+| I-SEARCH-01 | Người gửi tìm thấy nội dung tệp đính kèm của mình, từ khớp được đánh dấu |
+| I-SEARCH-02 | Nhân viên khác tìm cùng từ khóa: không có kết quả, không lộ nội dung (quyền do Hasura quyết định) |
+| I-SEARCH-03 | Hỏi đáp: người không có quyền nhận câu trả lời rỗng; người có quyền nhận đúng nguồn, câu trả lời của AI dẫn số nguồn |
+| I-SEARCH-04 | Không token 401; JSON hỏng, câu hỏi rỗng hoặc quá dài 400 |
+| I-SEARCH-05 | Nội dung có mã HTML trả về như chữ thường |
 
 ## Lỗi bộ kiểm thử tìm ra và đã sửa (phiên bản 1.1.0)
 

@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 -->
 <script setup>
-import { Inbox, FilePlus2, FolderOpen, ChartNoAxesColumn, Bot, Workflow, PencilRuler, LogOut, CircleCheck, CircleAlert, Columns3, CalendarDays, UserRound, Languages } from 'lucide-vue-next'
+import { Inbox, FilePlus2, FolderOpen, ChartNoAxesColumn, Bot, Workflow, PencilRuler, LogOut, CircleCheck, CircleAlert, Columns3, CalendarDays, MessageCircleQuestion, UserRound, Languages } from 'lucide-vue-next'
 import { auth, logout, initials, toasts } from './lib.js'
 import { t, i18n, setLang } from './i18n.js'
 
@@ -18,6 +18,7 @@ const items = [
   { to: '/quy-trinh', label: 'nav.processes', icon: Workflow, space: 'P' },
   { to: '/soan', label: 'nav.builder', icon: PencilRuler, space: 'P', role: 'manager' },
   { to: '/so-lieu', label: 'nav.stats', icon: ChartNoAxesColumn, space: 'D', roles: ['manager', 'director'] },
+  { to: '/hoi-dap', label: 'nav.ask', icon: MessageCircleQuestion, space: 'I' },
   { to: '/tro-ly', label: 'nav.assistant', icon: Bot, space: 'I', roles: ['manager', 'director'] },
 ].filter((item) => (!item.role || auth.role === item.role) && (!item.roles || item.roles.includes(auth.role)))
 const active = (to, path) => (to === '/' ? path === '/' || path.startsWith('/ho-so') : path.startsWith(to))

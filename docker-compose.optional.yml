@@ -4,7 +4,9 @@
 # Thành phần tùy chọn, không cần cho đề thi nên tách khỏi docker-compose.yml (máy yếu vẫn chạy được bản lõi).
 #   TLS tại biên:  docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tls up -d
 #   Giám sát:      docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile monitoring up -d
-# Hướng dẫn: docs/VAN_HANH.md
+#   Tìm kiếm toàn văn và hỏi đáp: ... --profile search up -d
+#   Mô hình AI chạy tại chỗ:      ... --profile ai up -d
+# Hướng dẫn: docs/VAN_HANH.md, docs/TRI_TUE.md
 
 services:
   # TLS tại biên: Caddy cấp chứng chỉ nội bộ (tls internal) cho web, API và đăng nhập. Triển khai thật thì thay bằng tên miền để Caddy tự lấy chứng chỉ Let's Encrypt.
@@ -37,6 +39,28 @@ services:
     depends_on:
       - apisix
 
+  # Tìm kiếm toàn văn hồ sơ và tệp đính kèm dạng văn bản. Không công bố cổng: chỉ workflow-bridge gọi tới, và chính nó kiểm quyền từng kết quả.
+  meilisearch:
+    image: getmeili/meilisearch:v1.11.3
+    profiles: ["search"]
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me-meili-key}
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilidata:/meili_data
+
+  # Mô hình ngôn ngữ chạy tại chỗ (không gửi dữ liệu ra ngoài). Cần tải mô hình một lần, xem docs/TRI_TUE.md.
+  ollama:
+    image: ollama/ollama:0.5.7
+    profiles: ["ai"]
+    restart: unless-stopped
+    volumes:
+      - ollamadata:/root/.ollama
+
 volumes:
+  meilidata:
+  ollamadata:
   caddydata:
   promdata:

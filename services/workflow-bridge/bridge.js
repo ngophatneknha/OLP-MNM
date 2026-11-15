@@ -8,6 +8,7 @@
 //   submission_act    có hành động duyệt/từ chối   -> hoàn tất user task tương ứng
 //   app_change_check  có đề xuất thay đổi quy trình -> kiểm tra hợp lệ + chạy thử trên hồ sơ cũ
 // Nhận yêu cầu tệp đính kèm tại /files (xem files.js).
+// Tìm kiếm và hỏi đáp có dẫn nguồn tại /search và /ask (xem search.js).
 // Nhận Hasura action tại POST /library : kho quy trình mẫu đọc từ thư mục /library.
 // Nhận Hasura action tại POST /ai/spec : mô tả bằng lời -> bản mô tả ứng dụng (xem ai.js).
 // Sau mỗi bước, trạng thái hồ sơ trong DB được đồng bộ lại từ Flowable (Flowable là nguồn sự thật của quy trình).
@@ -18,6 +19,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { validateSpec, toBpmn, toViewSql, simulate } from './compile.js'
 import { generateApp } from './ai.js'
 import { handleFiles } from './files.js'
+import { handleSearch, syncIndex } from './search.js'
 import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
 const { BRIDGE_SECRET, FLOWABLE_URL, FLOWABLE_USER, FLOWABLE_PASSWORD, HASURA_URL, HASURA_ADMIN_SECRET } = process.env
@@ -142,8 +144,16 @@ setInterval(async () => { if (!autonomyReady) autonomyReady = await ensureAllAut
 
 const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission, app_change_check: checkChange }
 
+// Chỉ mục tìm kiếm tự đuổi kịp dữ liệu; chưa bật Meilisearch thì bỏ qua lặng lẽ.
+let lastSyncError = ''
+setInterval(() => syncIndex().then(() => { lastSyncError = '' }, (err) => {
+  if (err.message !== lastSyncError) console.error('Nạp chỉ mục tìm kiếm thất bại:', err.message) // chỉ ghi khi lỗi đổi, khỏi ngập nhật ký
+  lastSyncError = err.message
+}), 10000)
+
 createServer(async (req, res) => {
   if (req.url.startsWith('/files')) return handleFiles(req, res)
+  if (req.url.startsWith('/search') || req.url.startsWith('/ask')) return handleSearch(req, res)
   try {
     if (req.method !== 'POST' || req.headers['x-bridge-secret'] !== BRIDGE_SECRET) {
       res.writeHead(401).end()

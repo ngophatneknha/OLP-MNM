@@ -114,6 +114,9 @@ services:
       HASURA_URL: http://hasura:8080
       S3_URL: http://seaweedfs:8333
       CLAMAV_HOST: clamav
+      # Tìm kiếm và hỏi đáp (tùy chọn): chỉ hoạt động khi bật profile search ở docker-compose.optional.yml.
+      MEILI_URL: http://meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me-meili-key}
       HASURA_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
       # Trợ lý AI (tùy chọn): mọi máy chủ tương thích OpenAI /chat/completions (Ollama, vLLM, Mistral...).
       AI_BASE_URL: ${AI_BASE_URL:-}

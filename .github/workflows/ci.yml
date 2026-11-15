@@ -31,7 +31,7 @@ jobs:
           node-version: 22
       - run: pip install reuse
       - name: Kiểm thử đơn vị
-        run: node --test services/workflow-bridge/*.test.js web/src/metrics.test.js web/src/i18n.test.js
+        run: node --test services/workflow-bridge/*.test.js web/src/metrics.test.js web/src/i18n.test.js web/src/snippet.test.js
       - run: npm ci --no-audit --no-fund && npm run lint && npm run build
         working-directory: web
       - name: Dựng hệ thống từ đầu
@@ -41,11 +41,12 @@ jobs:
           node tests/wait-ready.js 900
       - name: Kiểm thử Tầng 1, H-P-D-I và PoF
         run: node --test --test-reporter=spec tests/*.test.js
-      - name: TLS và giám sát (thành phần tùy chọn)
+      - name: TLS, giám sát, tìm kiếm (thành phần tùy chọn)
         run: |
-          docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tls --profile monitoring up -d
-          OPS_OPTIONAL=1 node --test --test-reporter=spec tests/ops.test.js
+          docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tls --profile monitoring --profile search up -d
+          node tests/wait-ready.js 300
+          OPS_OPTIONAL=1 SEARCH_OPTIONAL=1 node --test --test-reporter=spec tests/ops.test.js tests/search.test.js
       - name: Sao lưu và khôi phục thảm họa
         run: RESTORE_TEST=1 node --test --test-reporter=spec tests/restore.test.js
       - if: failure()
-        run: docker compose ps -a && docker compose logs --tail=80
+        run: docker compose -f docker-compose.yml -f docker-compose.optional.yml ps -a && docker compose -f docker-compose.yml -f docker-compose.optional.yml logs --tail=80 workflow-bridge meilisearch
