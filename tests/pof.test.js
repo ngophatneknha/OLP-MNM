@@ -16,11 +16,20 @@ import { ROOT, run } from './lib.js'
 const REPO = process.env.REPO ?? 'ngophatneknha/OLP-MNM'
 const DEADLINE = new Date('2026-12-06T17:00:00+07:00')
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
+const composeAll = () => `${read('docker-compose.yml')}
+${read('docker-compose.optional.yml')}`
 const files = run('git', ['ls-files']).split('\n').filter(Boolean).filter((f) => existsSync(join(ROOT, f)))
 // Có GITHUB_TOKEN (trong CI) thì dùng để khỏi bị giới hạn 60 lượt/giờ; vẫn chỉ đọc dữ liệu công khai.
-const gh = async (path) => (await fetch(`https://api.github.com/repos/${REPO}${path}`, {
-  headers: { accept: 'application/vnd.github+json', ...(process.env.GITHUB_TOKEN ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}) },
-}))
+// Thử lại vài lần: GitHub thỉnh thoảng từ chối tạm thời khi nhiều tệp kiểm thử cùng gọi một lúc.
+const gh = async (path) => {
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(`https://api.github.com/repos/${REPO}${path}`, {
+      headers: { accept: 'application/vnd.github+json', ...(process.env.GITHUB_TOKEN ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}) },
+    }).catch(() => null)
+    if ((res && res.status < 500 && res.status !== 403 && res.status !== 429) || attempt >= 4) return res
+    await new Promise((ok) => setTimeout(ok, 1500 * attempt))
+  }
+}
 // Dựng chuỗi tìm kiếm để tệp kiểm thử này không tự chứa thẻ SPDX thật (công cụ REUSE sẽ đọc nhầm).
 const SPDX = new RegExp(String.raw`SPDX-${'License'}-Identifier:\s*\S+`)
 const SPDX_ID = new RegExp(String.raw`SPDX-${'License'}-Identifier:\s*([A-Za-z0-9.\-+]+)`)
@@ -160,10 +169,10 @@ describe('PoF-4: Cài đặt và dịch từ mã nguồn (10 điểm)', () => {
   test('PoF-4.3 công cụ dựng đều là nguồn mở và có sẵn: Docker Compose, Node, npm; không công cụ tự chế/đóng (không bị -5)', () => {
     const dockerfile = read('web/Dockerfile')
     assert.match(dockerfile, /FROM node:\d+/)
-    assert.ok(!/curl .*\|\s*(sh|bash)/.test(dockerfile + read('docker-compose.yml')), 'không tải và chạy mã lạ')
+    assert.ok(!/curl .*\|\s*(sh|bash)/.test(dockerfile + composeAll()), 'không tải và chạy mã lạ')
   })
   test('PoF-4.4 mọi image được ghim phiên bản cụ thể (dựng lại được, không dùng :latest)', () => {
-    const imgs = [...(read('docker-compose.yml') + read('web/Dockerfile')).matchAll(/^\s*(?:image:|FROM)\s+(\S+)/gm)].map((m) => m[1])
+    const imgs = [...(composeAll() + read('web/Dockerfile')).matchAll(/^\s*(?:image:|FROM)\s+(\S+)/gm)].map((m) => m[1])
     assert.ok(imgs.length >= 8)
     for (const i of imgs) assert.ok(/:[\w.-]*\d/.test(i) && !i.endsWith(':latest'), `chưa ghim: ${i}`)
   })
@@ -192,7 +201,7 @@ describe('PoF-5: Thư viện và gói đính kèm (10 điểm)', () => {
   test('PoF-5.1 có thông tin làm rõ mọi thành phần: mỗi image trong compose và mỗi thư viện web đều có trong THIRD_PARTY.md', () => {
     const norm = (x) => x.toLowerCase().replace(/[^a-z0-9]/g, '')
     const tp = norm(read('THIRD_PARTY.md'))
-    const imgs = [...read('docker-compose.yml').matchAll(/^\s*image:\s*(\S+)/gm)].map((m) => m[1].split(':')[0].split('/').pop())
+    const imgs = [...composeAll().matchAll(/^\s*image:\s*(\S+)/gm)].map((m) => m[1].split(':')[0].split('/').pop())
     for (const i of imgs) assert.ok(tp.includes(norm(i.replace(/-(rest|engine)$/, ''))), `THIRD_PARTY.md thiếu ${i}`)
     const pkg = JSON.parse(read('web/package.json'))
     for (const d of Object.keys({ ...pkg.dependencies, ...pkg.devDependencies })) assert.ok(tp.includes(norm(d)), `THIRD_PARTY.md thiếu ${d}`)
@@ -211,7 +220,7 @@ describe('PoF-5: Thư viện và gói đính kèm (10 điểm)', () => {
     assert.ok(pk.every(([, v]) => !v.resolved || v.resolved.startsWith('https://registry.npmjs.org/')), 'gói lấy từ nguồn lạ')
   })
   test('PoF-5.4 không sửa mã nguồn của gói đính kèm: không có patch-package, không sed/patch lên thư viện trong Dockerfile hay compose', () => {
-    const joined = read('web/Dockerfile') + read('docker-compose.yml')
+    const joined = read('web/Dockerfile') + composeAll()
     assert.ok(!/patch-package|\bpatch\s+-p|sed -i .*node_modules/.test(joined))
     assert.ok(!files.some((f) => /\.(patch|diff)$/.test(f)))
     assert.ok(!('patchedDependencies' in JSON.parse(read('web/package.json'))))

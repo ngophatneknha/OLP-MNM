@@ -37,6 +37,8 @@ services:
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HEALTH_ENABLED: "true"
       KC_HTTP_ENABLED: "true"
+      # Đứng sau Caddy (profile tls) thì tin các header X-Forwarded-* để tạo đúng địa chỉ https.
+      KC_PROXY_HEADERS: xforwarded
     volumes:
       - ./infra/keycloak/realm:/opt/keycloak/data/import:ro
     ports:

@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Ba địa chỉ HTTPS, mỗi cái chuyển tiếp tới một dịch vụ trong mạng nội bộ. Chứng chỉ nội bộ của Caddy (trình duyệt sẽ cảnh báo
+# tới khi tin cậy CA của Caddy). Cách bật: docs/VAN_HANH.md, mục "TLS".
+{
+	auto_https disable_redirects
+}
+
+(bao_mat) {
+	tls internal
+	header Strict-Transport-Security "max-age=31536000"
+}
+
+https://localhost:8443 {
+	import bao_mat
+	reverse_proxy web:80
+}
+
+https://localhost:9443 {
+	import bao_mat
+	reverse_proxy apisix:9080
+}
+
+https://localhost:8444 {
+	import bao_mat
+	reverse_proxy keycloak:8080
+}

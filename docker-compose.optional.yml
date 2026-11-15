@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Thành phần tùy chọn, không cần cho đề thi nên tách khỏi docker-compose.yml (máy yếu vẫn chạy được bản lõi).
+#   TLS tại biên:  docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tls up -d
+#   Giám sát:      docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile monitoring up -d
+# Hướng dẫn: docs/VAN_HANH.md
+
+services:
+  # TLS tại biên: Caddy cấp chứng chỉ nội bộ (tls internal) cho web, API và đăng nhập. Triển khai thật thì thay bằng tên miền để Caddy tự lấy chứng chỉ Let's Encrypt.
+  caddy:
+    image: caddy:2.8.4-alpine
+    profiles: ["tls"]
+    restart: unless-stopped
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    ports:
+      - "8443:8443"
+      - "9443:9443"
+      - "8444:8444"
+    depends_on:
+      - web
+      - apisix
+      - keycloak
+
+  # Thu thập số đo của cổng API (APISIX) mỗi 15 giây và có giao diện truy vấn sẵn. Không dùng Grafana vì giấy phép AGPL-3.0, trái với chính sách của dự án (THIRD_PARTY.md).
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9092}:9090"
+    depends_on:
+      - apisix
+
+volumes:
+  caddydata:
+  promdata:

@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: apisix
+    metrics_path: /apisix/prometheus/metrics
+    static_configs:
+      - targets: ["apisix:9091"]
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
