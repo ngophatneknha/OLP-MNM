@@ -22,6 +22,10 @@ function combine(parts) {
   return { score: Math.round((have.reduce((s, p) => s + p.weight * p.value, 0) / weight) * 100), parts }
 }
 
+/** Hồ sơ đã duyệt xong mà thiếu dấu ở một bước áp dụng cho nó: nhật ký không đủ để kiểm toán. */
+const isLogIncomplete = (s) => !s.version.spec.steps.filter((st) => applies(st, s.data)).every((st) => s.events.some((e) => e.step_key === st.key))
+export const incompleteLogs = (submissions) => submissions.filter((s) => s.status === 'approved' && isLogIncomplete(s))
+
 /** "Khởi đầu" dưới 40, "Đang phát triển" từ 40, "Trưởng thành" từ 70. */
 export const maturityLevel = (score) => (score === null ? 'none' : score >= 70 ? 'mature' : score >= 40 ? 'growing' : 'start')
 
@@ -54,7 +58,7 @@ export function computeMaturity({ submissions, apps, autonomy }) {
 
   // D: nhật ký đầy đủ (mọi bước áp dụng đều có dấu) và đủ mẫu để số liệu có nghĩa.
   const finished = submissions.filter((s) => s.status === 'approved')
-  const complete = finished.filter((s) => s.version.spec.steps.filter((st) => applies(st, s.data)).every((st) => s.events.some((e) => e.step_key === st.key)))
+  const complete = finished.filter((s) => !isLogIncomplete(s))
   const perApp = new Map()
   for (const s of submissions) perApp.set(s.app.key, (perApp.get(s.app.key) ?? 0) + 1)
   const D = combine([

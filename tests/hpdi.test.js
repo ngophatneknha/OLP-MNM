@@ -12,7 +12,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT, WEB, as, publishApp, submit, act, waitStatus, sql, until, uid, SPEC } from './lib.js'
 import { validateSpec, simulate, toBpmn } from '../services/workflow-bridge/compile.js'
-import { computeMaturity } from '../web/src/maturity.js'
+import { computeMaturity, incompleteLogs } from '../web/src/maturity.js'
 
 const FIELD = (extra = {}) => ({ key: 'so_tien', label: 'Số tiền', type: 'number', required: true, ...extra })
 const STEP = (extra = {}) => ({ key: 'tp', name: 'Trưởng phòng duyệt', role: 'manager', ...extra })
@@ -171,6 +171,8 @@ describe('D: Không gian Dữ liệu số — số liệu thực chứng', () =>
     const q = 'query($i: uuid!) { submission_by_pk(id: $i) { events { step_key } } }'
     for (const u of ['manager1', 'director1']) assert.equal((await as(u, q, { i: id })).data.submission_by_pk.events.length, 3, `${u} thấy thiếu nhật ký`)
     assert.equal((await as('staff2', q, { i: id })).data.submission_by_pk, null, 'nhân viên không liên quan thấy hồ sơ')
+    const full = (await as('director1', 'query($i: uuid!) { submission_by_pk(id: $i) { id status data app { key name } version { spec } events { step_key action created_at } } }', { i: id })).data.submission_by_pk
+    assert.deepEqual(incompleteLogs([full]), [], 'hồ sơ đã xong qua đúng quy trình phải có nhật ký đủ')
   })
   test('D-05 đóng băng dữ liệu theo chuỗi thời gian: mỗi sự kiện có dấu thời gian đơn điệu, không có sự kiện từ tương lai', async () => {
     assert.equal(sql("select count(*) from submission_event where created_at > now() + interval '1 minute'"), '0')

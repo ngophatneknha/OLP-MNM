@@ -9,6 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.3] - 2026-11-15
+
+### Added
+- Trang Số liệu có mục "Nhật ký và xuất dữ liệu": liệt kê hồ sơ đã xong nhưng thiếu nhật ký (có liên kết), và nút tải CSV hoặc JSON toàn bộ hồ sơ kèm nhật ký. Dữ liệu xuất chỉ gồm những gì người dùng được phép xem; CSV chặn công thức bảng tính.
+- `web/src/exporter.js` và `incompleteLogs` trong `maturity.js`, có kiểm thử đơn vị. CI chạy toàn bộ `web/src/*.test.js` (trước đó bỏ sót flow, maturity, hardcoded).
+
 ## [1.7.2] - 2026-11-15
 
 ### Added

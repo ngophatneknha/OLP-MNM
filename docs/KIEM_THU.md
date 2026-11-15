@@ -78,6 +78,7 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | OPS-04 | Prometheus thu được số đo APISIX và thấy yêu cầu thật |
 | OPS-06 | Mọi dịch vụ chạy lâu của luồng chính có `restart` và kiểm tra sức khỏe |
 | OPS-07 | Cho tiến trình chính của web và kho S3 thoát đột ngột: Docker tự chạy lại và dịch vụ khỏe trở lại (chạy bằng `RECOVERY_TEST=1`; `docker kill` là dừng thủ công nên không dùng) |
+| D-04b | Trưởng phòng và giám đốc đọc đủ nhật ký của hồ sơ họ được xem, người không liên quan không thấy; hồ sơ đã xong qua đúng quy trình có nhật ký đủ |
 | DEMO | Sau `seed.js`, điểm H-P-D-I tính riêng trên các quy trình mẫu hợp lý, `tam_ung` có phiên bản 2 (`tests/demo.check.js`) |
 | OPS-RESTORE | Sao lưu, xóa bảng và thêm hồ sơ mới, khôi phục: hồ sơ trở về đúng lúc sao lưu, tệp đính kèm giống từng byte (chạy bằng `RESTORE_TEST=1`) |
 
