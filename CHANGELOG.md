@@ -18,6 +18,7 @@ SPDX-License-Identifier: Apache-2.0
 - Trang Số liệu ghi rõ điểm tính từ bao nhiêu hồ sơ và quy trình.
 
 ### Fixed
+- Trưởng phòng và giám đốc xem được mọi hồ sơ nhưng chỉ thấy nhật ký do chính họ ký (quyền đọc `submission_event`), nên trang Số liệu và điểm trưởng thành tính thiếu sự kiện: D "hồ sơ có nhật ký đủ" luôn 0%. Hai vai trò này nay đọc được toàn bộ nhật ký của hồ sơ họ được xem; người không liên quan vẫn không thấy. Ca kiểm D-04b.
 - Điểm trưởng thành thấp (D, I gần 0) trên máy dev lâu ngày là do hàng trăm quy trình do bộ kiểm thử tạo ra lẫn vào mẫu số. Máy demo dựng sạch bằng `scripts/demo-reset.sh` cho điểm đúng; ghi chú trong KICH_BAN_DEMO.
 
 ## [1.7.1] - 2026-11-15
