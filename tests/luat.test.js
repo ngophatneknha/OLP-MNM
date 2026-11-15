@@ -47,7 +47,7 @@ describe('LUAT: Thể lệ và Đề thi — điều khoản ngoài bảng đi�
       [/-----BEGIN (RSA |EC |OPENSSH |)PRIVATE KEY-----/, 'khóa riêng'],
       [/\bghp_[A-Za-z0-9]{30,}\b|\bgithub_pat_[A-Za-z0-9_]{30,}\b/, 'token GitHub'],
       [/\bsk-[A-Za-z0-9]{32,}\b/, 'khóa kiểu OpenAI'],
-      [/\bAKIA[0-9A-Z]{16}\b/, 'khóa AWS'],
+      [/\bAKIA(?!IOSFODNN7EXAMPLE\b)[0-9A-Z]{16}\b/, 'khóa AWS'], // trừ khóa mẫu công khai trong tài liệu AWS (dùng kiểm chứng bộ ký SigV4)
       [/^\+.*(?:API_KEY|api_key|apiKey)\s*[:=]\s*['"]?[A-Za-z0-9]{28,}['"]?/m, 'khóa API gán thẳng'],
     ]
     for (const [re, what] of shapes) assert.ok(!re.test(log), `phát hiện ${what} trong lịch sử`)
