@@ -48,7 +48,7 @@ describe('OPS: thành phần tùy chọn đang chạy', { skip }, () => {
     await fetch(`${GW}/v1/graphql`) // một yêu cầu 401 để có số đo
     const targets = await until(async () => {
       const t = (await (await fetch(`${PROM}/api/v1/targets`)).json()).data.activeTargets
-      return t.every((x) => x.health === 'up') ? t : null
+      return t.length >= 2 && t.every((x) => x.health === 'up') ? t : null
     }, 'mọi mục tiêu của Prometheus ở trạng thái up', 90_000)
     assert.ok(targets.some((t) => t.labels.job === 'apisix'))
     await until(async () => {
