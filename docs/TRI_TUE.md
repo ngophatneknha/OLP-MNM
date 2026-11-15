@@ -32,3 +32,7 @@ docker compose -f docker-compose.yml -f docker-compose.optional.yml exec ollama 
 ```
 
 Rồi đặt trong `.env`: `AI_BASE_URL=http://ollama:11434/v1`, `AI_MODEL=qwen2.5:7b`, `AI_API_KEY=ollama`, và dựng lại `workflow-bridge`. Mô hình 7 tỷ tham số cần khoảng 8 GB RAM; máy yếu hãy dùng dịch vụ ngoài như Mistral. Thành phần này chưa được kiểm thử tự động trong CI vì tải mô hình quá nặng.
+
+## Báo trước khi đủ bằng chứng
+
+Bàn làm việc của giám đốc hiện dòng "N bước duyệt đã đủ bằng chứng để nâng nấc" khi một bước ở nấc 2 trở lên đạt 10 quyết định thật và 90% khớp. Trang Số liệu cho giám đốc thấy độ khớp chung. Việc nâng nấc vẫn do giám đốc bấm; cơ sở dữ liệu chặn nếu thiếu bằng chứng.

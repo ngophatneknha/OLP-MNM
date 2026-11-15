@@ -7,10 +7,11 @@ Mọi con số tính từ hồ sơ và nhật ký bằng mã (metrics.js), mỗi
 -->
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { gql, ROLE_LABEL } from '../lib.js'
+import { auth, gql, ROLE_LABEL } from '../lib.js'
 import { computeMetrics, formatHours } from '../metrics.js'
 import { computeMaturity, incompleteLogs, maturityLevel } from '../maturity.js'
 import { download, toCsv, toJson } from '../exporter.js'
+import { agreement } from '../autonomy.js'
 import { t } from '../i18n.js'
 
 const submissions = ref(null)
@@ -29,11 +30,17 @@ async function load() {
       autonomy: step_autonomy { app_key step_key level } }`)
   } catch { extra.value = null } // vai trò không đọc được: bỏ phần chấm điểm, các số liệu khác vẫn hiện
 }
-onMounted(() => { load(); timer = setInterval(load, 5000) })
+async function loadOpinions() {
+  if (auth.role !== 'director') return
+  try { opinionList.value = (await gql('{ ai_opinion(limit: 1000) { matched sample } }')).ai_opinion } catch { opinionList.value = [] }
+}
+onMounted(() => { load(); loadOpinions(); timer = setInterval(load, 5000) })
 onUnmounted(() => clearInterval(timer))
 
 const m = computed(() => submissions.value && computeMetrics(submissions.value))
 const maturity = computed(() => submissions.value && extra.value && computeMaturity({ submissions: submissions.value, apps: extra.value.apps, autonomy: extra.value.autonomy }))
+const opinionList = ref([]) // chỉ giám đốc đọc được cột so sánh với quyết định của người
+const agree = computed(() => agreement(opinionList.value))
 const missingLogs = computed(() => (submissions.value ? incompleteLogs(submissions.value) : []))
 const stamp = () => new Date().toISOString().slice(0, 10)
 const SPACES = ['H', 'P', 'D', 'I']
@@ -79,6 +86,7 @@ const percent = (n) => (m.value.total ? Math.round((n / m.value.total) * 100) : 
       <template v-else>
         <p class="mt-3 text-xs text-pencil">{{ t('mat.basis', { subs: submissions.length, apps: extra.apps.length }) }}</p>
         <p class="num mt-1 text-sm text-pencil">{{ t('mat.overall') }}: <strong class="text-2xl text-ink">{{ maturity.overall ?? '–' }}</strong> / 100 · {{ t('mat.level.' + maturityLevel(maturity.overall)) }}</p>
+        <p v-if="auth.role === 'director'" class="mt-1 text-xs text-pencil">{{ agree.total ? t('ai.agree', { hits: agree.hits, total: agree.total, pct: Math.round(agree.hits / agree.total * 100) }) : t('ai.none') }}</p>
         <ul class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <li v-for="space in SPACES" :key="space" class="panel p-4">
             <div class="flex items-baseline justify-between gap-2">
