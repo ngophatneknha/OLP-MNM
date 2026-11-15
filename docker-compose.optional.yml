@@ -4,6 +4,8 @@
 # Thành phần tùy chọn, không cần cho đề thi nên tách khỏi docker-compose.yml (máy yếu vẫn chạy được bản lõi).
 #   TLS tại biên:  docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tls up -d
 #   Giám sát:      docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile monitoring up -d
+#   Tường lửa ứng dụng (Coraza + OWASP CRS, cổng 9081 trước cổng API): ... --profile waf up -d --build
+#   Két bí mật OpenBao: sh scripts/vault.sh init (xem docs/VAN_HANH.md, mục "Két bí mật")
 #   Tìm kiếm toàn văn và hỏi đáp: ... --profile search up -d
 #   Mô hình AI chạy tại chỗ:      ... --profile ai up -d
 # Hướng dẫn: docs/VAN_HANH.md, docs/TRI_TUE.md
@@ -25,6 +27,29 @@ services:
       - web
       - apisix
       - keycloak
+
+  # Tường lửa ứng dụng web (Coraza + OWASP CRS) đứng trước cổng API, mở cổng ${WAF_PORT:-9081}. Dựng từ infra/coraza (xcaddy).
+  waf:
+    build: ./infra/coraza
+    profiles: ["waf"]
+    restart: unless-stopped
+    volumes:
+      - ./infra/coraza/Caddyfile:/etc/caddy/Caddyfile:ro
+    ports:
+      - "${WAF_PORT:-9081}:9081"
+    depends_on:
+      - apisix
+
+  # Két bí mật OpenBao (MPL-2.0, nhánh mã nguồn mở của Vault): chỉ mạng nội bộ, không công bố cổng. Điều khiển bằng scripts/vault.sh.
+  openbao:
+    image: quay.io/openbao/openbao:2.1.0
+    profiles: ["vault"]
+    restart: unless-stopped
+    command: server
+    environment:
+      BAO_LOCAL_CONFIG: '{"storage":{"file":{"path":"/openbao/file"}},"listener":[{"tcp":{"address":"0.0.0.0:8200","tls_disable":true}}],"disable_mlock":true,"ui":false}'
+    volumes:
+      - baodata:/openbao/file
 
   # Thu thập số đo của cổng API (APISIX) mỗi 15 giây và có giao diện truy vấn sẵn. Không dùng Grafana vì giấy phép AGPL-3.0, trái với chính sách của dự án (THIRD_PARTY.md).
   prometheus:
@@ -60,6 +85,7 @@ services:
       - ollamadata:/root/.ollama
 
 volumes:
+  baodata:
   meilidata:
   ollamadata:
   caddydata:

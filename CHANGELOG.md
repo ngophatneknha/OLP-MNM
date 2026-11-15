@@ -9,6 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.9] - 2026-11-15
+
+### Added
+- **Tường lửa ứng dụng web** (Z-02): Coraza + OWASP CRS đứng trước cổng API (profile `waf`, cổng 9081). SQL injection, XSS, đi ngược thư mục bị 403.
+- **Két bí mật OpenBao** (Z-01): `scripts/vault.sh init|unseal|export|up`; mật khẩu, khóa, token chuyển từ `.env` vào két (profile `vault`).
+- **Ẩn thông tin cá nhân** (Z-04): email, số điện thoại, CCCD, số thẻ bị thay bằng nhãn trước khi gửi tới máy chủ AI (`services/workflow-bridge/pii.js`).
+- Ba ca Z-01, Z-02, Z-04 chuyển từ `todo` thành ca chạy thật; CI chạy chúng cùng các thành phần tùy chọn.
+
 ## [1.7.8] - 2026-11-15
 
 ### Security

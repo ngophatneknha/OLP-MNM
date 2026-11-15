@@ -45,6 +45,23 @@ APP_ORIGIN=https://localhost:8443
 
 Triển khai thật: đổi `localhost` trong `infra/caddy/Caddyfile` thành tên miền, Caddy sẽ tự lấy chứng chỉ Let's Encrypt.
 
+## Tường lửa ứng dụng (Coraza)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile waf up -d --build
+```
+
+Coraza (WAF mã nguồn mở, Apache-2.0) chạy trong Caddy cùng bộ luật OWASP CRS, đứng trước cổng API tại `http://localhost:9081` (đổi bằng `WAF_PORT`). Dùng 9081 thay cho 9080 là mọi yêu cầu được kiểm tra trước: SQL injection, XSS, đi ngược thư mục bị trả `403`. Lần dựng đầu mất vài phút vì biên dịch Caddy kèm Coraza. Nếu một chức năng bị chặn nhầm, đọc nhật ký bằng `docker compose logs waf` rồi thêm luật loại trừ trong `infra/coraza/Caddyfile`.
+
+## Két bí mật (OpenBao)
+
+```bash
+sh scripts/vault.sh init     # khởi tạo két, chép mật khẩu/khóa/token trong .env vào két
+sh scripts/vault.sh up       # chạy hệ thống với bí mật lấy từ két
+```
+
+Sau `init`, khóa mở và token gốc nằm ở `.vault-keys` (không commit). **Hãy cất tệp này ra ngoài máy chủ rồi xóa**, sau đó xóa các dòng bí mật trong `.env`. Két khởi động lại sẽ bị khóa: `sh scripts/vault.sh unseal` (cần tệp khóa). Giới hạn: một khóa mở duy nhất, chưa tự mở khóa; môi trường thật nên chia khóa cho nhiều người.
+
 ## Giám sát (Prometheus)
 
 ```bash
