@@ -346,4 +346,7 @@ describe('Z: Nguyên lý Zero-Trust và vận hành (đề thi mục 4, nguyên 
   })
   test('Z-05 sao lưu và khôi phục thảm họa: script thủ công đã có (ca chạy thật ở tests/restore.test.js), chưa có lịch tự động', () => assert.ok(existsSync(join(ROOT, 'scripts/restore.sh'))))
   test('Z-06 TLS tại biên và giám sát: thành phần tùy chọn đã có (ca chạy thật ở tests/ops.test.js)', () => assert.match(readFileSync(join(ROOT, 'docker-compose.optional.yml'), 'utf8'), /caddy:[\s\S]*prometheus:/))
+  test('Z-07 [todo] chữ ký số PKI có chứng thư cho phê duyệt (hiện là xác nhận trong nhật ký bất biến, chưa phải chữ ký số)', { todo: 'chưa làm: PKI, HSM' }, () => assert.fail('chưa có'))
+  test('Z-08 [todo] sao lưu tự động theo lịch (script thủ công và khôi phục đã có: Z-05)', { todo: 'chưa làm: lịch sao lưu' }, () => assert.fail('chưa có'))
+  test('Z-09 [todo] truyền thông thời gian thực bằng WebSocket và thiết bị bằng MQTT/OPC UA (hiện là SSE và HTTP: Z-03, IOT)', { todo: 'chưa làm: WebSocket, MQTT' }, () => assert.fail('chưa có'))
 })

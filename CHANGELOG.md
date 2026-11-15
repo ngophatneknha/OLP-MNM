@@ -9,6 +9,17 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-15
+
+### Added
+- `scripts/demo-platform.mjs`: trình diễn nền tảng Tầng 1 trong hai phút (cảm biến mở hồ sơ sửa chữa, kho lạnh và kiểm chứng sổ cái, phả hệ, cách ly đa tổ chức, cổng API chặn token giả), không cần mở giao diện.
+- Ba ca `todo` trung thực trong `tests/hpdi.test.js`: Z-07 (PKI), Z-08 (sao lưu theo lịch), Z-09 (WebSocket, MQTT).
+
+### Changed
+- Slide và kịch bản trình diễn 15 phút sắp lại theo đúng bốn nội dung Đề quy định (giải pháp và công nghệ; tính năng nền tảng và bài toán minh họa; kết quả và demo; định hướng). Trước đây nền tảng Tầng 1 và bốn nguyên lý chỉ chiếm vài phút cuối; nay chiếm mục 1, mục 2 và một cảnh demo riêng.
+- Câu trả lời thường gặp của ban giám khảo cập nhật theo các tính năng mới (két bí mật, WAF, ẩn thông tin cá nhân, đa tổ chức đã có; PKI chưa).
+- Trang web GitHub Pages cho dự án (`docs/_config.yml`, `docs/index.md`).
+
 ## [1.8.4] - 2026-11-15
 
 ### Added
