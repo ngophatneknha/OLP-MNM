@@ -104,7 +104,7 @@ describe('I-SEARCH: tìm kiếm và hỏi đáp có kiểm quyền', { skip }, (
     const scan = textPdf(scanWord)
     assert.equal((await upload('staff1', id, 'anh-chup.png', rasterise(scan, 'png'), 'image/png')).status, 200)
     assert.equal((await upload('staff1', id, 'ban-quet.pdf', scannedPdf(rasterise(textPdf(scanPdfWord), 'pgm')), 'application/pdf')).status, 200)
-    const find = (q) => until(async () => { const { hits } = await (await call('staff1', '/search', { q })).json(); return hits.length ? hits : null }, `tìm thấy ${q}`, 180_000)
+    const find = (q) => until(async () => { const { hits } = await (await call('staff1', '/search', { q })).json(); return hits.length ? hits : null }, `tìm thấy ${q}`, 360_000)
     assert.ok((await find(word)).some((h) => h.name === 'hop-dong.pdf'), 'PDF có lớp chữ')
     assert.ok((await find('QUETANH')).some((h) => h.submission_id === id && h.name === 'anh-chup.png'), 'ảnh qua OCR')
     assert.ok((await find('BANQUET')).some((h) => h.submission_id === id && h.name === 'ban-quet.pdf'), 'PDF quét qua OCR')

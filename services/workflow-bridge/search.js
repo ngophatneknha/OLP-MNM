@@ -85,7 +85,7 @@ async function extractedText(att, mime) {
   try {
     const file = await s3fetch(`/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(15_000) })
     if (!file.ok) return null
-    const res = await fetch(`${EXTRACTOR_URL}/extract`, { method: 'POST', headers: { 'content-type': mime }, body: Buffer.from(await file.arrayBuffer()), signal: AbortSignal.timeout(120_000) })
+    const res = await fetch(`${EXTRACTOR_URL}/extract`, { method: 'POST', headers: { 'content-type': mime }, body: Buffer.from(await file.arrayBuffer()), signal: AbortSignal.timeout(300_000) })
     if (res.status === 415 || res.status === 400) return null
     if (!res.ok) throw new Error(`extractor ${res.status}`)
     return ((await res.json()).text ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT) || null
