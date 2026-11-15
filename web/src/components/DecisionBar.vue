@@ -9,6 +9,7 @@ Các nút hành động trên một hồ sơ đang chờ tôi. Từ chối mở 
 import { ref } from 'vue'
 import { Check, X } from 'lucide-vue-next'
 import { sendAction, stepOf, toast } from '../lib.js'
+import { t } from '../i18n.js'
 
 const props = defineProps({ submission: { type: Object, required: true } })
 const emit = defineEmits(['done'])
@@ -23,7 +24,7 @@ async function act(action, note) {
     await sendAction(props.submission, action, note)
     emit('done')
   } catch (err) {
-    toast(`Chưa ghi nhận được: ${err.message}. Hãy thử lại.`, false)
+    toast(t('dec.fail', { err: err.message }), false)
   } finally {
     busy.value = false
   }
@@ -39,22 +40,22 @@ async function refuse() {
 <template>
   <div class="flex flex-wrap gap-2">
     <button v-if="stepOf(submission)?.type === 'task'" class="btn-primary" :disabled="busy" @click="act('done')">
-      <Check :size="16" aria-hidden="true" /> Đã thực hiện xong
+      <Check :size="16" aria-hidden="true" /> {{ t('dec.done') }}
     </button>
     <template v-else>
-      <button class="btn-primary" :disabled="busy" @click="act('approve')"><Check :size="16" aria-hidden="true" /> Duyệt</button>
-      <button class="btn-danger" :disabled="busy" @click="dialog.showModal()"><X :size="16" aria-hidden="true" /> Từ chối</button>
+      <button class="btn-primary" :disabled="busy" @click="act('approve')"><Check :size="16" aria-hidden="true" /> {{ t('dec.approve') }}</button>
+      <button class="btn-danger" :disabled="busy" @click="dialog.showModal()"><X :size="16" aria-hidden="true" /> {{ t('dec.reject') }}</button>
     </template>
 
     <dialog ref="dialog" class="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-lg border border-line bg-surface p-0 text-ink">
       <form class="p-5" @submit.prevent="refuse">
-        <h2 class="section-title">Từ chối hồ sơ số {{ submission.no }}</h2>
-        <label class="label mt-4" for="reason">Lý do từ chối</label>
-        <textarea id="reason" v-model="reason" class="input" rows="3" required minlength="5" placeholder="Ví dụ: Thiếu báo giá của nhà cung cấp" />
-        <p class="hint">{{ submission.submitter_name }} sẽ đọc được lý do này.</p>
+        <h2 class="section-title">{{ t('dec.title', { no: submission.no }) }}</h2>
+        <label class="label mt-4" for="reason">{{ t('dec.reasonLabel') }}</label>
+        <textarea id="reason" v-model="reason" class="input" rows="3" required minlength="5" :placeholder="t('dec.placeholder')" />
+        <p class="hint">{{ t('dec.hint', { who: submission.submitter_name }) }}</p>
         <div class="mt-5 flex justify-end gap-2">
-          <button type="button" class="btn-quiet" @click="dialog.close()">Quay lại</button>
-          <button class="btn-danger" :disabled="busy || reason.trim().length < 5">Từ chối hồ sơ</button>
+          <button type="button" class="btn-quiet" @click="dialog.close()">{{ t('dec.back') }}</button>
+          <button class="btn-danger" :disabled="busy || reason.trim().length < 5">{{ t('dec.rejectBtn') }}</button>
         </div>
       </form>
     </dialog>

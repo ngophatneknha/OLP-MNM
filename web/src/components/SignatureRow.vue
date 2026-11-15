@@ -10,6 +10,7 @@ bước không áp dụng cho hồ sơ này thì ghi rõ. Không truyền `submi
 import { computed } from 'vue'
 import { Clock, MinusCircle } from 'lucide-vue-next'
 import { stepStates } from '../flow.js'
+import { t } from '../i18n.js'
 import { ROLE_LABEL, conditionText, formatTime } from '../lib.js'
 
 const props = defineProps({
@@ -28,7 +29,7 @@ const boxes = computed(() => stepStates(props.spec, props.submission).map((box) 
 <template>
   <ol class="grid grid-cols-2 overflow-hidden rounded-md border-l border-t border-line sm:grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]">
     <li v-if="submission" class="flex min-h-32 flex-col border-b border-r border-line bg-surface p-3">
-      <div class="text-sm font-medium">Người đề nghị</div>
+      <div class="text-sm font-medium">{{ t('sig.requester') }}</div>
       <div class="mt-auto pt-3">
         <div class="font-serif text-sm italic text-pen">{{ submission.submitter_name }}</div>
         <div class="num text-xs text-pencil">{{ formatTime(submission.created_at) }}</div>
@@ -47,7 +48,7 @@ const boxes = computed(() => stepStates(props.spec, props.submission).map((box) 
         <template v-if="box.state === 'signed' || box.state === 'refused'">
           <div class="pb-2 pl-1">
             <span class="stamp" :class="{ 'stamp-refused': box.state === 'refused', 'stamp-fresh': box.fresh }">
-              {{ box.state === 'refused' ? 'KHÔNG DUYỆT' : box.type === 'task' ? 'ĐÃ XONG' : 'ĐÃ DUYỆT' }}
+              {{ t(box.state === 'refused' ? 'sig.stamp.refused' : box.type === 'task' ? 'sig.stamp.done' : 'sig.stamp.approved') }}
             </span>
           </div>
           <div class="font-serif text-sm italic text-pen">{{ box.event.actor_name }}</div>
@@ -55,17 +56,17 @@ const boxes = computed(() => stepStates(props.spec, props.submission).map((box) 
         </template>
 
         <div v-else-if="box.state === 'waiting'" class="flex items-center gap-1.5 text-sm font-medium text-pen">
-          <Clock :size="16" aria-hidden="true" /> Đang chờ {{ box.type === 'task' ? 'thực hiện' : 'ký' }}
+          <Clock :size="16" aria-hidden="true" /> {{ t(box.type === 'task' ? 'sig.waitingDo' : 'sig.waitingSign') }}
         </div>
 
         <div v-else-if="box.state === 'skipped'" class="flex items-start gap-1.5 text-xs text-pencil">
-          <MinusCircle :size="14" class="mt-0.5 shrink-0" aria-hidden="true" /> Không cần với hồ sơ này
+          <MinusCircle :size="14" class="mt-0.5 shrink-0" aria-hidden="true" /> {{ t('sig.skipped') }}
         </div>
 
         <div v-else class="text-xs text-pencil">
           <template v-if="box.condition">{{ box.condition }}</template>
-          <template v-else-if="box.state === 'upcoming'">Chưa tới lượt</template>
-          <template v-else>{{ box.type === 'task' ? 'Thực hiện rồi xác nhận' : 'Duyệt hoặc từ chối' }}</template>
+          <template v-else-if="box.state === 'upcoming'">{{ t('sig.upcoming') }}</template>
+          <template v-else>{{ t(box.type === 'task' ? 'sig.doConfirm' : 'sig.decide') }}</template>
         </div>
       </div>
     </li>

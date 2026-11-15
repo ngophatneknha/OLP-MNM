@@ -9,6 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-11-15
+
+### Changed
+- Bàn làm việc, Hồ sơ, Quy trình, hàng ô ký và hộp duyệt/từ chối dùng đủ hai ngôn ngữ Việt và Anh (#111, giai đoạn 1). Ngày giờ, số, thời gian tương đối và tên vai trò đổi theo ngôn ngữ đang chọn.
+
+### Added
+- Ca kiểm `web/src/hardcoded.test.js`: màn hình đã chuyển sang i18n mà còn chữ Việt viết thẳng thì kiểm thử đỏ.
+
 ## [1.7.0] - 2026-11-15
 
 ### Added
