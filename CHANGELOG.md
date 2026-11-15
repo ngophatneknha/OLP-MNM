@@ -9,6 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-11-15
+
+### Fixed
+- Tìm kiếm: chỉ mục đôi khi được tạo không có khóa chính (hai bước tạo chỉ mục và đặt cấu hình chạy đua nhau), khiến Meilisearch từ chối ngầm mọi lần nạp tài liệu và ca I-SEARCH chập chờn trên CI. Nay chỉ định khóa chính ngay ở lệnh nạp.
+- Tìm kiếm: chỉ mục bị mất thì tự dựng lại và nạp lại; một tệp đọc lỗi không còn chặn cả lần nạp; mọi lời gọi Hasura và S3 có hạn chờ; nhật ký ghi rõ mã lỗi.
+
 ## [1.6.0] - 2026-11-15
 
 Tài liệu và trình diễn.

@@ -27,15 +27,22 @@ const meili = async (method, path, body) => {
     signal: AbortSignal.timeout(10_000),
   })
   const text = await res.text()
+  if (res.status === 404 && text.includes('index_not_found')) { ready = false; seen.clear() } // chỉ mục bị mất (Meilisearch dựng lại): dựng lại và nạp lại từ đầu
   if (!res.ok) throw new Error(`Meilisearch ${method} ${path}: ${res.status} ${text.slice(0, 200)}`)
   return text ? JSON.parse(text) : null
 }
 
-const admin = async (query) => (await (await fetch(`${HASURA_URL}/v1/graphql`, {
-  method: 'POST',
-  headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
-  body: JSON.stringify({ query }),
-})).json()).data
+const admin = async (query) => {
+  const res = await fetch(`${HASURA_URL}/v1/graphql`, {
+    method: 'POST',
+    headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    body: JSON.stringify({ query }),
+    signal: AbortSignal.timeout(15_000),
+  })
+  const j = await res.json()
+  if (!j.data) throw new Error(`Hasura: ${JSON.stringify(j.errors ?? j).slice(0, 200)}`)
+  return j.data
+}
 
 /** Văn bản tìm kiếm được của một hồ sơ: tên quy trình, các ô đã điền (kèm nhãn), người gửi, ghi chú duyệt. */
 export function submissionText(s) {
@@ -56,8 +63,13 @@ async function ensureIndex() {
 
 async function fileText(att) {
   if (!(att.content_type?.startsWith('text/') || TEXTY.test(att.name)) || att.size > 1_000_000) return null
-  const res = await fetch(`${S3_URL}/dxlab/${att.object_key}`)
-  return res.ok ? (await res.text()).slice(0, MAX_TEXT) : null
+  try { // một tệp lỗi không được chặn cả lần nạp: bỏ qua, lần sau thử lại
+    const res = await fetch(`${S3_URL}/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(10_000) })
+    return res.ok ? (await res.text()).slice(0, MAX_TEXT) : null
+  } catch (err) {
+    console.error(`Không đọc được tệp ${att.id} để lập chỉ mục:`, err.cause?.code ?? err.message)
+    return null
+  }
 }
 
 /** Nạp hồ sơ và tệp văn bản vào chỉ mục. Chạy lại được an toàn: chỉ nạp thứ mới hoặc đã đổi. */
@@ -82,7 +94,7 @@ export async function syncIndex() {
   }
   if (!docs.length) return 0
   await ensureIndex()
-  await meili('POST', `/indexes/${INDEX}/documents`, docs.map(([d]) => d))
+  await meili('POST', `/indexes/${INDEX}/documents?primaryKey=id`, docs.map(([d]) => d))
   for (const [d, hash] of docs) seen.set(d.id, hash)
   return docs.length
 }
