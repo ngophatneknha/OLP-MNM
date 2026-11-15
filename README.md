@@ -143,7 +143,7 @@ docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tl
 | `search` | Meilisearch | tìm kiếm toàn văn, hỏi đáp có dẫn nguồn và kiểm quyền |
 | `ai` | Ollama | mô hình ngôn ngữ chạy tại chỗ |
 
-Hướng dẫn: [VAN_HANH.md](docs/VAN_HANH.md) (TLS, WAF, két, sao lưu và khôi phục, MFA, giám sát), [TRI_TUE.md](docs/TRI_TUE.md) (tìm kiếm, AI).
+Hướng dẫn: [VAN_HANH.md](docs/VAN_HANH.md) (TLS, WAF, két, sao lưu tự động và khôi phục, GitOps nhẹ, MFA, giám sát), [TRI_TUE.md](docs/TRI_TUE.md) (tìm kiếm, AI).
 
 **Image dựng sẵn** (chỉ là tiện lợi, cách cài chuẩn vẫn là dựng từ mã nguồn): `ghcr.io/ngophatneknha/dxlab-web` và `ghcr.io/ngophatneknha/dxlab-workflow-bridge` (mount `library/` vào `/library`).
 
@@ -167,7 +167,7 @@ Các mục dưới đây khai báo là `todo` trong báo cáo kiểm thử, khô
 - Chưa có tìm kiếm véc-tơ ngữ nghĩa, đọc PDF, OCR.
 - Chữ ký số là PKI phần mềm (chứng thư X.509 do CA của từng tổ chức cấp, ký phía máy chủ, khóa mã hóa trong CSDL): **chưa có HSM, CRL/OCSP** và chưa phải chữ ký số có giá trị pháp lý theo luật.
 - Thời gian thực dùng SSE (chưa WebSocket); thiết bị gọi HTTP (chưa MQTT/OPC UA).
-- Chưa có sao lưu tự động theo lịch (script có); két bí mật mới có một khóa mở.
+- Sao lưu tự động chỉ gồm CSDL (kho tệp dùng script); két bí mật mới có một khóa mở; GitOps chỉ ở mức một máy, chưa phải ArgoCD/Flux.
 - Đa tổ chức đã cách ly ở CSDL, nhưng mã ứng dụng vẫn duy nhất toàn hệ thống, chưa có màn hình quản trị tổ chức, các view báo cáo `bi.*` chưa tách theo tổ chức.
 
 ## Đóng góp

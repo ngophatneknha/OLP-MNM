@@ -9,6 +9,17 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-16
+
+### Added
+- Sao lưu tự động theo lịch: dịch vụ `backup` (profile `backup`, mặc định 24 giờ, giữ 7 bản); `restore.sh` khôi phục được từ bản chỉ có CSDL.
+- GitOps nhẹ: `scripts/gitops.sh check|apply|watch`.
+- Khóa theo cảm biến: số đo vượt ngưỡng đến cùng lúc không còn mở nhiều hồ sơ sửa chữa (IOT-07).
+- Ca kiểm thử OPS-BACKUP, OPS-GITOPS, IOT-07.
+
+### Changed
+- Z-08 không còn `todo`; Z-10 ghi rõ phần GitOps nhẹ đã có.
+
 ## [1.10.0] - 2026-11-16
 
 ### Added

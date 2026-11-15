@@ -7,10 +7,30 @@
 #   Tường lửa ứng dụng (Coraza + OWASP CRS, cổng 9081 trước cổng API): ... --profile waf up -d --build
 #   Két bí mật OpenBao: sh scripts/vault.sh init (xem docs/VAN_HANH.md, mục "Két bí mật")
 #   Tìm kiếm toàn văn và hỏi đáp: ... --profile search up -d
+#   Sao lưu tự động theo lịch:   ... --profile backup up -d   (xem docs/VAN_HANH.md)
 #   Mô hình AI chạy tại chỗ:      ... --profile ai up -d
 # Hướng dẫn: docs/VAN_HANH.md, docs/TRI_TUE.md
 
 services:
+  # Sao lưu CSDL theo lịch vào ./backups (mặc định mỗi 24 giờ, giữ 7 bản). Kho tệp S3: dùng scripts/backup.sh.
+  backup:
+    image: postgres:16-alpine
+    profiles: ["backup"]
+    restart: unless-stopped
+    entrypoint: ["sh", "/backup-loop.sh"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+      BACKUP_ONCE: ${BACKUP_ONCE:-}
+    volumes:
+      - ./scripts/backup-loop.sh:/backup-loop.sh:ro
+      - ./backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # TLS tại biên: Caddy cấp chứng chỉ nội bộ (tls internal) cho web, API và đăng nhập. Triển khai thật thì thay bằng tên miền để Caddy tự lấy chứng chỉ Let's Encrypt.
   caddy:
     image: caddy:2.8.4-alpine
