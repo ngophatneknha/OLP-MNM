@@ -1,21 +1,24 @@
 // SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 // SPDX-License-Identifier: Apache-2.0
 //
-// Tìm kiếm toàn văn và hỏi đáp có dẫn nguồn (RAG) trên hồ sơ và tệp đính kèm dạng văn bản. Qua cổng API:
+// Tìm kiếm toàn văn và hỏi đáp có dẫn nguồn (RAG) trên hồ sơ và tệp đính kèm dạng văn bản hoặc PDF có chữ. Qua cổng API:
 //   POST /search   { q }         -> các đoạn khớp
 //   POST /ask      { question }  -> câu trả lời của AI chỉ dựa trên các đoạn khớp, kèm nguồn
 // Chỉ mục (Meilisearch) KHÔNG quyết định quyền: mọi kết quả đều được Hasura kiểm lại bằng chính token của người hỏi,
 // nên người không được xem hồ sơ thì không bao giờ thấy nội dung của nó, cả trong kết quả lẫn trong ngữ cảnh gửi cho AI.
-// shortcut: chỉ mục toàn văn (BM25), chưa có véc-tơ ngữ nghĩa, OCR hay PDF; thêm khi có mô hình nhúng và OCR.
+// Chữ trong PDF được trích bằng pdftext.js (chỉ thư viện chuẩn của Node.js, chạy trong worker riêng).
+// shortcut: chỉ mục toàn văn (BM25), chưa có véc-tơ ngữ nghĩa, chưa OCR (PDF scan, ảnh); thêm khi có mô hình nhúng và OCR.
 
 import { createHash } from 'node:crypto'
 import { aiConfigured, complete } from './ai.js'
-import { HttpError, asUser } from './files.js'
+import { HttpError, asUser, MAX_BYTES } from './files.js'
+import { isPdf, extractPdfTextIsolated } from './pdftext.js'
 
 const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET, S3_URL = 'http://seaweedfs:8333' } = process.env
 const INDEX = 'docs'
 const MAX_TEXT = 100_000
 const TEXTY = /\.(txt|md|csv|json|log|tsv|xml|yml|yaml)$/i
+const PDFY = /\.pdf$/i
 const MARK_OPEN = '\u00ab'
 const MARK_CLOSE = '\u00bb'
 
@@ -65,12 +68,26 @@ const fails = new Map() // id tệp -> số lần đọc lỗi; quá 3 lần th�
 
 /** Văn bản của tệp; null = tệp không phải dạng chữ (bỏ qua hẳn), undefined = đọc lỗi tạm thời (thử lại). */
 async function fileText(att) {
-  if (!(att.content_type?.startsWith('text/') || TEXTY.test(att.name)) || att.size > 1_000_000) return null
+  const texty = att.content_type?.startsWith('text/') || TEXTY.test(att.name)
+  // Tên và loại tệp do trình duyệt gửi lên nên chỉ là gợi ý; có phải PDF thật hay không do byte đầu tệp quyết định.
+  const pdfy = att.content_type === 'application/pdf' || PDFY.test(att.name)
+  if (!(texty || pdfy) || att.size > (pdfy ? MAX_BYTES : 1_000_000)) return null
+  let body
   try {
-    const res = await fetch(`${S3_URL}/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(10_000) })
-    return res.ok ? (await res.text()).slice(0, MAX_TEXT) : null
+    const res = await fetch(`${S3_URL}/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(pdfy ? 30_000 : 10_000) })
+    if (!res.ok) return null
+    body = Buffer.from(await res.arrayBuffer())
   } catch (err) {
     console.error(`Không đọc được tệp ${att.id} để lập chỉ mục:`, err.cause?.code ?? err.message)
+    return undefined
+  }
+  if (!isPdf(body)) return texty ? new TextDecoder().decode(body).slice(0, MAX_TEXT) : null // như res.text(): bỏ BOM
+  try {
+    const { text, note } = await extractPdfTextIsolated(body, { limits: { maxChars: MAX_TEXT } })
+    if (note === 'limit') console.error(`Tệp PDF ${att.id} chạm trần khi trích chữ, chỉ lập chỉ mục phần đã đọc được`)
+    return text || null // PDF scan hoặc mã hoá: không có chữ để tìm
+  } catch (err) {
+    console.error(`Không trích được chữ từ PDF ${att.id}:`, err.message)
     return undefined
   }
 }

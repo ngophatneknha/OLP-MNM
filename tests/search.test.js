@@ -19,16 +19,45 @@ const call = async (user, path, body, raw = false) => {
   return fetch(`${GW}${path}`, { method: 'POST', headers, body: raw ? body : JSON.stringify(body) })
 }
 // Khi cả bộ kiểm thử chạy song song, giới hạn tần suất (429) hoặc trạm kiểm dịch bận (503) có thể từ chối tạm thời: thử lại.
-const upload = async (user, submissionId, name, text) => {
+const upload = async (user, submissionId, name, body, type = 'text/plain') => {
   for (let attempt = 1; ; attempt++) {
     const res = await fetch(`${GW}/files`, {
       method: 'POST',
-      headers: { authorization: `Bearer ${await login(user)}`, 'x-hasura-role': ROLE[user], 'x-submission-id': submissionId, 'x-file-name': encodeURIComponent(name), 'content-type': 'text/plain' },
-      body: text,
+      headers: { authorization: `Bearer ${await login(user)}`, 'x-hasura-role': ROLE[user], 'x-submission-id': submissionId, 'x-file-name': encodeURIComponent(name), 'content-type': type },
+      body,
     })
     if (res.status === 200 || attempt >= 8 || ![429, 503].includes(res.status)) return res
     await new Promise((ok) => setTimeout(ok, 8000))
   }
+}
+
+/**
+ * Dựng một tệp PDF một trang ngay trong kiểm thử (kho không chứa tệp PDF nào, xem LUAT-02). Font Helvetica với bảng
+ * /Differences cho các chữ tiếng Việt không có trong WinAnsi, giống cách các phần mềm cũ ghi chữ có dấu vào PDF.
+ */
+function makePdf(lines) {
+  const viet = { Đ: 'Dcroat', ề: 'ecircumflexgrave', ị: 'idotbelow', ạ: 'adotbelow', ứ: 'uhornacute', ộ: 'ocircumflexdotbelow',
+    ồ: 'ocircumflexgrave', ơ: 'ohorn', ư: 'uhorn', ờ: 'ohorngrave', ụ: 'udotbelow' }
+  const chars = Object.keys(viet)
+  const enc = (t) => [...t].map((c) => {
+    const i = chars.indexOf(c)
+    if (i >= 0) return `\\${(128 + i).toString(8)}`
+    if (c.charCodeAt(0) > 0xff) throw new Error(`makePdf chưa có mã cho chữ "${c}"`) // không ghi sai lặng lẽ
+    return c === '(' || c === ')' || c === '\\' ? `\\${c}` : c
+  }).join('')
+  const content = `BT /F1 12 Tf 72 760 Td 16 TL ${lines.map((l) => `(${enc(l)}) '`).join(' ')} ET`
+  const objs = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Length ${Buffer.byteLength(content, 'latin1')} >>\nstream\n${content}\nendstream`,
+    `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /BaseEncoding /WinAnsiEncoding /Differences [128 ${Object.values(viet).map((n) => `/${n}`).join(' ')}] >> >>`,
+  ]
+  let out = '%PDF-1.7\n', xref = ''
+  objs.forEach((o, i) => { xref += `${String(Buffer.byteLength(out, 'latin1')).padStart(10, '0')} 00000 n \n`; out += `${i + 1} 0 obj\n${o}\nendobj\n` })
+  const at = Buffer.byteLength(out, 'latin1')
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${xref}trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${at}\n%%EOF\n`
+  return Buffer.from(out, 'latin1')
 }
 
 describe('I-SEARCH: tìm kiếm và hỏi đáp có kiểm quyền', { skip }, () => {
@@ -88,5 +117,37 @@ describe('I-SEARCH: tìm kiếm và hỏi đáp có kiểm quyền', { skip }, (
     }, 'chỉ mục sẵn sàng', 90_000)
     // Máy chủ trả chuỗi thuần kèm dấu « »; giao diện chỉ dựng nút văn bản (xem Ask.vue), không dùng v-html.
     assert.equal(typeof hits[0].snippet, 'string')
+  })
+
+  test('I-SEARCH-06 tệp PDF có chữ: người gửi tìm thấy nội dung (kể cả chữ tiếng Việt có dấu), người khác không thấy gì', async () => {
+    const word = `pdfmanoibo${uid()}`
+    const id = (await submit('staff1', await publishApp(), { so_tien: 3 })).data.insert_submission_one.id
+    const pdf = makePdf(['Đề nghị tạm ứng công tác phí', `Mã hồ sơ nội bộ ${word}`, 'Người phụ trách: chị Lan'])
+    assert.equal((await upload('staff1', id, 'de-nghi.pdf', pdf, 'application/pdf')).status, 200)
+    const hits = await until(async () => {
+      const { hits } = await (await call('staff1', '/search', { q: word })).json()
+      return hits.length ? hits : null
+    }, 'chỉ mục đọc xong tệp PDF', 90_000)
+    const hit = hits.find((h) => h.submission_id === id)
+    assert.ok(hit, 'phải tìm thấy đúng hồ sơ')
+    assert.equal(hit.kind, 'file')
+    assert.equal(hit.name, 'de-nghi.pdf')
+    assert.ok(hit.snippet.includes('tạm ứng'), `chữ có dấu phải được trích đúng: ${hit.snippet}`)
+
+    const other = await (await call('staff2', '/search', { q: word })).json()
+    assert.deepEqual(other.hits, [], 'nhân viên khác không được thấy gì')
+    const denied = await (await call('staff2', '/ask', { question: `mã hồ sơ nội bộ ${word} là gì?` })).json()
+    assert.deepEqual(denied.sources, [])
+    assert.ok(!JSON.stringify(denied).includes(word), 'nội dung PDF không được lọt vào câu trả lời')
+  })
+
+  test('I-SEARCH-07 tệp đuôi .pdf nhưng hỏng hoặc không phải PDF không làm kẹt chỉ mục: tệp gửi sau vẫn tìm được', async () => {
+    const word = `saupdfhong${uid()}`
+    const id = (await submit('staff1', await publishApp(), { so_tien: 4 })).data.insert_submission_one.id
+    const broken = Buffer.concat([Buffer.from('%PDF-1.7\n1 0 obj << /Length 999999 >>\nstream\n', 'latin1'), Buffer.alloc(4096, 0xff)])
+    assert.equal((await upload('staff1', id, 'hong.pdf', broken, 'application/pdf')).status, 200)
+    assert.equal((await upload('staff1', id, 'khong-phai.pdf', 'chỉ là chữ thường', 'application/pdf')).status, 200)
+    assert.equal((await upload('staff1', id, 'sau.txt', `Ghi chú gửi sau ${word}`)).status, 200)
+    await until(async () => (await (await call('staff1', '/search', { q: word })).json()).hits.length, 'chỉ mục vẫn chạy tiếp', 90_000)
   })
 })

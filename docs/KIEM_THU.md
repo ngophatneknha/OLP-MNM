@@ -91,6 +91,10 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | I-SEARCH-03 | Hỏi đáp: người không có quyền nhận câu trả lời rỗng; người có quyền nhận đúng nguồn, câu trả lời của AI dẫn số nguồn |
 | I-SEARCH-04 | Không token 401; JSON hỏng, câu hỏi rỗng hoặc quá dài 400 |
 | I-SEARCH-05 | Nội dung có mã HTML trả về như chữ thường |
+| I-SEARCH-06 | Tệp PDF có chữ tiếng Việt: người gửi tìm thấy và đoạn trích đúng dấu; nhân viên khác không thấy, hỏi đáp không lộ nội dung |
+| I-SEARCH-07 | Tệp đuôi `.pdf` nhưng hỏng hoặc không phải PDF bị bỏ qua mà không làm kẹt chỉ mục: tệp gửi sau vẫn tìm được |
+
+Bộ trích chữ PDF (`services/workflow-bridge/pdftext.test.js`, kiểm thử đơn vị, không cần hệ thống chạy) có 23 ca: font một byte và hai byte kèm ToUnicode, object stream, cây trang thừa kế, `/ActualText`, chữ vẽ không theo thứ tự đọc, Form XObject; và các tệp cố ý phá: bom nén, form tự gọi lại chính nó, lồng sâu 200.000 tầng, khoá `__proto__`, tệp cắt cụt ở mọi vị trí, worker quá hạn. Ngoài kiểm thử tự động, bộ trích đã được đối chiếu tay với `pdftotext` trên PDF thật xuất từ LibreOffice (cả đường docx), Chrome, wkhtmltopdf, reportlab, XeLaTeX, pdfLaTeX và bản nén object stream của qpdf: khớp từng từ; tài liệu 132 trang khớp nguyên văn với văn bản gốc, đọc trong khoảng 0,3 giây.
 
 ## Lỗi bộ kiểm thử tìm ra và đã sửa (phiên bản 1.1.0)
 
@@ -110,7 +114,7 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | Mã | Thiếu | Ghi chú |
 |---|---|---|
 | D-06 | Lakehouse, NGSI-LD, WebGIS, phả hệ dữ liệu [D] | Ngoài phạm vi hiện tại |
-| I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
+| I-07 | Tìm kiếm véc-tơ ngữ nghĩa, OCR [I] | Toàn văn, PDF có chữ và RAG kiểm quyền đã có (I-SEARCH); chưa có véc-tơ và OCR |
 | Z-01 | Két bí mật (Vault) | Bí mật hiện nằm trong `.env` |
 | Z-05b | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
 | Z-02 | WAF tại biên | Chưa làm |

@@ -57,7 +57,7 @@ AI lỗi hoặc chưa cấu hình thì mọi thứ chạy như nấc 1.
 
 ## Tìm kiếm và hỏi đáp có kiểm quyền
 
-Thành phần tùy chọn (profile `search`). `workflow-bridge` nạp nội dung hồ sơ và tệp văn bản vào Meilisearch. Khi người dùng hỏi (`POST /ask`) hoặc tìm (`POST /search`): chỉ mục trả các đoạn khớp, rồi **Hasura kiểm lại từng kết quả bằng chính token của người hỏi**, nên quyền xem chỉ có một nơi định nghĩa. AI chỉ nhận các đoạn đã qua kiểm quyền và chỉ được trả lời từ đó, ghi số nguồn. Chi tiết và giới hạn: [TRI_TUE.md](TRI_TUE.md).
+Thành phần tùy chọn (profile `search`). `workflow-bridge` nạp nội dung hồ sơ, tệp văn bản và chữ của tệp PDF (`pdftext.js`, chạy trong worker riêng) vào Meilisearch. Khi người dùng hỏi (`POST /ask`) hoặc tìm (`POST /search`): chỉ mục trả các đoạn khớp, rồi **Hasura kiểm lại từng kết quả bằng chính token của người hỏi**, nên quyền xem chỉ có một nơi định nghĩa. AI chỉ nhận các đoạn đã qua kiểm quyền và chỉ được trả lời từ đó, ghi số nguồn. Chi tiết và giới hạn: [TRI_TUE.md](TRI_TUE.md).
 
 ## Bảo mật khi triển khai
 

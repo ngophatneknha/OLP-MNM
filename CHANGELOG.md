@@ -9,6 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+### Added
+- Hỏi đáp và tìm kiếm tài liệu đọc được **tệp PDF có chữ** (issue #129), không cần OCR. Bộ trích chữ `services/workflow-bridge/pdftext.js` chỉ dùng thư viện chuẩn của Node.js, không thêm thành phần bên thứ ba: đọc object stream, nén FlateDecode, font hai byte qua bảng ToUnicode (chữ tiếng Việt), `/ActualText`, Form XObject; xếp lại chữ theo vị trí khi phần mềm tạo PDF không vẽ theo thứ tự đọc (LibreOffice vẽ chữ tiếng Việt bằng font dự phòng sau cùng).
+- Tệp PDF tải lên là dữ liệu không tin cậy: bộ trích chạy trong worker riêng không có biến môi trường, có trần bộ nhớ và hạn giờ; có trần byte giải nén (chống bom nén), số object, độ lồng, số toán tử và số ký tự. PDF có phải PDF hay không do byte đầu tệp quyết định, không theo tên hay loại tệp do trình duyệt gửi.
+- Kiểm thử: 23 ca đơn vị trong `pdftext.test.js` (mọi PDF mẫu dựng ngay trong mã, kho vẫn không có tệp PDF nào); I-SEARCH-06 (PDF tiếng Việt: người gửi tìm thấy, người khác không thấy, kể cả qua hỏi đáp) và I-SEARCH-07 (PDF hỏng hoặc giả không làm kẹt chỉ mục).
+
+### Chưa làm
+- PDF scan (cần OCR) và PDF mã hoá: bỏ qua, không lỗi. Font không có bảng ToUnicode mà dùng bảng mã riêng (kể cả font tiếng Việt cũ TCVN3/VNI) cho ra chữ sai. Font bitmap Type3 của pdfTeX mất các chữ ghép fi, fl.
+
 ## [1.7.6] - 2026-11-15
 
 ### Added

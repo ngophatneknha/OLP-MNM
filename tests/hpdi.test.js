@@ -275,7 +275,7 @@ describe('I: Không gian Trí tuệ số — AI có kiểm soát', () => {
     await waitStatus('manager1', s, { current_step: 'truong_phong' })
     assert.ok(!(await act('manager1', s, 'truong_phong', 'approve')).errors)
   })
-  test('I-07 [todo] tìm kiếm véc-tơ ngữ nghĩa, OCR, đọc PDF (toàn văn và RAG kiểm quyền đã có: tests/search.test.js)', { todo: 'chưa làm: Qdrant, OCR, PDF' }, () => assert.fail('chưa có'))
+  test('I-07 [todo] tìm kiếm véc-tơ ngữ nghĩa, OCR (toàn văn, PDF có chữ và RAG kiểm quyền đã có: tests/search.test.js)', { todo: 'chưa làm: Qdrant, OCR' }, () => assert.fail('chưa có'))
 })
 
 describe('Z: Nguyên lý Zero-Trust và vận hành (đề thi mục 4, nguyên lý iv) — điểm chưa làm', () => {

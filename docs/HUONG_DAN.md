@@ -75,7 +75,7 @@ Thành phần chưa có dữ liệu thì bỏ ra khỏi trung bình. Mức: dư�
 ## [I] Trí tuệ
 
 ### Hỏi đáp tài liệu
-Gõ câu hỏi bằng lời thường. Trợ lý tìm trong hồ sơ và các tệp văn bản bạn **được phép xem**, trả lời ngắn gọn và **ghi số nguồn** cho từng ý; bấm vào nguồn để mở hồ sơ gốc. Nếu không có tài liệu nào liên quan, nó nói thẳng thay vì đoán. (Cần bật thành phần tìm kiếm, xem [TRI_TUE.md](TRI_TUE.md).)
+Gõ câu hỏi bằng lời thường. Trợ lý tìm trong hồ sơ, các tệp văn bản và tệp PDF có chữ mà bạn **được phép xem**, trả lời ngắn gọn và **ghi số nguồn** cho từng ý; bấm vào nguồn để mở hồ sơ gốc. Nếu không có tài liệu nào liên quan, nó nói thẳng thay vì đoán. (Cần bật thành phần tìm kiếm, xem [TRI_TUE.md](TRI_TUE.md).)
 
 ### Trợ lý AI thử việc (trưởng phòng, giám đốc)
 Ở mỗi bước duyệt, trợ lý đi qua bốn nấc: *Người làm*, *Chạy bóng* (âm thầm cho ý kiến để so với quyết định của người), *Gợi ý* (người duyệt thấy gợi ý kèm lý do), *Tự duyệt* (chỉ duyệt hồ sơ hợp lệ, **không bao giờ tự từ chối**). Chỉ giám đốc nâng nấc, từng nấc một, và chỉ khi có ít nhất 10 quyết định thật của người với từ 90% khớp. Trưởng phòng và giám đốc hạ nấc được bất cứ lúc nào.

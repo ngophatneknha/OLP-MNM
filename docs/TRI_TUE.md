@@ -15,12 +15,12 @@ docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile se
 
 Cách hoạt động:
 
-1. `workflow-bridge` nạp vào chỉ mục (mỗi 10 giây, chỉ phần mới hoặc đổi) nội dung các ô của hồ sơ, ghi chú duyệt và **tệp đính kèm dạng văn bản** (`.txt`, `.md`, `.csv`, `.json`, `.log`... tới 1 MB).
+1. `workflow-bridge` nạp vào chỉ mục (mỗi 10 giây, chỉ phần mới hoặc đổi) nội dung các ô của hồ sơ, ghi chú duyệt và **tệp đính kèm dạng văn bản** (`.txt`, `.md`, `.csv`, `.json`, `.log`... tới 1 MB) và **tệp PDF có chữ** (tới 10 MB). Chữ trong PDF được trích bằng mã của dự án (`pdftext.js`, chỉ thư viện chuẩn của Node.js) trong một worker riêng có trần bộ nhớ và hạn giờ, vì tệp tải lên là dữ liệu không tin cậy.
 2. Người dùng hỏi ở trang **Hỏi đáp tài liệu** (`/hoi-dap`) hoặc gọi `POST /search` và `POST /ask` qua cổng API (có JWT, giới hạn 120 yêu cầu mỗi phút).
 3. Meilisearch tìm đoạn khớp, rồi **Hasura kiểm lại từng kết quả bằng chính token của người hỏi**. Chỉ mục không quyết định quyền, nên hồ sơ người đó không được xem không bao giờ xuất hiện, cả trong kết quả lẫn trong ngữ cảnh gửi cho AI.
 4. Nếu đã cấu hình AI (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` trong `.env`), AI trả lời **chỉ dựa trên các đoạn đó**, mỗi ý ghi số nguồn. Nguồn được coi là dữ liệu, không phải mệnh lệnh. Không có đoạn nào khớp thì không gọi AI. Không cấu hình AI thì vẫn tìm kiếm và xem nguồn được.
 
-Giới hạn hiện tại, nói thẳng: tìm kiếm toàn văn (BM25), chưa có véc-tơ ngữ nghĩa (Qdrant), chưa đọc PDF hay ảnh (OCR). Kiểm thử: `SEARCH_OPTIONAL=1 node --test tests/search.test.js`.
+Giới hạn hiện tại, nói thẳng: tìm kiếm toàn văn (BM25), chưa có véc-tơ ngữ nghĩa (Qdrant), chưa OCR: PDF scan, ảnh và PDF mã hoá được bỏ qua; PDF dùng font tiếng Việt cũ (TCVN3/VNI) không có bảng ToUnicode cho ra chữ sai. Kiểm thử: `SEARCH_OPTIONAL=1 node --test tests/search.test.js`.
 
 ## Mô hình AI chạy tại chỗ (Ollama)
 

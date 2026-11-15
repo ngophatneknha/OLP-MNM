@@ -227,7 +227,7 @@ docs/                       kiến trúc và kế hoạch
 
 **Đã chạy được, có kiểm thử trên hệ thống thật:** nền tảng lõi Tầng 1 (SSO có MFA, cổng API, dữ liệu cấu trúc và phi cấu trúc, luồng BPMN), bộ sinh ứng dụng từ mô tả, trợ lý AI phác thảo, phiên bản và đề xuất thay đổi quy trình, tệp đính kèm có quét mã độc, bảng công việc, lịch, thông báo, số liệu điều hành, hỏi đáp tài liệu có dẫn nguồn và kiểm quyền, trợ lý AI thử việc bốn nấc, sao lưu và khôi phục, TLS và giám sát tùy chọn, giao diện vi/en.
 
-**Chưa làm, nói thẳng** (khai báo là `todo` trong báo cáo kiểm thử): tìm kiếm véc-tơ ngữ nghĩa và đọc PDF/OCR; kho dữ liệu lạnh, NGSI-LD, WebGIS; két bí mật; WAF; ẩn thông tin định danh; sao lưu tự động theo lịch; dịch nốt các trang cũ sang tiếng Anh; wiki và điểm trưởng thành H-P-D-I.
+**Chưa làm, nói thẳng** (khai báo là `todo` trong báo cáo kiểm thử): tìm kiếm véc-tơ ngữ nghĩa và OCR (PDF scan, ảnh); kho dữ liệu lạnh, NGSI-LD, WebGIS; két bí mật; WAF; ẩn thông tin định danh; sao lưu tự động theo lịch; dịch nốt các trang cũ sang tiếng Anh; wiki và điểm trưởng thành H-P-D-I.
 
 ### Muốn đóng góp?
 

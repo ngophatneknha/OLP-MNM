@@ -78,7 +78,7 @@ Danh sách kiểm tra:
 | Dữ liệu có bị gửi ra ngoài không? | Chỉ khi cấu hình dịch vụ AI ngoài; có thể chạy mô hình tại chỗ bằng Ollama |
 | Giấy phép? | Apache-2.0; SPDX trong từng tệp, kiểm bằng REUSE trong CI; không thành phần AGPL |
 | Kiểm thử thế nào? | `node --test tests/*.test.js`: kiểm đối chiếu đề thi và thể lệ trên hệ thống thật, xem `docs/KIEM_THU.md` |
-| Điều gì chưa làm? | Nói thẳng: tìm kiếm véc-tơ, OCR/PDF, két bí mật, WAF, ẩn PII; các mục này nằm trong báo cáo kiểm thử dưới dạng `todo` |
+| Điều gì chưa làm? | Nói thẳng: tìm kiếm véc-tơ, OCR, két bí mật, WAF, ẩn PII; các mục này nằm trong báo cáo kiểm thử dưới dạng `todo` |
 | Cài đặt có khó không? | Ba lệnh: sao chép `.env`, `docker compose up -d --build`, nạp dữ liệu mẫu |
 | Triển khai thật? | Bật TLS qua Caddy, đổi mật khẩu mẫu, sao lưu theo `docs/VAN_HANH.md` |
 

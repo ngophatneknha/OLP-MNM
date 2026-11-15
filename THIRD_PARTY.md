@@ -57,6 +57,7 @@ Toàn bộ cây phụ thuộc cài lúc build (khoảng 80 gói) chỉ gồm cá
 - Có đúng **một** thành phần copyleft: ClamAV (GPL-2.0), chạy trong container riêng, không sửa, không đính kèm mã vào kho, và chỉ giao tiếp với hệ thống qua cổng mạng (giao thức clamd). Vì vậy GPL-2.0 không lan sang mã Apache-2.0 của dự án (đây là việc chạy một chương trình riêng, không phải liên kết hay trộn mã). Không thành phần nào dùng AGPL hay giấy phép không được OSI chấp thuận; MinIO (AGPL-3.0) đã được thay bằng SeaweedFS (Apache-2.0), và Grafana (AGPL-3.0) không được dùng: giám sát dùng giao diện truy vấn của Prometheus (Apache-2.0).
 - Mã tự viết của dự án phát hành theo Apache-2.0; phông chữ OFL-1.1 được phép đóng gói kèm miễn là không bán riêng, và dự án không làm vậy.
 - Dự án không phát hành cùng gói đính kèm của dự án khác và không chỉnh sửa mã của bất kỳ gói nào.
+- Đọc chữ trong tệp PDF (tìm kiếm, hỏi đáp) dùng mã tự viết `services/workflow-bridge/pdftext.js` (Apache-2.0, chỉ thư viện chuẩn của Node.js), không thêm thư viện hay container nào; `workflow-bridge` vẫn không có gói phụ thuộc bên thứ ba.
 
 ## Tùy chọn
 
