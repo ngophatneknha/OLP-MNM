@@ -4,6 +4,8 @@
 // Số liệu điều hành tính từ chính dữ liệu hồ sơ và nhật ký (không có số liệu nhập tay).
 // Hàm thuần, có kiểm thử: metrics.test.js.
 
+import { locale, t } from './i18n.js'
+
 const HOUR = 3600000
 
 /** Thời gian chờ ở từng bước = khoảng cách từ lúc hồ sơ vào bước (gửi, hoặc hành động trước đó) tới lúc có người xử lý. */
@@ -76,8 +78,9 @@ export function computeMetrics(submissions, now = Date.now()) {
 
 /** "2 giờ", "1,5 ngày", "vài giây" */
 export function formatHours(hours) {
-  if (hours < 1 / 60) return 'vài giây'
-  if (hours < 1) return `${Math.round(hours * 60)} phút`
-  if (hours < 24) return `${hours.toFixed(1).replace('.', ',').replace(',0', '')} giờ`
-  return `${(hours / 24).toFixed(1).replace('.', ',').replace(',0', '')} ngày`
+  const num = (n) => n.toFixed(1).replace(/\.0$/, '').replace('.', locale() === 'vi-VN' ? ',' : '.')
+  if (hours < 1 / 60) return t('unit.seconds')
+  if (hours < 1) return t('unit.minutes', { n: Math.round(hours * 60) })
+  if (hours < 24) return t('unit.hoursShort', { n: num(hours) })
+  return t('unit.daysShort', { n: num(hours / 24) })
 }

@@ -8,14 +8,17 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const GUARDED = [
-  'pages/Home.vue', 'pages/Submission.vue', 'pages/Processes.vue',
-  'components/SignatureRow.vue', 'components/DecisionBar.vue', 'components/ProcessFlow.vue',
+  'App.vue', 'lib.js', 'metrics.js',
+  'pages/Home.vue', 'pages/Submission.vue', 'pages/Processes.vue', 'pages/Stats.vue', 'pages/Apps.vue', 'pages/Assistant.vue',
+  'pages/Documents.vue', 'pages/Builder.vue', 'pages/Ask.vue', 'pages/Board.vue', 'pages/Calendar.vue', 'pages/Profile.vue',
+  'components/SignatureRow.vue', 'components/DecisionBar.vue', 'components/ProcessFlow.vue', 'components/CategoryIcon.vue',
 ]
 const VIET = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i
 
 for (const file of GUARDED) {
   test(`${file} không còn chữ Việt viết thẳng`, () => {
     const code = readFileSync(new URL(`./${file}`, import.meta.url), 'utf8')
+      .split('\n').filter((line) => !line.includes('i18n-ok')).join('\n') // dòng đánh dấu i18n-ok là dữ liệu, không phải chữ giao diện
       .replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/ .*$/gm, '')
     const bad = code.split('\n').filter((line) => VIET.test(line))
     assert.deepEqual(bad, [])

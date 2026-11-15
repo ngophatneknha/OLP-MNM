@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 import { Banknote, CalendarDays, ShoppingCart, Stamp, FileText } from 'lucide-vue-next'
 
 defineProps({ category: { type: String, default: '' } })
-const ICONS = { 'Tài chính': Banknote, 'Nhân sự': CalendarDays, 'Mua sắm': ShoppingCart, 'Hành chính': Stamp }
+const ICONS = { 'Tài chính': Banknote, 'Nhân sự': CalendarDays, 'Mua sắm': ShoppingCart, 'Hành chính': Stamp } // i18n-ok: khóa dữ liệu nhóm hồ sơ
 </script>
 
 <template>

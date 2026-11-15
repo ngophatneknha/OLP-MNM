@@ -9,6 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.7] - 2026-11-15
+
+### Changed
+- Các màn hình còn lại (Số liệu, Gửi hồ sơ, Trợ lý AI, Tài liệu, Soạn quy trình) dùng đủ hai ngôn ngữ Việt và Anh; đóng giai đoạn 2 của #111. Thời lượng ("2 giờ", "1,5 ngày"), bốn nấc tự chủ của trợ lý và tên nhóm hồ sơ cũng đổi theo ngôn ngữ.
+- `web/src/hardcoded.test.js` nay chặn chữ Việt viết thẳng ở mọi màn hình, `lib.js` và `metrics.js`. Dòng là dữ liệu (giá trị nhóm lưu trong cơ sở dữ liệu) đánh dấu `i18n-ok`.
+
 ## [1.7.6] - 2026-11-15
 
 ### Added
