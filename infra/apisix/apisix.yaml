@@ -15,7 +15,7 @@ routes:
         allow_methods: "POST,OPTIONS"
         allow_headers: "authorization,content-type,x-hasura-role"
       limit-count:
-        count: 300
+        count: 900
         time_window: 60
         key_type: var
         key: remote_addr
