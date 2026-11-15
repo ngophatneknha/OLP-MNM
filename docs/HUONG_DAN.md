@@ -55,6 +55,8 @@ Ba cách tạo: lấy từ **kho quy trình mẫu**, tự khai báo ô và bư�
 ### Số liệu (trưởng phòng, giám đốc)
 **Mức trưởng thành H-P-D-I** (điểm 0 đến 100 cho từng không gian, và điểm chung); bao nhiêu hồ sơ đang chờ, hoàn tất, bị từ chối; thời gian xử lý trung bình; **bước nào làm hồ sơ chờ lâu nhất**; hồ sơ đang chờ lâu. Mọi con số tính từ chính hồ sơ và nhật ký ký duyệt, dòng nào cũng bấm vào được hồ sơ gốc. Trang tự làm mới.
 
+**Việc đáng làm nhất và xu hướng:** dưới mỗi thẻ điểm H, P, D, I có một dòng chỉ thành phần có thể cộng nhiều điểm nhất (trọng số nhân phần còn thiếu) kèm việc cụ thể để làm. Bảng 4 tuần cho thấy H và D tính lại từ nhật ký tại từng mốc; P và I không có lịch sử đầy đủ nên không vẽ xu hướng, không bịa số.
+
 **Gợi ý cải tiến quy trình:** tính từ hồ sơ thật, không dùng AI. Một bước được nêu khi chờ trung bình quá 48 giờ, hoặc bị từ chối từ 40% trở lên, và có ít nhất 3 hồ sơ làm căn cứ. Mỗi gợi ý ghi rõ con số và dẫn tới trang Quy trình để đề xuất thay đổi. Cùng mục này cảnh báo vai trò mà quy trình cần nhưng chưa từng ký hồ sơ nào. Trên Bàn làm việc, hồ sơ chờ bạn quá 48 giờ có nhãn "Quá N giờ".
 
 **Nhật ký và xuất dữ liệu:** mục "Nhật ký và xuất dữ liệu" liệt kê hồ sơ đã xong nhưng thiếu dấu duyệt ở một bước áp dụng cho nó (bấm vào để mở hồ sơ), và có nút tải toàn bộ hồ sơ cùng nhật ký ra CSV hoặc JSON. Dữ liệu xuất ra chỉ gồm những gì vai trò của bạn được phép xem.

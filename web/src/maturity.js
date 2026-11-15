@@ -78,3 +78,32 @@ export function computeMaturity({ submissions, apps, autonomy }) {
   const scores = Object.values(spaces).map((x) => x.score).filter((x) => x !== null)
   return { enough: true, spaces, overall: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null }
 }
+
+/**
+ * Việc đáng làm nhất cho một không gian: thành phần có thể cộng nhiều điểm nhất (trọng số nhân phần còn thiếu).
+ * @returns { key, gain } hoặc null khi không còn gì để cải thiện hoặc chưa có dữ liệu
+ */
+export function nextStep(space) {
+  const best = space.parts
+    .filter((p) => p.value !== null && p.value < 1)
+    .map((p) => ({ key: p.key, gain: p.weight * (1 - p.value) }))
+    .sort((a, b) => b.gain - a.gain)[0]
+  return best ?? null
+}
+
+/**
+ * Điểm H và D của các tuần gần đây, tính lại từ nhật ký tại từng mốc (hồ sơ và dấu duyệt có sau mốc bị bỏ đi).
+ * P và I không tính lại được vì phiên bản và nấc tự chủ không giữ lịch sử đầy đủ, nên chỉ có giá trị hiện tại.
+ */
+export function weeklyTrend({ submissions, apps }, now = Date.now(), weeks = 4) {
+  const WEEK = 7 * 24 * 3_600_000
+  return Array.from({ length: weeks }, (_, i) => {
+    const cutoff = now - (weeks - 1 - i) * WEEK
+    const slice = submissions.filter((s) => Date.parse(s.created_at) <= cutoff).map((s) => {
+      const done = s.finished_at && Date.parse(s.finished_at) <= cutoff
+      return { ...s, status: done ? s.status : 'running', events: s.events.filter((e) => Date.parse(e.created_at) <= cutoff) }
+    })
+    const r = computeMaturity({ submissions: slice, apps, autonomy: [] })
+    return { at: cutoff, H: r.enough ? r.spaces.H.score : null, D: r.enough ? r.spaces.D.score : null }
+  })
+}

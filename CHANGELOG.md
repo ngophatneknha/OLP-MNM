@@ -9,6 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.6] - 2026-11-15
+
+### Added
+- Dưới mỗi thẻ điểm H, P, D, I trên trang Số liệu có dòng "Việc đáng làm nhất": thành phần cộng được nhiều điểm nhất kèm việc cụ thể (`nextStep` trong `maturity.js`).
+- Bảng xu hướng 4 tuần cho H và D, tính lại từ nhật ký tại từng mốc (`weeklyTrend`). P và I không có lịch sử nên không vẽ, và trang nói rõ điều đó.
+
 ## [1.7.5] - 2026-11-15
 
 ### Added

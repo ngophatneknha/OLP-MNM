@@ -66,3 +66,26 @@ test('điểm chung là trung bình các không gian có điểm; nhãn mức th
   assert.equal(maturityLevel(40), 'growing')
   assert.equal(maturityLevel(70), 'mature')
 })
+
+import { nextStep, weeklyTrend } from './maturity.js'
+
+test('nextStep chọn thành phần cộng được nhiều điểm nhất, bỏ thành phần chưa có dữ liệu hoặc đã đủ', () => {
+  const space = { parts: [{ key: 'a', weight: 50, value: 0.9 }, { key: 'b', weight: 40, value: 0.25 }, { key: 'c', weight: 10, value: null }, { key: 'd', weight: 99, value: 1 }] }
+  assert.deepEqual(nextStep(space), { key: 'b', gain: 30 })
+  assert.equal(nextStep({ parts: [{ key: 'a', weight: 50, value: 1 }] }), null)
+})
+
+test('weeklyTrend tính lại theo mốc: hồ sơ và dấu duyệt sau mốc không được tính', () => {
+  const DAY = 86_400_000
+  const now = Date.parse('2026-11-29T00:00:00Z')
+  const spec = { steps: [{ key: 'tp', role: 'manager' }] }
+  const at = (d) => new Date(now - d * DAY).toISOString()
+  const mk = (n, d0, dEv, events) => Array.from({ length: n }, () => ({ status: 'approved', created_at: at(d0), finished_at: at(dEv), data: {}, app: { key: 'a' }, version: { spec }, events }))
+  const good = mk(5, 20, 19, [{ step_key: 'tp', action: 'approve', created_at: at(19) }])
+  const bad = mk(5, 2, 1, []) // hồ sơ gần đây đã duyệt nhưng thiếu nhật ký
+  const trend = weeklyTrend({ submissions: [...good, ...bad], apps: [{ key: 'a', spec, versions: [{ version: 1 }], changes: [] }] }, now)
+  assert.equal(trend.length, 4)
+  assert.equal(trend[0].H, null, 'mốc 3 tuần trước chưa có hồ sơ nào')
+  assert.equal(trend[1].D, 100, 'mốc 2 tuần trước chỉ có 5 hồ sơ tốt')
+  assert.equal(trend[3].D, 70, 'hiện tại một nửa hồ sơ thiếu nhật ký')
+})
