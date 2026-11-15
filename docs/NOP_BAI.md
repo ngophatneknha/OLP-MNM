@@ -3,37 +3,67 @@ SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Hướng dẫn nộp bài và danh sách kiểm tra trước hạn
+# Hồ sơ nộp bài và các điều khoản không kiểm bằng máy được
 
-Tài liệu cho người nộp bài. Phần việc của máy (mã, kiểm thử, bản phát hành) đã xong và nằm trong kho; phần dưới đây là việc của người.
+Tài liệu này gom những việc **chỉ người trong đội làm được** theo Đề thi (mục 5) và Thể lệ, kèm mẫu để điền. Phần máy kiểm được nằm trong `tests/luat.test.js` và `tests/pof.test.js`.
 
-## 1. Trước khi gửi (làm một lần, theo thứ tự)
+## 1. Việc cần xác nhận với Ban tổ chức
 
-- [ ] **Hỏi Ban tổ chức năm của hạn nộp.** Đề ghi 17:00 ngày 06/12 nhưng in năm 2025 trong khi cuộc thi là 2026; xác nhận bằng văn bản (thư hoặc tin nhắn) và giữ lại.
-- [ ] Mở [trang bản phát hành](https://github.com/ngophatneknha/OLP-MNM/releases/latest): có đúng một tệp `.tar.gz`, phiên bản khớp dòng đầu của [CHANGELOG](../CHANGELOG.md).
-- [ ] Mở tab Actions: lần chạy gần nhất của nhánh `main` xanh cả hai việc (kiểm thử trên hệ thống thật, kiểm giấy phép REUSE).
-- [ ] Tải `.tar.gz` về một thư mục trống, giải nén, làm đúng mục "Cài đặt và chạy thử trong 5 phút" của README trên máy sạch (Docker Desktop, 8 GB RAM). Ghi lại thời gian và mọi chỗ vấp.
-- [ ] Chạy `node scripts/demo-platform.mjs`: bảy bước đều có dấu ✔.
-- [ ] Trên máy trình diễn, đăng nhập `manager1` và `director1` một lần để cài OTP (bắt buộc cho hai vai trò này); không chạy bộ kiểm thử trên máy này.
-- [ ] Xem lại [kịch bản demo](KICH_BAN_DEMO.md), tập ít nhất hai lần, đo giờ (15 phút). Quay video dự phòng.
-- [ ] Điền khóa AI thật vào `.env` nếu muốn demo soạn quy trình bằng AI; không có khóa thì dùng kho mẫu.
+**Hạn nộp bài.** Đề thi ghi "17:00 Chủ Nhật ngày 06/12/2025", trong khi cuộc thi diễn ra năm 2026 (thể lệ: chấm kho mã 7-9/12/2026, chung kết 10/12/2026). Ngày 06/12/2026 là Chủ Nhật, nên gần như chắc là gõ nhầm năm. Nên hỏi trên nhóm Telegram của BTC (https://t.me/+YUkj6aM3bnYyOWQ1) để có xác nhận bằng văn bản:
 
-## 2. Thư nộp bài
+> Kính gửi BTC, đề thi PMNM 2026 mục 5 ghi hạn gửi bài là "17:00 Chủ Nhật ngày 06/12/2025". Chúng em hiểu đây là 06/12/2026 (Chủ Nhật). Nhờ BTC xác nhận giúp. Cảm ơn BTC.
 
-Gửi từ hộp thư của đội tới địa chỉ Ban tổ chức nêu trong Thể lệ, trước hạn đã xác nhận. Tiêu đề và nội dung theo mẫu Thể lệ: tên đội, trường, danh sách thành viên (họ tên, năm sinh, ngành), người hướng dẫn, đường dẫn kho mã nguồn và bản phát hành, lời cam kết bản quyền theo phần mềm tự do nguồn mở.
+Trong lúc chờ xác nhận, coi hạn là **17:00 ngày 06/12/2026** và nộp sớm hơn ít nhất một ngày.
 
-- Kho mã nguồn: https://github.com/ngophatneknha/OLP-MNM
-- Bản phát hành dự thi: https://github.com/ngophatneknha/OLP-MNM/releases/latest
-- Không đính kèm mã hay tệp lớn; chỉ gửi đường dẫn. Kho phải công khai (kiểm bằng cửa sổ ẩn danh).
+## 2. Điều kiện của đội (Thể lệ, "Yêu cầu tham gia")
 
-Giữ bản sao thư đã gửi và dấu thời gian gửi.
+| Điều kiện | Cần làm | Xong |
+|---|---|---|
+| Đội có không quá 3 thí sinh | Chốt danh sách | ☐ |
+| Có một giảng viên của trường dẫn dắt | Xác nhận tên, khoa/viện | ☐ |
+| Mỗi trường tối đa 2 đội | Hỏi khoa đã đăng ký mấy đội | ☐ |
+| Đội đã đăng ký qua trường | Xin xác nhận đăng ký của trường | ☐ |
 
-## 3. Sau khi gửi
+## 3. Thư nộp bài
 
-- [ ] Không đẩy thêm lên `main` cho tới khi có kết quả vòng hồ sơ (mỗi lần đẩy sinh bản phát hành mới; Thể lệ chỉ chấm bản có trước hạn).
-- [ ] Nếu phải sửa gấp: sửa trên nhánh, mở PR, chờ CI xanh rồi mới gộp; ghi rõ trong CHANGELOG.
-- [ ] Chuẩn bị chung kết 10/12: slide ở [docs/slides](slides/index.html), kịch bản 15 phút, máy trình diễn đã nạp dữ liệu mẫu (`docker compose exec workflow-bridge node seed.js --force`).
+Gửi tới: `olpvietnam@vaip.vn`, `thuky@vfossa.vn`. Hạn: 17:00 Chủ Nhật 06/12 (xem mục 1).
 
-## 4. Nói thẳng khi trình bày
+**Tiêu đề:** `BÀI THI PMNM 2026 - [Tên Đội] - [Tên Trường]`
 
-Danh sách điều chưa làm nằm ở README (mục "Còn thiếu gì") và bảng "Điểm chưa làm" trong [KIEM_THU.md](KIEM_THU.md); đừng nói quá phần chữ ký số (PKI phần mềm, chưa HSM) và lakehouse (JSONL, chưa Parquet/Iceberg).
+**Nội dung:**
+
+```
+Kính gửi BTC cuộc thi PMNM 2026,
+
+Đội thi [Tên Đội] - [Tên Trường] đã hoàn thành bài thi và xin gửi BTC kết quả như sau
+
+Thành viên đội
+1. [Tên thành viên 1], [năm sinh], [ngành đào tạo]
+2. [Tên thành viên 2], [năm sinh], [ngành đào tạo]
+3. [Tên thành viên 3], [năm sinh], [ngành đào tạo]
+
+Người hướng dẫn: [Tên Thầy/Cô] - [Khoa/Viện/Trường]
+
+Kho mã nguồn dự thi: https://github.com/ngophatneknha/OLP-MNM
+Bản phát hành dự thi: https://github.com/ngophatneknha/OLP-MNM/releases/latest
+
+Đội thi đã hoàn thành việc đăng kí dự thi theo đúng quy định của BTC thông qua [Tên Trường].
+Chúng tôi cam kết toàn bộ bản quyền sử dụng đối với sản phẩm dự thi tuân thủ theo đúng các quy tắc của phần mềm tự do nguồn mở.
+```
+
+Mẫu trên giữ nguyên từng câu của đề; chỉ phần trong `[...]` cần điền. Đội chỉ nên ghi những thành viên thật sự tham gia. Nếu chỉ có một hoặc hai người thì ghi đúng như vậy (đề cho phép "không quá 3").
+
+## 4. Kiểm tra trước khi bấm gửi
+
+- [ ] Bản phát hành mới nhất đã được tạo, là `.tar.gz`, và là bản cuối cùng muốn nộp.
+- [ ] `node --test --test-reporter=spec tests/*.test.js` đạt trên hệ thống dựng từ bản phát hành giải nén ở thư mục sạch.
+- [ ] Kho GitHub ở chế độ công khai, mở bằng cửa sổ ẩn danh vẫn thấy.
+- [ ] Đã đổi toàn bộ mật khẩu mặc định (`change-me`) nếu đưa hệ thống lên Internet, và thu hồi khóa AI đang dùng sau cuộc thi.
+- [ ] Thư gửi từ địa chỉ của một thành viên, đính kèm không quá cần thiết (kho là bằng chứng chính), lưu lại thư đã gửi.
+
+## 5. Danh sách kiểm tra cuối (bản 2.0.0)
+
+- [ ] Trang [bản phát hành](https://github.com/ngophatneknha/OLP-MNM/releases/latest) có đúng một tệp `.tar.gz`, phiên bản khớp dòng đầu của [CHANGELOG](../CHANGELOG.md); lần chạy CI gần nhất của `main` xanh.
+- [ ] Giải nén bản phát hành ở thư mục trống, làm theo README trên máy sạch; chạy `node scripts/demo-platform.mjs` thấy cả bảy bước có dấu ✔.
+- [ ] Trên máy trình diễn, đăng nhập `manager1` và `director1` một lần để cài OTP; tập kịch bản demo ([KICH_BAN_DEMO.md](KICH_BAN_DEMO.md)) ít nhất hai lần, quay video dự phòng.
+- [ ] Sau khi gửi, không đẩy thêm lên `main` (mỗi lần đẩy sinh bản phát hành mới). Nói thẳng điều chưa làm: PKI phần mềm chưa HSM, lakehouse là JSONL chưa Parquet/Iceberg.
