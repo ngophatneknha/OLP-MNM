@@ -11,14 +11,15 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { ROOT, run } from './lib.js'
+import { NO_GIT, ROOT, run } from './lib.js'
 
 const REPO = process.env.REPO ?? 'ngophatneknha/OLP-MNM'
 const DEADLINE = new Date('2026-12-06T17:00:00+07:00')
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
 const composeAll = () => `${read('docker-compose.yml')}
 ${read('docker-compose.optional.yml')}`
-const files = run('git', ['ls-files']).split('\n').filter(Boolean).filter((f) => existsSync(join(ROOT, f)))
+const walk = (d) => readdirSync(join(ROOT, d), { withFileTypes: true }).flatMap((e) => (['node_modules', 'dist', '.git'].includes(e.name) ? [] : e.isDirectory() ? walk(`${d}/${e.name}`) : [`${d}/${e.name}`.replace(/^\.\//, '')]))
+const files = (NO_GIT ? walk('.') : run('git', ['ls-files']).split('\n').filter(Boolean)).filter((f) => existsSync(join(ROOT, f)))
 // Có GITHUB_TOKEN (trong CI) thì dùng để khỏi bị giới hạn 60 lượt/giờ; vẫn chỉ đọc dữ liệu công khai.
 // Thử lại vài lần: GitHub thỉnh thoảng từ chối tạm thời khi nhiều tệp kiểm thử cùng gọi một lúc.
 const gh = async (path) => {
@@ -43,7 +44,7 @@ describe('PoF-1: Hệ thống quản lý mã nguồn trên Internet (5 điểm)'
     assert.equal(j.private, false)
     assert.equal((await fetch(j.html_url)).status, 200)
   })
-  test('PoF-1.2 kho thật sự được dùng: nhiều commit, trải trên nhiều ngày, nhiều nhánh/PR (không bị -5)', async () => {
+  test('PoF-1.2 kho thật sự được dùng: nhiều commit, trải trên nhiều ngày, nhiều nhánh/PR (không bị -5)', { skip: NO_GIT }, async () => {
     const commits = run('git', ['log', '--format=%ad', '--date=short']).trim().split('\n')
     assert.ok(commits.length >= 30, `chỉ có ${commits.length} commit`)
     assert.ok(new Set(commits).size >= 3, 'commit phải trải trên ít nhất 3 ngày')
@@ -120,7 +121,7 @@ describe('PoF-3: Bản phát hành (5 điểm)', () => {
     const first = releases.map((r) => new Date(r.published_at)).sort((a, b) => a - b)[0]
     assert.ok(first < DEADLINE, `bản đầu tiên ${first.toISOString()} sau hạn ${DEADLINE.toISOString()}`)
   })
-  test('PoF-3.2 đánh số phiên bản theo SemVer (không bị -3)', () => {
+  test('PoF-3.2 đánh số phiên bản theo SemVer (không bị -3)', { skip: NO_GIT }, () => {
     for (const r of releases) assert.match(r.tag_name, semver, r.tag_name)
     const tags = run('git', ['tag', '--list']).trim().split('\n').filter(Boolean)
     for (const t of tags) assert.match(t, semver, t)
@@ -132,7 +133,7 @@ describe('PoF-3: Bản phát hành (5 điểm)', () => {
       assert.deepEqual(names.filter((n) => /\.(zip|rar|arj|7z)$/i.test(n)), [], `${r.tag_name} có định dạng đóng`)
     }
   })
-  test('PoF-3.4 phiên bản trong CHANGELOG, web/package.json và thẻ phát hành khớp nhau; thẻ nằm trên nhánh main', () => {
+  test('PoF-3.4 phiên bản trong CHANGELOG, web/package.json và thẻ phát hành khớp nhau; thẻ nằm trên nhánh main', { skip: NO_GIT }, () => {
     // Mỗi lần đẩy là một phiên bản: trên nhánh đang làm, phiên bản đầu CHANGELOG có thể mới hơn bản đã phát hành (thẻ gắn sau khi gộp).
     const top = read('CHANGELOG.md').match(/^## \[(\d+\.\d+\.\d+)\]/m)[1]
     assert.equal(JSON.parse(read('web/package.json')).version, top)
@@ -249,7 +250,7 @@ describe('PoF-6: Tài liệu và giao tiếp (10 điểm)', () => {
     assert.ok(r.length > 4000)
     for (const f of ['CONTRIBUTING.md', 'docs/architecture.md']) assert.ok(existsSync(join(ROOT, f)), f)
   })
-  test('PoF-6.2 có lịch sử thay đổi CHANGELOG theo Keep a Changelog, mỗi bản phát hành một mục (không bị -5)', () => {
+  test('PoF-6.2 có lịch sử thay đổi CHANGELOG theo Keep a Changelog, mỗi bản phát hành một mục (không bị -5)', { skip: NO_GIT }, () => {
     const c = read('CHANGELOG.md')
     assert.match(c, /Keep a Changelog/)
     for (const t of run('git', ['tag', '--list']).trim().split('\n').filter(Boolean)) assert.match(c, new RegExp(`^## \\[${t.slice(1).replace(/\./g, '\\.')}\\] - \\d{4}-\\d{2}-\\d{2}`, 'm'), `CHANGELOG thiếu ${t}`)

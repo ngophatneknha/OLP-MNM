@@ -9,6 +9,11 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.6.4] - 2026-11-15
+
+### Fixed
+- Chạy kiểm thử trên bản giải nén từ tarball (không có thư mục `.git`): các ca cần lịch sử commit hoặc thẻ (LUAT-02, 03, 05, PoF-1.2, 3.2, 3.4, 6.2) tự bỏ qua kèm lý do thay vì báo đỏ; `pof.test.js` không còn sập khi nạp.
+
 ## [1.6.3] - 2026-11-15
 
 ### Fixed
