@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { ROOT, WEB, run, as, publishApp, submit, act, waitStatus, sql, until, uid, SPEC } from './lib.js'
+import { ROOT, WEB, GW, login, run, as, publishApp, submit, act, waitStatus, sql, until, uid, SPEC } from './lib.js'
 import { validateSpec, simulate, toBpmn } from '../services/workflow-bridge/compile.js'
 import { computeMaturity, incompleteLogs } from '../web/src/maturity.js'
 
@@ -300,7 +300,27 @@ describe('Z: Nguyên lý Zero-Trust và vận hành (đề thi mục 4, nguyên 
     assert.equal(await status(`/?q=${encodeURIComponent('<script>alert(1)</script>')}`), 403, 'XSS')
     assert.equal(await status(`/files?f=${encodeURIComponent('../../etc/passwd')}`), 403, 'path traversal')
   })
-  test('Z-03 [todo] truyền phát sự kiện thời gian thực (streaming) và WebSocket', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
+  test('Z-03 thời gian thực: kênh SSE qua cổng API (cần token) đẩy nhịp ngay khi ứng dụng xuất bản và khi có hồ sơ mới', async () => {
+    assert.equal((await fetch(`${GW}/events`)).status, 401, 'không token phải bị từ chối')
+    const ctl = new AbortController()
+    const res = await fetch(`${GW}/events`, { headers: { authorization: `Bearer ${await login('staff1')}`, 'x-hasura-role': 'staff' }, signal: ctl.signal })
+    assert.equal(res.status, 200)
+    assert.match(res.headers.get('content-type'), /text\/event-stream/)
+    let text = ''
+    const reader = res.body.getReader()
+    const pump = (async () => { for (;;) { const { done, value } = await reader.read(); if (done) return; text += new TextDecoder().decode(value) } })().catch(() => {})
+    const ticks = () => text.split('data: tick').length - 1
+    try {
+      // Chèn thẳng bằng SQL để chạy được cả khi không đăng nhập được trưởng phòng; sự kiện Hasura vẫn kích hoạt như thường.
+      const key = `rt_${uid()}`
+      sql(`insert into app(key, name, owner_id, spec) values ('${key}', 'Thời gian thực', gen_random_uuid(), '${JSON.stringify(SPEC).replaceAll("'", "''")}')`)
+      await until(() => ticks() >= 1, 'nhịp sau khi xuất bản ứng dụng', 30_000)
+      await until(async () => sql(`select status from app where key = '${key}'`) === 'published', 'ứng dụng xuất bản')
+      const before = ticks()
+      assert.ok(!(await submit('staff1', key, { so_tien: 1 })).errors)
+      await until(() => ticks() > before, 'nhịp sau khi gửi hồ sơ', 30_000)
+    } finally { ctl.abort(); await pump }
+  })
   test('Z-04 thông tin định danh cá nhân bị ẩn trước khi gửi tới máy chủ AI (email, số điện thoại, CCCD, số thẻ)', async () => {
     // Máy chủ AI giả ghi lại đúng những gì nhận được; chạy mã thật của cầu nối (ai.js), không giả lập hàm.
     const seen = []

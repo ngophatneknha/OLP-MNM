@@ -44,6 +44,19 @@ describe('OPS: tự phục hồi khi sự cố (đề thi: Zero-Trust gắn vớ
   })
 })
 
+describe('OPS: tài nguyên (máy yếu vẫn chạy được bản lõi)', () => {
+  test('OPS-08 bản lõi dùng dưới 5 GiB RAM khi nhàn rỗi (đo thật bằng docker stats; scripts/measure.sh in từng dịch vụ)', () => {
+    const core = ['postgres', 'keycloak', 'hasura', 'apisix', 'flowable', 'workflow-bridge', 'seaweedfs', 'clamav', 'web']
+    const unit = { B: 1 / 1024 ** 2, KiB: 1 / 1024, MiB: 1, GiB: 1024 }
+    const rows = run('docker', ['stats', '--no-stream', '--format', '{{.Name}}|{{.MemUsage}}']).trim().split(/\r?\n/)
+      .map((l) => l.split('|')).map(([name, mem]) => [name.replace(/^[^-]*-/, '').replace(/-\d+$/, ''), mem.split('/')[0].trim().match(/^([\d.]+)(\w+)$/)])
+      .filter(([name]) => core.includes(name))
+    assert.equal(rows.length, core.length, 'thiếu dịch vụ lõi đang chạy')
+    const total = rows.reduce((sum, [, m]) => sum + Number(m[1]) * unit[m[2]], 0)
+    assert.ok(total < 5 * 1024, `bản lõi dùng ${Math.round(total)} MiB, vượt 5 GiB`)
+  })
+})
+
 describe('OPS: thành phần tùy chọn đang chạy', { skip }, () => {
   test('OPS-03 TLS: web, API và đăng nhập đều trả lời qua HTTPS, có HSTS', async () => {
     for (const url of ['https://localhost:8443/', 'https://localhost:9443/v1/graphql', 'https://localhost:8444/realms/dxlab/.well-known/openid-configuration']) {

@@ -5,6 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 Một hồ sơ: nội dung đã khai, hàng ô ký cho biết đang ở đâu, và nhật ký kể lại ai đã làm gì.
 -->
 <script setup>
+import { live } from '../live.js'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeft, Download, Paperclip } from 'lucide-vue-next'
@@ -25,8 +26,8 @@ async function load() {
     submission.value = null
   }
 }
-onMounted(() => { load(); timer = setInterval(load, 3000) })
-onUnmounted(() => clearInterval(timer))
+onMounted(() => { load(); timer = live(load) })
+onUnmounted(() => timer?.())
 watch(() => route.params.id, load)
 
 const canAttach = () => submission.value.submitter_id === auth.userId || waitsOnMe(submission.value)

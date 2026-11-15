@@ -19,6 +19,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { validateSpec, toBpmn, toViewSql, simulate } from './compile.js'
 import { generateApp } from './ai.js'
 import { handleFiles } from './files.js'
+import { handleEvents, notify } from './events.js'
 import { handleSearch, syncIndex } from './search.js'
 import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
@@ -82,6 +83,7 @@ async function syncSubmission(id) {
   }
   await gql('mutation($id: uuid!, $set: submission_set_input!) { update_submission_by_pk(pk_columns: {id: $id}, _set: $set) { id } }', { id, set })
   // AI cho ý kiến ở nền: chậm hay lỗi thì cũng không làm trễ hay hỏng luồng của người.
+  notify()
   if (set.current_step) opine(id, set.current_step).catch((err) => console.error('AI thử việc:', err.message))
 }
 
@@ -163,6 +165,7 @@ setInterval(async () => {
 }, 10000)
 
 createServer(async (req, res) => {
+  if (req.url.startsWith('/events')) return handleEvents(req, res)
   if (req.url.startsWith('/files')) return handleFiles(req, res)
   if (req.url.startsWith('/search') || req.url.startsWith('/ask')) return handleSearch(req, res)
   try {
@@ -187,6 +190,7 @@ createServer(async (req, res) => {
       }
     } else {
       await handlers[payload.trigger.name](payload.event.data.new)
+      notify() // hồ sơ, nhật ký hay ứng dụng vừa đổi: báo các trình duyệt đang mở tải lại
     }
     res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(result))
   } catch (err) {

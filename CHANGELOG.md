@@ -9,6 +9,16 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-15
+
+### Added
+- **Thời gian thực** (Z-03, WF-05): `GET /events` (SSE) qua cổng API; bridge đẩy nhịp mỗi khi hồ sơ, nhật ký, ứng dụng hay tệp đổi. Mọi màn hình dùng chung một kênh (`web/src/live.js`); kênh đứt thì tự hỏi định kỳ.
+- **Đo tài nguyên** (RISK-03): `scripts/measure.sh` và ca OPS-08 (bản lõi dưới 5 GiB RAM, đo khoảng 3 GiB).
+- Mục "Đối chiếu lần cuối với Đề thi" trong `docs/KIEM_THU.md` (RISK-01), nói thẳng phần chưa có: kho lạnh, IT/OT, phả hệ, chứng thư số.
+
+### Changed
+- Số lần hỏi máy chủ giảm rõ rệt: có kênh sống thì mỗi màn hình chỉ hỏi bù 30 giây một lần thay vì 3 đến 5 giây.
+
 ## [1.7.9] - 2026-11-15
 
 ### Added

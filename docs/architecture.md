@@ -17,6 +17,7 @@ flowchart TB
   BR -- "tệp đính kèm" --> S3[("SeaweedFS S3<br/>không mở ra ngoài")]
   BR -- "quét mã độc" --> AV["ClamAV"]
   GW -- "/search, /ask" --> BR
+  GW -- "/events (SSE)" --> BR
   BR -. "tùy chọn" .-> MS["Meilisearch"]
 ```
 
@@ -34,6 +35,8 @@ Nguyên tắc: tầng lõi **headless** – chỉ cung cấp dịch vụ qua API
 Ứng dụng web có nhãn H/P/D/I cạnh từng mục điều hướng và hai ngôn ngữ vi/en (`web/src/i18n.js`).
 
 ## Tệp đính kèm
+
+**Thời gian thực.** `GET /events` là kênh Server-Sent Events qua cổng API (cần token). Mỗi khi `workflow-bridge` xử lý xong một sự kiện của Hasura (hồ sơ mới, có người ký, ứng dụng xuất bản) hoặc nhận tệp, nó đẩy một nhịp rỗng tới mọi trình duyệt đang mở. Trình duyệt nhận nhịp rồi tự tải lại bằng GraphQL **với token của chính người dùng**, nên kênh không mang dữ liệu và không thể làm lộ gì. Kênh đứt thì giao diện quay về hỏi định kỳ 3 giây; kênh sống thì chỉ hỏi bù 30 giây một lần (`web/src/live.js`, dùng chung cho mọi màn hình). Giới hạn: danh sách kết nối giữ trong bộ nhớ của một tiến trình bridge.
 
 Nội dung tệp nằm trong kho S3 (SeaweedFS); bảng `attachment` giữ tên, kích thước và khóa đối tượng. Tệp đi qua `POST /files` và `GET /files/<id>` của cổng API:
 

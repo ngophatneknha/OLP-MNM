@@ -5,6 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 Bảng công việc [H]: hồ sơ xếp cột theo tình trạng (Kanban), dữ liệu lấy thẳng từ hồ sơ thật, không có thẻ nhập tay.
 -->
 <script setup>
+import { live } from '../live.js'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { auth, gql, headline, whereIs, waitsOnMe } from '../lib.js'
 import { t } from '../i18n.js'
@@ -18,8 +19,8 @@ async function load() {
     app { key name category } version { spec } events { action note actor_name }
   } }`)).submission
 }
-onMounted(() => { load().catch(() => {}); timer = setInterval(() => load().catch(() => {}), 4000) })
-onUnmounted(() => clearInterval(timer))
+onMounted(() => { load().catch(() => {}); timer = live(load) })
+onUnmounted(() => timer?.())
 
 const columns = computed(() => {
   const all = list.value ?? []

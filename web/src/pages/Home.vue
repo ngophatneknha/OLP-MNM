@@ -5,6 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 Bàn làm việc: việc đang chờ tôi đứng đầu, sau đó là hồ sơ tôi đã gửi và lối tắt để gửi hồ sơ mới.
 -->
 <script setup>
+import { live } from '../live.js'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ChevronRight, CircleCheck } from 'lucide-vue-next'
 import { auth, gql, ago, givenName, initials, headline, whereIs, waitsOnMe, stepOf, routeText, suggestion, SUBMISSION_FIELDS } from '../lib.js'
@@ -43,8 +44,8 @@ async function loadReady() {
     ready.value = readyToPromote(d.app, d.step_autonomy, d.ai_opinion)
   } catch { ready.value = [] } // banner phụ: lỗi thì thôi, không ảnh hưởng việc chính
 }
-onMounted(() => { load(); loadReady(); timer = setInterval(load, 3000) })
-onUnmounted(() => clearInterval(timer))
+onMounted(() => { load(); loadReady(); timer = live(load) })
+onUnmounted(() => timer?.())
 
 const waiting = computed(() => (submissions.value ?? []).filter(waitsOnMe))
 const mine = computed(() => (submissions.value ?? []).filter((s) => s.submitter_id === auth.userId))
