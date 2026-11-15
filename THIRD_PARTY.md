@@ -27,6 +27,8 @@ Các thành phần chạy dưới dạng **container độc lập, không sửa 
 | Meilisearch (tìm kiếm toàn văn, tùy chọn) | 1.11.3 | MIT | `LICENSE` trong github.com/meilisearch/meilisearch | ☑ |
 | Ollama (mô hình AI chạy tại chỗ, tùy chọn) | 0.5.7 | MIT | `LICENSE` trong github.com/ollama/ollama | ☑ |
 | Prometheus (giám sát, tùy chọn) | 2.55.1 | Apache-2.0 | `LICENSE` trong github.com/prometheus/prometheus | ☑ |
+| poppler-utils (`pdftotext`, `pdftoppm`; trạm đọc chữ, tùy chọn) | gói Debian của image `python:3.12-slim` | GPL-2.0-or-later | `COPYING` trong gitlab.freedesktop.org/poppler/poppler | ☑ |
+| Tesseract OCR (trạm đọc chữ, tùy chọn) | gói Debian của image `python:3.12-slim` | Apache-2.0 | `LICENSE` trong github.com/tesseract-ocr/tesseract (GitHub báo Apache-2.0) | ☑ |
 | DuckDB (SQL trên kho lạnh, tùy chọn; gói `duckdb` cài trong ảnh dựng từ `infra/duckdb`) | 1.1.3 | MIT | `LICENSE` trong github.com/duckdb/duckdb (GitHub báo MIT) | ☑ |
 | Python (image `python:3.12-slim`, nền của ảnh DuckDB) | 3.12 | PSF-2.0 | `LICENSE` trong github.com/python/cpython | ☑ |
 | Node.js (image `node`) | 22.19.0 | MIT | `LICENSE` trong github.com/nodejs/node | ☑ |
@@ -59,7 +61,7 @@ Toàn bộ cây phụ thuộc cài lúc build (khoảng 80 gói) chỉ gồm cá
 
 ## Kết luận về tương thích giấy phép
 
-- Có **hai** thành phần copyleft: ClamAV (GPL-2.0, mạnh) và OpenBao (MPL-2.0, yếu, chỉ ràng buộc ở mức tệp và là thành phần tùy chọn). Cả hai chạy trong container riêng, không sửa, không đính kèm mã vào kho, và chỉ giao tiếp với hệ thống qua cổng mạng (giao thức clamd; HTTP API của két). Vì vậy GPL-2.0 không lan sang mã Apache-2.0 của dự án (đây là việc chạy một chương trình riêng, không phải liên kết hay trộn mã). Không thành phần nào dùng AGPL hay giấy phép không được OSI chấp thuận; MinIO (AGPL-3.0) đã được thay bằng SeaweedFS (Apache-2.0), và Grafana (AGPL-3.0) không được dùng: giám sát dùng giao diện truy vấn của Prometheus (Apache-2.0).
+- Có **ba** thành phần copyleft: ClamAV (GPL-2.0, mạnh), poppler (GPL-2.0 trở lên, mạnh, chỉ nằm trong trạm đọc chữ tùy chọn) và OpenBao (MPL-2.0, yếu, chỉ ràng buộc ở mức tệp và là thành phần tùy chọn). Cả ba chạy trong container riêng, không sửa, không đính kèm mã vào kho, và chỉ giao tiếp với hệ thống qua cổng mạng (giao thức clamd; HTTP của trạm đọc chữ; HTTP API của két). Vì vậy GPL-2.0 không lan sang mã Apache-2.0 của dự án (đây là việc chạy một chương trình riêng, không phải liên kết hay trộn mã). Không thành phần nào dùng AGPL hay giấy phép không được OSI chấp thuận; MinIO (AGPL-3.0) đã được thay bằng SeaweedFS (Apache-2.0), và Grafana (AGPL-3.0) không được dùng: giám sát dùng giao diện truy vấn của Prometheus (Apache-2.0).
 - Mã tự viết của dự án phát hành theo Apache-2.0; phông chữ OFL-1.1 được phép đóng gói kèm miễn là không bán riêng, và dự án không làm vậy.
 - Dự án không phát hành cùng gói đính kèm của dự án khác và không chỉnh sửa mã của bất kỳ gói nào.
 

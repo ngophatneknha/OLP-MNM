@@ -158,6 +158,8 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | I-SEARCH-03 | Hỏi đáp: người không có quyền nhận câu trả lời rỗng; người có quyền nhận đúng nguồn, câu trả lời của AI dẫn số nguồn |
 | I-SEARCH-04 | Không token 401; JSON hỏng, câu hỏi rỗng hoặc quá dài 400 |
 | I-SEARCH-05 | Nội dung có mã HTML trả về như chữ thường |
+| I-SEARCH-06 | Đọc PDF có lớp chữ, ảnh PNG và PDF quét (OCR Tesseract tiếng Việt + Anh); nội dung tìm được, người khác vẫn không thấy |
+| I-SEARCH-07 | Tìm ngữ nghĩa (chạy bằng `SEMANTIC_OPTIONAL=1`, cần `SEARCH_EMBEDDER`): tìm ra tài liệu cùng nghĩa dù không trùng từ nào, vẫn kiểm quyền |
 
 ## Lỗi bộ kiểm thử tìm ra và đã sửa (phiên bản 1.1.0)
 
@@ -178,7 +180,6 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | Mã | Thiếu | Ghi chú |
 |---|---|---|
 | D-06 | Bảng lakehouse Parquet/Iceberg có lược đồ phiên bản; NGSI-LD ghi và thuê bao; bản đồ có nền (tile) [D] | Đã có: SQL DuckDB trên tệp JSONL (LAKE-01), NGSI-LD chỉ đọc và bản đồ SVG tối giản (IOT-08), phả hệ, nạp hàng loạt (LIN, ING) |
-| I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
 | Z-07 | HSM giữ khóa, thu hồi chứng thư (CRL/OCSP), ký ở trình duyệt | Chữ ký số PKI phần mềm đã có (PKI-01 đến PKI-07); khóa nằm trong CSDL (mã hóa), ký phía máy chủ |
 | Z-09 | WebSocket cho thời gian thực, MQTT/OPC UA cho thiết bị | Hiện là SSE (Z-03) và HTTP (IOT) |
 | Z-10 | GitOps thật (ArgoCD/Flux: nhiều máy, tự hoàn tác) | Đã có GitOps nhẹ cho một máy: `scripts/gitops.sh check/apply/watch` (OPS-GITOPS) |

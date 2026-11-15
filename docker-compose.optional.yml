@@ -72,6 +72,12 @@ services:
     depends_on:
       - apisix
 
+  # Trạm đọc chữ từ PDF và ảnh (poppler + Tesseract) cho tìm kiếm; bật cùng profile search. Chỉ mạng nội bộ.
+  extractor:
+    build: ./infra/extractor
+    profiles: ["search"]
+    restart: unless-stopped
+
   # Két bí mật OpenBao (MPL-2.0, nhánh mã nguồn mở của Vault): chỉ mạng nội bộ, không công bố cổng. Điều khiển bằng scripts/vault.sh.
   openbao:
     image: quay.io/openbao/openbao:2.1.0

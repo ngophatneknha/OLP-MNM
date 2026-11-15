@@ -22,3 +22,21 @@ test('bỏ qua ô trống, ô không có dữ liệu và sự kiện không có 
   assert.ok(!t.includes('Để trống') && !t.includes('Không có'))
   assert.equal(t.split('Chi Lê').length - 1, 1)
 })
+
+test('extractMime: PDF và ảnh theo content-type hoặc đuôi tên; tệp khác thì không', async () => {
+  const { extractMime } = await import('./search.js')
+  assert.equal(extractMime({ content_type: 'application/pdf', name: 'a' }), 'application/pdf')
+  assert.equal(extractMime({ content_type: 'application/octet-stream', name: 'Scan.PDF' }), 'application/pdf')
+  assert.equal(extractMime({ content_type: null, name: 'anh.JPG' }), 'image/jpeg')
+  assert.equal(extractMime({ content_type: 'image/png; charset=x', name: 'x' }), 'image/png')
+  assert.equal(extractMime({ content_type: 'text/plain', name: 'a.txt' }), null)
+  assert.equal(extractMime({ name: 'noext' }), null)
+})
+
+test('searchBody: chỉ tìm từ khóa khi chưa cấu hình mô hình nhúng; có thì tìm lai và kẹp tỉ lệ vào 0..1', async () => {
+  const { searchBody } = await import('./search.js')
+  assert.equal(searchBody('abc', '', undefined).hybrid, undefined)
+  assert.deepEqual(searchBody('abc', 'intfloat/multilingual-e5-small', undefined).hybrid, { embedder: 'default', semanticRatio: 0.5 })
+  assert.equal(searchBody('abc', 'm', '7').hybrid.semanticRatio, 1)
+  assert.equal(searchBody('abc', 'm', '0').hybrid.semanticRatio, 0.5, '0 không hợp lệ thì dùng mặc định (0 nghĩa là bỏ ngữ nghĩa nên dùng cách để trống)')
+})

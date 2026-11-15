@@ -6,16 +6,19 @@
 //   POST /ask      { question }  -> câu trả lời của AI chỉ dựa trên các đoạn khớp, kèm nguồn
 // Chỉ mục (Meilisearch) KHÔNG quyết định quyền: mọi kết quả đều được Hasura kiểm lại bằng chính token của người hỏi,
 // nên người không được xem hồ sơ thì không bao giờ thấy nội dung của nó, cả trong kết quả lẫn trong ngữ cảnh gửi cho AI.
-// shortcut: chỉ mục toàn văn (BM25), chưa có véc-tơ ngữ nghĩa, OCR hay PDF; thêm khi có mô hình nhúng và OCR.
+// PDF và ảnh được đọc chữ bằng trạm extractor (poppler, Tesseract OCR); tìm ngữ nghĩa (véc-tơ) bật bằng SEARCH_EMBEDDER (xem docs/TRI_TUE.md).
+// shortcut: chỉ mục dùng Meilisearch; OCR chỉ đọc 10 trang đầu, chất lượng phụ thuộc ảnh gốc.
 
 import { s3fetch } from './s3.js'
 import { createHash } from 'node:crypto'
 import { aiConfigured, complete } from './ai.js'
 import { HttpError, asUser } from './files.js'
 
-const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET } = process.env
+const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET, EXTRACTOR_URL, SEARCH_EMBEDDER, SEARCH_SEMANTIC_RATIO } = process.env
 const INDEX = 'docs'
 const MAX_TEXT = 100_000
+const PAGE = 100
+const MAX_SCAN = 1000 // quét tối đa chừng này kết quả (bằng maxTotalHits mặc định của Meilisearch)
 const TEXTY = /\.(txt|md|csv|json|log|tsv|xml|yml|yaml)$/i
 const MARK_OPEN = '\u00ab'
 const MARK_CLOSE = '\u00bb'
@@ -59,13 +62,43 @@ async function ensureIndex() {
   if (ready) return
   await meili('POST', '/indexes', { uid: INDEX, primaryKey: 'id' }).catch(() => {}) // đã có thì bỏ qua
   await meili('PATCH', `/indexes/${INDEX}/settings`, { searchableAttributes: ['title', 'text', 'name'] })
+  if (SEARCH_EMBEDDER) { // tìm ngữ nghĩa: Meilisearch tự nhúng văn bản bằng mô hình HuggingFace (tải lần đầu, nhúng nền)
+    await meili('PATCH', '/experimental-features', { vectorStore: true })
+    await meili('PATCH', `/indexes/${INDEX}/settings`, { embedders: { default: { source: 'huggingFace', model: SEARCH_EMBEDDER, documentTemplate: 'passage: {{doc.text|truncatewords: 80}}' } } })
+  }
   ready = true
 }
 
 const fails = new Map() // id tệp -> số lần đọc lỗi; quá 3 lần thì bỏ qua, khỏi lấy đi lấy lại mãi
 
+const MIME_BY_EXT = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', tif: 'image/tiff', tiff: 'image/tiff', bmp: 'image/bmp', gif: 'image/gif' }
+
+/** Loại của tệp cần trạm đọc chữ (PDF hoặc ảnh), theo content-type đã lưu hoặc đuôi tên; null nếu không phải. */
+export function extractMime(att) {
+  const declared = (att.content_type ?? '').split(';')[0].trim().toLowerCase()
+  if (Object.values(MIME_BY_EXT).includes(declared)) return declared
+  return MIME_BY_EXT[(att.name ?? '').split('.').pop().toLowerCase()] ?? null
+}
+
+/** Đọc chữ từ PDF/ảnh qua trạm extractor. null = không đọc được vĩnh viễn (không phải loại hỗ trợ), undefined = lỗi tạm thời. */
+async function extractedText(att, mime) {
+  try {
+    const file = await s3fetch(`/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(15_000) })
+    if (!file.ok) return null
+    const res = await fetch(`${EXTRACTOR_URL}/extract`, { method: 'POST', headers: { 'content-type': mime }, body: Buffer.from(await file.arrayBuffer()), signal: AbortSignal.timeout(120_000) })
+    if (res.status === 415 || res.status === 400) return null
+    if (!res.ok) throw new Error(`extractor ${res.status}`)
+    return ((await res.json()).text ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT) || null
+  } catch (err) {
+    console.error(`Không đọc chữ được từ tệp ${att.id}:`, err.cause?.code ?? err.message)
+    return undefined
+  }
+}
+
 /** Văn bản của tệp; null = tệp không phải dạng chữ (bỏ qua hẳn), undefined = đọc lỗi tạm thời (thử lại). */
 async function fileText(att) {
+  const mime = EXTRACTOR_URL && att.size <= 10 * 1024 * 1024 ? extractMime(att) : null
+  if (mime) return extractedText(att, mime)
   if (!(att.content_type?.startsWith('text/') || TEXTY.test(att.name)) || att.size > 1_000_000) return null
   try {
     const res = await s3fetch(`/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(10_000) })
@@ -125,25 +158,35 @@ class Unavailable extends HttpError {
   constructor() { super(503, 'Tìm kiếm chưa được bật trên máy chủ này (profile search trong docker-compose.optional.yml)') }
 }
 
+/** Thân yêu cầu tìm; có mô hình nhúng thì tìm lai (từ khóa + ngữ nghĩa), tỉ lệ ngữ nghĩa mặc định 0.5. */
+export function searchBody(q, embedder, ratio) {
+  const body = { q, limit: PAGE, attributesToCrop: ['text'], cropLength: 60, attributesToHighlight: ['text'], highlightPreTag: MARK_OPEN, highlightPostTag: MARK_CLOSE }
+  if (embedder) body.hybrid = { embedder: 'default', semanticRatio: Math.min(Math.max(Number(ratio ?? 0.5) || 0.5, 0), 1) }
+  return body
+}
+
 /** Tìm rồi lọc theo quyền thật của người hỏi (Hasura quyết định, không phải chỉ mục). */
 export async function permittedHits(req, q, want = 10) {
   if (!MEILI_URL) throw new Unavailable()
-  let found
+  const out = []
   try {
     await ensureIndex()
-    found = await meili('POST', `/indexes/${INDEX}/search`, {
-      q, limit: 100, attributesToCrop: ['text'], cropLength: 60, attributesToHighlight: ['text'],
-      highlightPreTag: MARK_OPEN, highlightPostTag: MARK_CLOSE,
-    })
+    // Quét từng trang kết quả: chỉ mục chứa tài liệu của mọi người nên trang đầu có thể toàn thứ người hỏi không được xem (nhất là khi tìm ngữ nghĩa, luôn trả về láng giềng gần nhất).
+    for (let offset = 0; offset < MAX_SCAN && out.length < want; offset += PAGE) {
+      const found = await meili('POST', `/indexes/${INDEX}/search`, { ...searchBody(q, SEARCH_EMBEDDER, SEARCH_SEMANTIC_RATIO), limit: PAGE, offset })
+      if (!found.hits.length) break
+      const ids = [...new Set(found.hits.map((h) => h.submission_id))]
+      const { submission } = await asUser(req, 'query($ids: [uuid!]!) { submission(where: {id: {_in: $ids}}) { id } }', { ids })
+      const visible = new Set(submission.map((s) => s.id))
+      for (const h of found.hits) if (visible.has(h.submission_id)) out.push(h)
+      if (found.hits.length < PAGE) break
+    }
   } catch (err) {
+    if (err instanceof HttpError) throw err // lỗi của Hasura/quyền không được che thành "chưa bật tìm kiếm"
     console.error(err.message)
     throw new Unavailable()
   }
-  if (!found.hits.length) return []
-  const ids = [...new Set(found.hits.map((h) => h.submission_id))]
-  const { submission } = await asUser(req, 'query($ids: [uuid!]!) { submission(where: {id: {_in: $ids}}) { id } }', { ids })
-  const visible = new Set(submission.map((s) => s.id))
-  return found.hits.filter((h) => visible.has(h.submission_id)).slice(0, want)
+  return out.slice(0, want)
     .map((h) => ({ id: h.id, kind: h.kind, submission_id: h.submission_id, title: h.title, name: h.name ?? null, snippet: h._formatted?.text ?? h.text.slice(0, 300) }))
 }
 

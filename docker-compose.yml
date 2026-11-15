@@ -129,6 +129,10 @@ services:
       CLAMAV_HOST: clamav
       # Tìm kiếm và hỏi đáp (tùy chọn): chỉ hoạt động khi bật profile search ở docker-compose.optional.yml.
       MEILI_URL: http://meilisearch:7700
+      EXTRACTOR_URL: http://extractor:8000
+      # Tìm ngữ nghĩa (tùy chọn): tên mô hình HuggingFace, ví dụ intfloat/multilingual-e5-small; trống là chỉ tìm từ khóa.
+      SEARCH_EMBEDDER: ${SEARCH_EMBEDDER:-}
+      SEARCH_SEMANTIC_RATIO: ${SEARCH_SEMANTIC_RATIO:-0.5}
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me-meili-key}
       HASURA_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
       # Trợ lý AI (tùy chọn): mọi máy chủ tương thích OpenAI /chat/completions (Ollama, vLLM, Mistral...).
