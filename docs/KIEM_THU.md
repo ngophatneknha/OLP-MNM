@@ -112,7 +112,6 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | D-06 | Lakehouse, NGSI-LD, WebGIS, phả hệ dữ liệu [D] | Ngoài phạm vi hiện tại |
 | I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
 | Z-05b | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
-| Z-03 | Truyền phát sự kiện, WebSocket | Chưa làm |
 
 ## Zero-Trust: các ca đã làm (nguyên lý iv của đề)
 
@@ -120,7 +119,25 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 |---|---|---|
 | Z-01 | Két bí mật **OpenBao**: `scripts/vault.sh init` chép mọi mật khẩu/khóa/token trong `.env` vào két, `up` chạy hệ thống với bí mật lấy từ két; không token thì két từ chối | Thành phần tùy chọn (profile `vault`). Khóa mở và token gốc nằm ở `.vault-keys`, người vận hành phải cất ra ngoài; mở khóa bằng một khóa duy nhất (chưa chia khóa Shamir, chưa tự mở khóa) |
 | Z-02 | **Coraza + OWASP CRS** trước cổng API (profile `waf`, cổng 9081): SQL injection, XSS, đi ngược thư mục bị 403, yêu cầu sạch đi tiếp | Mặc định người dùng vẫn đi thẳng cổng 9080; bật WAF là dùng 9081. Chưa chỉnh luật riêng cho GraphQL, có thể cần loại trừ khi gặp báo nhầm |
+| Z-03 | **Thời gian thực** bằng SSE qua cổng API: không token bị 401, có token nhận nhịp ngay khi ứng dụng xuất bản và khi có hồ sơ mới; mọi màn hình dùng chung một kênh (`web/src/live.js`, có kiểm thử đơn vị) | Là SSE, không phải WebSocket (đề tham chiếu Centrifugo). Kênh chỉ đẩy nhịp rỗng, dữ liệu vẫn qua GraphQL kiểm quyền; một tiến trình bridge giữ danh sách kết nối |
+| OPS-08 | **Tài nguyên**: bản lõi dùng dưới 5 GiB RAM khi nhàn rỗi, đo thật bằng `docker stats` (`scripts/measure.sh` in từng dịch vụ) | Đo trên máy phát triển: khoảng 3 GiB cho 9 dịch vụ lõi, trong đó ClamAV gần 1 GiB và Keycloak 650 MiB; thành phần tùy chọn tách profile để máy yếu bỏ qua |
 | Z-04 | **Ẩn thông tin cá nhân** (email, số điện thoại, CCCD, số thẻ) trước khi gửi tới máy chủ AI; kiểm bằng máy chủ AI giả ghi lại nội dung nhận được | Nhận dạng theo mẫu, chưa nhận được họ tên và địa chỉ |
+
+## Đối chiếu lần cuối với Đề thi (phiên bản 1.8.0)
+
+| Yêu cầu của Đề | Tình trạng | Bằng chứng |
+|---|---|---|
+| Mục 3: nền tảng lõi headless gồm SSO, cổng API, dữ liệu cấu trúc và phi cấu trúc, luồng công việc | Đạt | `T1-SSO`, `T1-GW`, `T1-HL`, `T1-DB`, `T1-OBJ`, `T1-WF` |
+| Mục 3: ít nhất một ứng dụng H-P-D-I ở Tầng 2 | Đạt, đủ bốn không gian | `tests/hpdi.test.js` (H, P, D, I) |
+| Nguyên lý (iv): Zero-Trust, MFA, kiểm dịch mã độc tại biên | Đạt | T1-SSO-10, T1-OBJ-08, Z-01, Z-02, Z-04 |
+| Nguyên lý (iv): cấu hình hạ tầng bằng mã, tự phục hồi tức thì | Đạt | `docker-compose.yml`, OPS-06, OPS-07 |
+| Lớp 1 tham chiếu: truyền phát trạng thái thời gian thực | Đạt bằng SSE (không dùng WebSocket) | Z-03 |
+| Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh/lakehouse | **Chưa** | D-06 |
+| Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | **Chưa** | D-06 |
+| Nguyên lý (iii): phả hệ dữ liệu | **Chưa** | D-06 |
+| Chứng thư số (PKI) cho chữ ký phê duyệt | **Chưa**: chữ ký là xác nhận trong nhật ký bất biến, không phải chữ ký số có chứng thư | Nói thẳng khi trình bày |
+
+Điều khoản của Thể lệ và Đề thi ngoài bảng điểm (hạn nộp, kho công khai, giấy phép OSI, không bí mật trong lịch sử, bản phát hành...) do nhóm `LUAT` kiểm. Hạn nộp trong Đề ghi năm 2025 trong khi cuộc thi là 2026: cần hỏi Ban tổ chức xác nhận.
 
 ## Giới hạn của chính bộ kiểm thử
 

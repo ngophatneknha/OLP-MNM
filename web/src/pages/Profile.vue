@@ -6,6 +6,7 @@ Trang cá nhân và trung tâm thông báo [H]. Thông báo suy ra từ hồ sơ
 và kết quả mới của hồ sơ tôi đã gửi.
 -->
 <script setup>
+import { live } from '../live.js'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Bell } from 'lucide-vue-next'
 import { auth, gql, ago, initials, waitsOnMe } from '../lib.js'
@@ -18,8 +19,8 @@ async function load() {
     id no status current_step waiting_role submitter_id submitter_name created_at finished_at app { name } version { spec }
   } }`)).submission
 }
-onMounted(() => { load().catch(() => {}); timer = setInterval(() => load().catch(() => {}), 4000) })
-onUnmounted(() => clearInterval(timer))
+onMounted(() => { load().catch(() => {}); timer = live(load) })
+onUnmounted(() => timer?.())
 
 const mine = computed(() => (list.value ?? []).filter((s) => s.submitter_id === auth.userId))
 const waiting = computed(() => (list.value ?? []).filter(waitsOnMe))

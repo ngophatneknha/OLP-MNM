@@ -11,6 +11,7 @@
 import { randomUUID } from 'node:crypto'
 import { scan } from './scan.js'
 import { s3fetch } from './s3.js'
+import { notify } from './events.js'
 
 const { HASURA_URL, HASURA_ADMIN_SECRET } = process.env
 const BUCKET = 'dxlab'
@@ -92,6 +93,7 @@ async function upload(req, res) {
     })
     throw new HttpError(502, 'Chưa lưu được tệp, hãy thử lại')
   }
+  notify()
   res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(row))
 }
 

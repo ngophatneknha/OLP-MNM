@@ -6,6 +6,7 @@ Quy trình được quản lý như mã nguồn mở: lịch sử phiên bản, 
 và chạy thử trên hồ sơ cũ, người khác duyệt mới phát hành), góp ý / báo lỗi. Ai cũng xem được.
 -->
 <script setup>
+import { live } from '../live.js'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { auth, gql, diffSpec, formatTime } from '../lib.js'
 import SignatureRow from '../components/SignatureRow.vue'
@@ -34,8 +35,8 @@ async function load() {
     error.value = t('proc.errLoad', { err: err.message })
   }
 }
-onMounted(() => { load(); timer = setInterval(load, 3000) })
-onUnmounted(() => clearInterval(timer))
+onMounted(() => { load(); timer = live(load) })
+onUnmounted(() => timer?.())
 
 const app = computed(() => apps.value?.find((a) => a.key === selectedKey.value))
 const openChanges = computed(() => app.value?.changes.filter((c) => c.status === 'open') ?? [])

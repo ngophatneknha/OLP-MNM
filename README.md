@@ -225,9 +225,9 @@ docs/                       kiến trúc và kế hoạch
 
 ## Hiện trạng và hướng phát triển
 
-**Đã chạy được, có kiểm thử trên hệ thống thật:** nền tảng lõi Tầng 1 (SSO có MFA, cổng API, dữ liệu cấu trúc và phi cấu trúc, luồng BPMN), bộ sinh ứng dụng từ mô tả, trợ lý AI phác thảo, phiên bản và đề xuất thay đổi quy trình, tệp đính kèm có quét mã độc, bảng công việc, lịch, thông báo, số liệu điều hành, hỏi đáp tài liệu có dẫn nguồn và kiểm quyền, trợ lý AI thử việc bốn nấc, sao lưu và khôi phục, TLS và giám sát tùy chọn, giao diện vi/en.
+**Đã chạy được, có kiểm thử trên hệ thống thật:** nền tảng lõi Tầng 1 (SSO có MFA, cổng API, dữ liệu cấu trúc và phi cấu trúc, luồng BPMN), bộ sinh ứng dụng từ mô tả, trợ lý AI phác thảo, phiên bản và đề xuất thay đổi quy trình, tệp đính kèm có quét mã độc, bảng công việc, lịch, thông báo, số liệu điều hành, hỏi đáp tài liệu có dẫn nguồn và kiểm quyền, trợ lý AI thử việc bốn nấc, sao lưu và khôi phục, TLS, giám sát, tường lửa Coraza và két OpenBao tùy chọn, ẩn thông tin cá nhân khi gửi AI, cập nhật thời gian thực (SSE), giao diện vi/en trọn bộ.
 
-**Chưa làm, nói thẳng** (khai báo là `todo` trong báo cáo kiểm thử): tìm kiếm véc-tơ ngữ nghĩa và đọc PDF/OCR; kho dữ liệu lạnh, NGSI-LD, WebGIS; két bí mật; WAF; ẩn thông tin định danh; sao lưu tự động theo lịch; dịch nốt các trang cũ sang tiếng Anh; wiki và điểm trưởng thành H-P-D-I.
+**Chưa làm, nói thẳng** (khai báo là `todo` trong báo cáo kiểm thử): tìm kiếm véc-tơ ngữ nghĩa và đọc PDF/OCR; kho dữ liệu lạnh, NGSI-LD, WebGIS; sao lưu tự động theo lịch; WebSocket (đã có SSE cho thời gian thực); chứng thư số PKI cho chữ ký phê duyệt (chữ ký hiện là xác nhận trong nhật ký bất biến, không phải chữ ký số có chứng thư).
 
 ### Muốn đóng góp?
 

@@ -4,6 +4,7 @@
 // Đăng nhập (Keycloak, PKCE) và gọi GraphQL qua gateway. Cấu hình đọc từ /config.json lúc chạy,
 // nên một image dùng được cho mọi môi trường.
 
+import { startStream } from './live.js'
 import Keycloak from 'keycloak-js'
 import { reactive } from 'vue'
 import { i18n, locale, t } from './i18n.js'
@@ -24,6 +25,14 @@ export const CATEGORIES = ['Tài chính', 'Nhân sự', 'Mua sắm', 'Hành chí
 export const auth = reactive({ name: '', userId: '', role: 'staff', roles: [] })
 let keycloak
 let apiUrl
+
+/** Mở kênh thời gian thực (SSE) qua cổng API; gọi một lần sau khi đăng nhập. */
+export function startLiveUpdates() {
+  startStream(`${apiUrl}/events`, async () => {
+    await keycloak.updateToken(30).catch(() => {})
+    return { authorization: `Bearer ${keycloak.token}`, 'x-hasura-role': auth.role }
+  })
+}
 
 export async function login() {
   const config = await (await fetch('/config.json')).json()

@@ -6,6 +6,7 @@ Số liệu điều hành (không gian [D]): quyết định dựa trên dữ li
 Mọi con số tính từ hồ sơ và nhật ký bằng mã (metrics.js), mỗi dòng bấm vào được hồ sơ gốc.
 -->
 <script setup>
+import { live } from '../live.js'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { auth, gql, ROLE_LABEL } from '../lib.js'
 import { computeMetrics, formatHours } from '../metrics.js'
@@ -35,8 +36,8 @@ async function loadOpinions() {
   if (auth.role !== 'director') return
   try { opinionList.value = (await gql('{ ai_opinion(limit: 1000) { matched sample } }')).ai_opinion } catch { opinionList.value = [] }
 }
-onMounted(() => { load(); loadOpinions(); timer = setInterval(load, 5000) })
-onUnmounted(() => clearInterval(timer))
+onMounted(() => { load(); loadOpinions(); timer = live(load) })
+onUnmounted(() => timer?.())
 
 const m = computed(() => submissions.value && computeMetrics(submissions.value))
 const maturity = computed(() => submissions.value && extra.value && computeMaturity({ submissions: submissions.value, apps: extra.value.apps, autonomy: extra.value.autonomy }))
