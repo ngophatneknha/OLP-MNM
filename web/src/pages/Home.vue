@@ -12,6 +12,7 @@ import DecisionBar from '../components/DecisionBar.vue'
 import CategoryIcon from '../components/CategoryIcon.vue'
 import { t } from '../i18n.js'
 import { readyToPromote } from '../autonomy.js'
+import { hoursWaiting, isOverdue } from '../hints.js'
 
 const submissions = ref(null)
 const apps = ref([])
@@ -87,7 +88,7 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
             <div class="min-w-[min(100%,15rem)] flex-1">
               <RouterLink :to="`/ho-so/${s.id}`" class="font-medium hover:text-pen hover:underline">{{ t('home.item', { name: s.app.name, no: s.no }) }}</RouterLink>
               <p class="text-sm text-pencil">{{ t('home.sentAgo', { who: s.submitter_name, when: ago(s.created_at), action: t(stepOf(s)?.type === 'task' ? 'act.do' : 'act.approve'), step: stepOf(s)?.name }) }}</p>
-              <p class="num mt-1 text-sm font-medium">{{ headline(s) }}</p>
+              <p class="num mt-1 text-sm font-medium">{{ headline(s) }} <span v-if="isOverdue(s)" class="pill pill-stop ml-1">{{ t('home.overdue', { h: Math.floor(hoursWaiting(s)) }) }}</span></p>
               <p v-if="suggestion(s)" class="sticky-note mt-2">{{ t('home.suggests') }} <strong>{{ t(suggestion(s).decision === 'approve' ? 'act.approve' : 'act.reject') }}</strong>: {{ suggestion(s).reason }}</p>
             </div>
             <DecisionBar :submission="s" @done="load" />

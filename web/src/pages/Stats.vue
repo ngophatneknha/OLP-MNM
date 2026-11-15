@@ -12,6 +12,7 @@ import { computeMetrics, formatHours } from '../metrics.js'
 import { computeMaturity, incompleteLogs, maturityLevel } from '../maturity.js'
 import { download, toCsv, toJson } from '../exporter.js'
 import { agreement } from '../autonomy.js'
+import { improvementHints, missingRoles } from '../hints.js'
 import { t } from '../i18n.js'
 
 const submissions = ref(null)
@@ -41,6 +42,8 @@ const m = computed(() => submissions.value && computeMetrics(submissions.value))
 const maturity = computed(() => submissions.value && extra.value && computeMaturity({ submissions: submissions.value, apps: extra.value.apps, autonomy: extra.value.autonomy }))
 const opinionList = ref([]) // chỉ giám đốc đọc được cột so sánh với quyết định của người
 const agree = computed(() => agreement(opinionList.value))
+const hints = computed(() => (submissions.value ? improvementHints(submissions.value) : []))
+const roleGaps = computed(() => (submissions.value && extra.value ? missingRoles(submissions.value, extra.value.apps) : []))
 const missingLogs = computed(() => (submissions.value ? incompleteLogs(submissions.value) : []))
 const stamp = () => new Date().toISOString().slice(0, 10)
 const SPACES = ['H', 'P', 'D', 'I']
@@ -106,6 +109,23 @@ const percent = (n) => (m.value.total ? Math.round((n / m.value.total) * 100) : 
           </li>
         </ul>
       </template>
+    </section>
+
+    <section aria-labelledby="hint-title">
+      <h2 id="hint-title" class="section-title">{{ t('hint.title') }}</h2>
+      <p class="mt-1 max-w-[65ch] text-pencil">{{ t('hint.lead') }}</p>
+      <p v-if="roleGaps.length" class="mt-3 text-sm text-seal">{{ t('hint.roles', { roles: roleGaps.map((r) => ROLE_LABEL[r] ?? r).join(', ') }) }}</p>
+      <p v-if="!hints.length" class="mt-3 text-done">✓ {{ t('hint.none') }}</p>
+      <ul v-else class="panel mt-3">
+        <li v-for="h in hints" :key="h.kind + h.appKey + h.step" class="panel-row">
+          <p class="min-w-[min(100%,16rem)] flex-1 text-sm">
+            {{ h.kind === 'slow'
+              ? t('hint.slow', { step: h.step, process: h.process, value: formatHours(h.value), count: h.count })
+              : t('hint.rejected', { step: h.step, process: h.process, pct: Math.round(h.value * 100), count: h.count }) }}
+          </p>
+          <RouterLink to="/quy-trinh" class="text-sm font-medium text-pen hover:underline">{{ t('hint.propose') }}</RouterLink>
+        </li>
+      </ul>
     </section>
 
     <section aria-labelledby="log-title">
