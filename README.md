@@ -12,13 +12,13 @@ SPDX-License-Identifier: Apache-2.0
 
 **Mô tả cách công việc đang diễn ra, nhận lại một ứng dụng chạy được. Quy trình của tổ chức được quản lý như mã nguồn mở: có phiên bản, đề xuất thay đổi, người duyệt và nhật ký bất biến.**
 
-> *English:* an open-core "Digital Transformation OS". Describe a business process in plain words; an AI assistant drafts it, a human reviews it, and one click publishes a working BPMN workflow with forms, role-based access, audit trail and reports. Processes are versioned and changed through pull-request-style proposals. Everything runs from one `docker compose up` on Apache-2.0 / OSI-licensed components (Keycloak, APISIX, PostgreSQL + Hasura, Flowable, SeaweedFS, ClamAV). Entry for the Vietnam Open Source Software Olympiad (OLP) 2026.
+> *English:* an open-core "Digital Transformation OS" (DX-OS). Describe a business process in plain words; an AI assistant drafts it, a human reviews it, and one click publishes a working BPMN workflow with forms, role-based access, audit trail and reports. Processes are versioned and changed through pull-request-style proposals. Everything runs from one `docker compose up` on Apache-2.0 / OSI-licensed components (Keycloak, APISIX, PostgreSQL + Hasura, Flowable, SeaweedFS, ClamAV). Entry for the Vietnam Open Source Software Olympiad (OLP) 2026.
 
 ![Bàn làm việc: việc đang chờ bạn ký duyệt và hồ sơ bạn đã gửi](docs/images/ban-lam-viec.jpg)
 
-## Chạy thử trong 5 phút
+## Cài đặt và chạy thử trong 5 phút
 
-Cần Docker và Docker Compose v2, khoảng 4 GB RAM dành cho Docker (bản lõi đo thực tế khoảng 3 GiB).
+**Yêu cầu:** Docker và Docker Compose v2, khoảng 4 GB RAM dành cho Docker (bản lõi đo thực tế khoảng 3 GiB).
 
 ```bash
 git clone https://github.com/ngophatneknha/OLP-MNM.git
@@ -47,7 +47,7 @@ Không muốn dựng từ mã nguồn: tải `.tar.gz` ở [bản phát hành](h
 
 Các dịch vụ còn lại chỉ nằm trong mạng nội bộ của Docker. Dừng: `docker compose down` (thêm `-v` để xóa dữ liệu). Dựng lại sạch trước mỗi lần diễn tập: `sh scripts/demo-reset.sh`.
 
-Hướng dẫn từng màn hình: [docs/HUONG_DAN.md](docs/HUONG_DAN.md). Kịch bản trình diễn 15 phút: [docs/KICH_BAN_DEMO.md](docs/KICH_BAN_DEMO.md).
+Hướng dẫn từng màn hình: [docs/HUONG_DAN.md](docs/HUONG_DAN.md). Kịch bản trình diễn 15 phút: [docs/KICH_BAN_DEMO.md](docs/KICH_BAN_DEMO.md), kèm [slide](docs/slides/index.html).
 
 ## Vấn đề và cách giải
 

@@ -30,7 +30,7 @@ describe('COLD: kho dữ liệu lạnh (hồ sơ đã kết thúc xuống kho S3
     const list = await (await call('director1', '/archive')).json()
     assert.ok(list.some((a) => a.id === out.id && a.rows === out.archived))
     // Chạy lại ngay thì không còn gì để xuất (không xuất trùng).
-    // Các tệp kiểm thử khác chạy song song nên có thể vừa có hồ sơ khác kết thúc: chỉ khẳng định hồ sơ này không bị xuất lần hai.
+    // Test chạy song song, hồ sơ khác có thể vừa kết thúc: chỉ cần hồ sơ này không bị xuất lần hai.
     await call('director1', '/archive?days=0', { method: 'POST' })
     assert.equal(sql(`select count(*) from cold_item where submission_id = '${s}'`), '1')
   })
