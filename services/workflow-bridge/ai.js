@@ -60,6 +60,18 @@ export async function chat(messages) {
   }
 }
 
+/** Trả lời dạng văn bản tự do (không ép JSON), dùng cho hỏi đáp dựa trên tài liệu. */
+export async function complete(messages) {
+  const res = await fetch(`${AI_BASE_URL.replace(/\/$/, '')}/chat/completions`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${AI_API_KEY}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ model: AI_MODEL, temperature: 0, messages }),
+    signal: AbortSignal.timeout(45000),
+  })
+  if (!res.ok) throw new Error(`Máy chủ AI trả mã ${res.status}`)
+  return (await res.json()).choices[0].message.content.trim()
+}
+
 const check = (json) => !json ? ['Kết quả không phải JSON hợp lệ']
   : [...(isKey(json.key) ? [] : ['"key" của ứng dụng không hợp lệ']),
     ...(typeof json.name === 'string' && json.name.trim() ? [] : ['Thiếu "name"']),

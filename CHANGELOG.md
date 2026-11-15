@@ -9,6 +9,18 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-15
+
+Không gian [I]: hỏi đáp tài liệu có dẫn nguồn và kiểm quyền.
+
+### Added
+- **Hỏi đáp tài liệu** (`/hoi-dap`, `POST /ask`) và **tìm kiếm toàn văn** (`POST /search`) trên hồ sơ và tệp đính kèm dạng văn bản, bằng Meilisearch (profile `search`). Mỗi kết quả được Hasura kiểm lại bằng token của người hỏi, nên người không có quyền không bao giờ thấy nội dung, cả trong kết quả lẫn trong ngữ cảnh gửi cho AI. AI chỉ trả lời từ các đoạn tìm được, dẫn số nguồn.
+- **Ollama** (profile `ai`) để chạy mô hình AI tại chỗ; hướng dẫn trong `docs/TRI_TUE.md`.
+- Ca kiểm thử `tests/search.test.js` (I-SEARCH-01..05), kiểm thử đơn vị `search.test.js` và `snippet.test.js`.
+
+### Chưa làm
+- Tìm kiếm véc-tơ ngữ nghĩa (Qdrant), đọc PDF và OCR, vòng hỏi-đáp làm rõ khi AI sinh quy trình (GEN-10).
+
 ## [1.4.0] - 2026-11-15
 
 An toàn và vận hành.

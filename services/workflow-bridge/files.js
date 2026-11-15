@@ -22,11 +22,11 @@ export function safeName(raw) {
   return name || 'tep-dinh-kem'
 }
 
-class HttpError extends Error {
+export class HttpError extends Error {
   constructor(status, message) { super(message); this.status = status }
 }
 
-async function asUser(req, query, variables) {
+export async function asUser(req, query, variables) {
   const authorization = req.headers.authorization
   if (!authorization) throw new HttpError(401, 'Thiếu thông tin đăng nhập')
   const res = await fetch(`${HASURA_URL}/v1/graphql`, {

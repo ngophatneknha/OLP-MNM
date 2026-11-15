@@ -50,6 +50,19 @@ export async function gql(query, variables) {
   return json.data
 }
 
+/** Gọi một điểm cuối JSON của gateway bằng token hiện tại (tìm kiếm, hỏi đáp). Ném lỗi với thông báo người dùng đọc được. */
+export async function postJson(path, body) {
+  await keycloak.updateToken(30)
+  const res = await fetch(`${apiUrl}${path}`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${keycloak.token}`, 'x-hasura-role': auth.role, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.message ?? (res.status === 429 ? 'Bạn hỏi quá nhanh, thử lại sau một phút' : `Lỗi ${res.status}`))
+  return json
+}
+
 /** "Số tiền tạm ứng" -> "so_tien_tam_ung" (mã hợp lệ cho trường / bước / ứng dụng). */
 export function slug(text) {
   const s = text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
