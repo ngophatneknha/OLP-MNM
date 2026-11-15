@@ -9,6 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-11-15
+
+### Added
+- **Kho dữ liệu lạnh** (nguyên lý (i) của Đề): hồ sơ đã kết thúc xuất ra JSONL trong bucket `dxlab-cold`; sổ cái `cold_archive` băm nối chuỗi, bất biến ở tầng CSDL; `POST /archive`, `GET /archive`, `GET /archive/verify` (chỉ giám đốc); tự chạy mỗi ngày. Bảng mới trong `infra/postgres/init/03-cold.sql` (đang chạy thì áp tệp này bằng psql, hoặc `docker compose down -v` rồi dựng lại).
+- **Phả hệ dữ liệu** (nguyên lý (iii)): `GET /lineage` lấy tự động từ danh mục PostgreSQL.
+- **Nạp hàng loạt**: `POST /ingest?app=<mã>` nhận CSV hoặc mảng JSON tối đa 500 dòng; từng dòng đi bằng token người nạp.
+- Bộ kiểm thử `tests/cold.test.js` (COLD-01..04, LIN-01, ING-01..02) và kiểm thử đơn vị cho `cold.js`, `ingest.js`.
+
 ## [1.8.0] - 2026-11-15
 
 ### Added

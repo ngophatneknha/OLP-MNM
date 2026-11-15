@@ -36,6 +36,8 @@ Nguyên tắc: tầng lõi **headless** – chỉ cung cấp dịch vụ qua API
 
 ## Tệp đính kèm
 
+**Kho lạnh và phả hệ.** Mỗi ngày (hoặc khi giám đốc gọi `POST /archive`), hồ sơ đã kết thúc quá `ARCHIVE_AFTER_DAYS` (mặc định 90) được xuất kèm nhật ký ra một tệp JSONL trong bucket `dxlab-cold`. Bảng `cold_archive` là sổ cái băm nối chuỗi (mỗi dòng ghi mã băm tệp và mã băm dòng trước) và cùng `cold_item` đều chỉ thêm, không sửa/xóa được ở tầng CSDL; `GET /archive/verify` kiểm lại chuỗi và từng tệp. `GET /lineage` trả đồ thị phả hệ: view báo cáo `bi.app_*` đọc từ bảng nào lấy tự động từ danh mục PostgreSQL, cộng các luồng xuống kho lạnh và số liệu. `POST /ingest?app=<mã>` nạp hàng loạt (tối đa 500 dòng CSV hoặc JSON), từng dòng đi bằng token của người nạp nên mọi rào chắn vẫn nguyên. Dữ liệu kho lạnh nằm trong volume `s3data` nên được `scripts/backup.sh` sao lưu.
+
 **Thời gian thực.** `GET /events` là kênh Server-Sent Events qua cổng API (cần token). Mỗi khi `workflow-bridge` xử lý xong một sự kiện của Hasura (hồ sơ mới, có người ký, ứng dụng xuất bản) hoặc nhận tệp, nó đẩy một nhịp rỗng tới mọi trình duyệt đang mở. Trình duyệt nhận nhịp rồi tự tải lại bằng GraphQL **với token của chính người dùng**, nên kênh không mang dữ liệu và không thể làm lộ gì. Kênh đứt thì giao diện quay về hỏi định kỳ 3 giây; kênh sống thì chỉ hỏi bù 30 giây một lần (`web/src/live.js`, dùng chung cho mọi màn hình). Giới hạn: danh sách kết nối giữ trong bộ nhớ của một tiến trình bridge.
 
 Nội dung tệp nằm trong kho S3 (SeaweedFS); bảng `attachment` giữ tên, kích thước và khóa đối tượng. Tệp đi qua `POST /files` và `GET /files/<id>` của cổng API:

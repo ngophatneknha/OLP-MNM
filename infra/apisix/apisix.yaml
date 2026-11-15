@@ -80,6 +80,33 @@ routes:
         read: 3600
       nodes:
         "workflow-bridge:3000": 1
+  - id: data
+    uris: ["/archive", "/archive/*", "/lineage", "/ingest"]
+    plugins:
+      cors:
+        allow_origins: "${{APP_ORIGIN}}"
+        allow_methods: "GET,POST,OPTIONS"
+        allow_headers: "authorization,content-type,x-hasura-role"
+      limit-count:
+        count: 60
+        time_window: 60
+        key_type: var
+        key: remote_addr
+        rejected_code: 429
+      openid-connect:
+        client_id: dxlab-app
+        client_secret: not-used-public-client
+        discovery: http://keycloak:8080/realms/dxlab/.well-known/openid-configuration
+        bearer_only: true
+        use_jwks: true
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 6
+        send: 60
+        read: 120
+      nodes:
+        "workflow-bridge:3000": 1
   - id: search
     uris: ["/search", "/ask"]
     plugins:
