@@ -22,7 +22,7 @@ export const AUTONOMY = [
 /** Giá trị nhóm lưu trong cơ sở dữ liệu (dữ liệu, không phải chữ giao diện); tên hiển thị lấy qua t('cat.<giá trị>'). */
 export const CATEGORIES = ['Tài chính', 'Nhân sự', 'Mua sắm', 'Hành chính', 'Khác'] // i18n-ok: giá trị lưu trong cơ sở dữ liệu
 
-export const auth = reactive({ name: '', userId: '', role: 'staff', roles: [] })
+export const auth = reactive({ name: '', userId: '', role: 'staff', roles: [], orgName: '' })
 let keycloak
 let apiUrl
 
@@ -45,6 +45,8 @@ export async function login() {
   auth.roles = Object.keys(ROLE_LABEL).filter((r) => token.realm_access?.roles.includes(r))
   // Mỗi tài khoản làm việc dưới vai trò chuyên trách của mình; ai cũng có thể gửi hồ sơ.
   auth.role = auth.roles.find((r) => r !== 'staff') ?? 'staff'
+  // Tên tổ chức chỉ để hiển thị; lỗi thì bỏ qua, không chặn đăng nhập.
+  auth.orgName = (await gql('{ org { name } }').catch(() => ({ org: [] }))).org?.[0]?.name ?? ''
 }
 
 export const logout = () => keycloak.logout({ redirectUri: location.origin })

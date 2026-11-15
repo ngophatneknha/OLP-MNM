@@ -54,7 +54,8 @@ const active = (to, path) => (to === '/' ? path === '/' || path.startsWith('/ho-
         <span class="avatar bg-white/15 text-white">{{ initials(auth.name) }}</span>
         <div class="min-w-0 flex-1 leading-tight">
           <div class="truncate text-sm font-medium">{{ auth.name }}</div>
-          <div class="text-xs text-white/70">{{ t(`role.${auth.role}`) }}</div>
+          <div class="truncate text-xs text-white/70">{{ t(`role.${auth.role}`) }}</div>
+          <div v-if="auth.orgName" class="truncate text-xs text-white/70" :title="auth.orgName">{{ auth.orgName }}</div>
         </div>
         <button class="btn-icon text-white/80 hover:bg-white/15 hover:text-white" :aria-label="t('nav.language')" :title="t('nav.language')" @click="setLang(i18n.lang === 'vi' ? 'en' : 'vi')">
           <Languages :size="18" aria-hidden="true" /><span class="sr-only">{{ i18n.lang }}</span>
