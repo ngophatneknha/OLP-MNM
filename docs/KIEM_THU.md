@@ -96,6 +96,19 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 
 Giới hạn nói thẳng: kho lạnh là tệp JSONL, chưa phải bảng Parquet/Iceberg; bản sao trong cơ sở dữ liệu nóng được giữ nguyên (chưa xóa sau khi xuất); sổ cái chống sửa ở tầng CSDL và băm chuỗi, nhưng chưa có neo bên ngoài (ví dụ ký thời gian) để chống người nắm cả CSDL lẫn kho S3 viết lại toàn bộ chuỗi.
 
+## Cảm biến IT/OT (phiên bản 1.8.2)
+
+| Mã | Kiểm tra | Cách thực hiện |
+|---|---|---|
+| IOT-01 | Chỉ giám đốc đăng ký cảm biến; token thiết bị trả một lần (CSDL chỉ giữ mã băm); ứng dụng sửa chữa phải đủ trường | `POST /sensors` |
+| IOT-02 | Số đo trong ngưỡng chỉ được ghi; vượt ngưỡng thì tự mở hồ sơ đúng ứng dụng, đúng dữ liệu, chờ trưởng phòng | `POST /telemetry/<mã>` bằng token thiết bị |
+| IOT-03 | Vượt ngưỡng liên tục không ngập hồ sơ: còn hồ sơ đang chạy thì dùng lại | nhiều số đo trong một lần gửi |
+| IOT-04 | Không token, sai token và cảm biến không tồn tại cùng bị 401; số đo sai, quá cũ, ở tương lai, quá 100 bị 400 | như trên |
+| IOT-05 | Số đo bất biến ở tầng CSDL; "bản sao số" `GET /sensors` phản ánh trạng thái hiện tại; nhân viên bị 403 | trigger `forbid_change` |
+| IOT-06 | Hồ sơ sửa chữa đi hết quy trình (trưởng phòng duyệt, kỹ thuật viên xác nhận); vượt ngưỡng lại thì mở hồ sơ mới | luồng thật qua Flowable |
+
+Giới hạn nói thẳng: thiết bị gọi HTTP (chưa có MQTT/OPC UA); ngưỡng một chiều; token thiết bị gửi qua HTTP thường nên môi trường thật phải đặt sau TLS (profile `tls`); hai số đo vượt ngưỡng đến cùng lúc có thể mở hai hồ sơ (chưa khóa theo cảm biến).
+
 ## Tìm kiếm và hỏi đáp (phiên bản 1.5.0)
 
 | Mã ca | Kiểm cái gì |
@@ -147,7 +160,7 @@ Giới hạn nói thẳng: kho lạnh là tệp JSONL, chưa phải bảng Parqu
 | Nguyên lý (iv): cấu hình hạ tầng bằng mã, tự phục hồi tức thì | Đạt | `docker-compose.yml`, OPS-06, OPS-07 |
 | Lớp 1 tham chiếu: truyền phát trạng thái thời gian thực | Đạt bằng SSE (không dùng WebSocket) | Z-03 |
 | Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh | Đạt ở mức tệp JSONL bất biến trong S3 (chưa phải bảng lakehouse Parquet/Iceberg) | COLD-01 đến COLD-04 |
-| Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | **Chưa** | D-06 |
+| Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | Đạt ở mức HTTP: cảm biến gửi số đo bằng token riêng, vượt ngưỡng tự mở hồ sơ sửa chữa qua quy trình của người | IOT-01 đến IOT-06 |
 | Nguyên lý (iii): phả hệ dữ liệu | Đạt: lấy tự động từ danh mục PostgreSQL, thêm luồng xuống kho lạnh và số liệu | LIN-01 |
 | Chứng thư số (PKI) cho chữ ký phê duyệt | **Chưa**: chữ ký là xác nhận trong nhật ký bất biến, không phải chữ ký số có chứng thư | Nói thẳng khi trình bày |
 

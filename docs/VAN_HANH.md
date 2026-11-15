@@ -62,6 +62,23 @@ sh scripts/vault.sh up       # chạy hệ thống với bí mật lấy từ k�
 
 Sau `init`, khóa mở và token gốc nằm ở `.vault-keys` (không commit). **Hãy cất tệp này ra ngoài máy chủ rồi xóa**, sau đó xóa các dòng bí mật trong `.env`. Két khởi động lại sẽ bị khóa: `sh scripts/vault.sh unseal` (cần tệp khóa). Giới hạn: một khóa mở duy nhất, chưa tự mở khóa; môi trường thật nên chia khóa cho nhiều người.
 
+## Cảm biến (IT/OT)
+
+1. Xuất bản ứng dụng sửa chữa: nhập mẫu `library/iot/sua_chua.json` bằng Soạn quy trình (cần các trường `thiet_bi`, `cam_bien`, `gia_tri`, `mo_ta`).
+2. Giám đốc đăng ký cảm biến, ví dụ bằng `curl` với token đăng nhập:
+
+```bash
+curl -X POST "$API/sensors" -H "authorization: Bearer $TOKEN" -H "x-hasura-role: director" -H "content-type: application/json"   -d '{"key":"lanh_kho1","name":"Tủ lạnh kho 1","unit":"°C","threshold":8,"direction":"above","repair_app":"sua_chua"}'
+```
+
+Phản hồi có `token` (chỉ hiện một lần): cất vào thiết bị. 3. Thiết bị gửi số đo:
+
+```bash
+curl -X POST "$API/telemetry/lanh_kho1" -H "x-sensor-token: $DEVICE_TOKEN" -H "content-type: application/json" -d '{"value": 11.5}'
+```
+
+Có thể gửi mảng tới 100 số đo kèm `at` (ISO 8601, trong 7 ngày qua). Vượt ngưỡng thì hồ sơ sửa chữa tự mở và hiện ở trưởng phòng. Token đi qua HTTP thường nên môi trường thật cần bật TLS. Máy đang chạy cần áp `infra/postgres/init/04-iot.sql` bằng psql (hoặc dựng lại CSDL).
+
 ## Giám sát (Prometheus)
 
 ```bash
