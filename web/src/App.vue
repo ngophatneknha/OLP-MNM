@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 -->
 <script setup>
-import { Inbox, FilePlus2, FolderOpen, ChartNoAxesColumn, Bot, Workflow, PencilRuler, LogOut, CircleCheck, CircleAlert, Columns3, CalendarDays, MessageCircleQuestion, UserRound, Languages, MapPin } from 'lucide-vue-next'
+import { Inbox, FilePlus2, FolderOpen, ChartNoAxesColumn, Bot, Workflow, PencilRuler, LogOut, CircleCheck, CircleAlert, Columns3, CalendarDays, MessageCircleQuestion, UserRound, Languages, MapPin, Users } from 'lucide-vue-next'
 import { auth, logout, initials, toasts } from './lib.js'
 import { t, i18n, setLang } from './i18n.js'
 
@@ -16,6 +16,7 @@ const items = [
   { to: '/ca-nhan', label: 'nav.profile', icon: UserRound, space: 'H' },
   { to: '/gui', label: 'nav.submit', icon: FilePlus2, space: 'P' },
   { to: '/quy-trinh', label: 'nav.processes', icon: Workflow, space: 'P' },
+  { to: '/to-chuc', label: 'nav.org', icon: Users, space: 'H', role: 'director' },
   { to: '/soan', label: 'nav.builder', icon: PencilRuler, space: 'P', role: 'manager' },
   { to: '/so-lieu', label: 'nav.stats', icon: ChartNoAxesColumn, space: 'D', roles: ['manager', 'director'] },
   { to: '/ban-do', label: 'nav.map', icon: MapPin, space: 'D', roles: ['manager', 'director'] },

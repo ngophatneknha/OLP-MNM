@@ -126,6 +126,9 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       # Khóa mã hóa khóa riêng của CA/người ký (chữ ký số); trống thì dùng HASURA_ADMIN_SECRET.
       PKI_MASTER_KEY: ${PKI_MASTER_KEY:-}
+      # Quản trị người dùng của tổ chức (Keycloak Admin API); xem docs/VAN_HANH.md, mục Nhiều tổ chức.
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       CLAMAV_HOST: clamav
       # Tìm kiếm và hỏi đáp (tùy chọn): chỉ hoạt động khi bật profile search ở docker-compose.optional.yml.
       MEILI_URL: http://meilisearch:7700

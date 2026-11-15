@@ -109,7 +109,7 @@ routes:
         "workflow-bridge:3000": 1
   # Thiết bị OT không có tài khoản Keycloak: tự xác thực bằng token riêng của từng cảm biến (kiểm ở workflow-bridge), cổng chỉ giới hạn tần suất.
   - id: data-read
-    uris: ["/signatures/*", "/pki/*", "/ngsi-ld/*"]
+    uris: ["/signatures/*", "/pki/*", "/ngsi-ld/*", "/orgs/*"]
     plugins:
       cors:
         allow_origins: "${{APP_ORIGIN}}"

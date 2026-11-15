@@ -25,6 +25,8 @@ import { handleIngest } from './ingest.js'
 import { handleSensors } from './sensors.js'
 import { handlePki, signEvent } from './pki.js'
 import { handleNgsi } from './ngsi.js'
+import { handleOrgs } from './orgs.js'
+import { sql, lit } from './db.js'
 import { handleSearch, syncIndex } from './search.js'
 import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
@@ -68,7 +70,7 @@ async function publishApp(app) {
   const form = new FormData()
   form.append('file', new Blob([toBpmn(app.key, app.name, app.spec)], { type: 'text/xml' }), `app_${app.key}.bpmn20.xml`)
   await flowable('POST', '/repository/deployments', form)
-  await hasuraPost('/v2/query', { type: 'run_sql', args: { source: 'default', sql: toViewSql(app.key, app.spec) } })
+  await hasuraPost('/v2/query', { type: 'run_sql', args: { source: 'default', sql: toViewSql(app.key, app.spec, app.org_id ?? (await sql(`SELECT org_id FROM app WHERE key = ${lit(app.key)}`))[0]?.[0]) } })
   await setAppStatus(app.key, 'published')
   await ensureAutonomy(app)
 }
@@ -140,7 +142,7 @@ const readLibrary = () => readdirSync('/library').filter((f) => f.endsWith('.jso
 // và sự kiện cũng có thể hết lượt gửi lại. Quét định kỳ các ứng dụng còn 'pending' để không cái nào bị kẹt.
 async function sweepPendingApps() {
   try {
-    const { data } = await gql('{ app(where: {status: {_eq: "pending"}}) { key name spec } }')
+    const { data } = await gql('{ app(where: {status: {_eq: "pending"}}) { key name spec org_id } }')
     for (const app of data.app) await publishApp(app)
   } catch (err) {
     console.error('Quét ứng dụng đang chờ thất bại:', err.message)
@@ -178,6 +180,7 @@ createServer(async (req, res) => {
   if (req.url.startsWith('/events')) return handleEvents(req, res)
   if (req.url.startsWith('/archive') || req.url.startsWith('/lineage')) return handleCold(req, res)
   if (req.url.startsWith('/ingest')) return handleIngest(req, res)
+  if (req.url.startsWith('/orgs/')) return handleOrgs(req, res)
   if (req.url.startsWith('/ngsi-ld/')) return handleNgsi(req, res)
   if (req.url.startsWith('/signatures') || req.url.startsWith('/pki')) return handlePki(req, res)
   if (req.url.startsWith('/sensors') || req.url.startsWith('/telemetry')) return handleSensors(req, res)

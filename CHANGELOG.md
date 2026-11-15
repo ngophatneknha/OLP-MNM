@@ -9,6 +9,18 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-11-16
+
+### Added
+- Quản trị người dùng của tổ chức: màn hình "Người dùng tổ chức" và `GET/POST /orgs/users`, khóa/mở lại tài khoản; giám đốc chỉ quản trị được tổ chức của mình (Keycloak Admin API).
+- `scripts/org-create.mjs`: lập tổ chức mới kèm giám đốc đầu tiên.
+- BI theo tổ chức: vai trò CSDL `bi_<tổ chức>` chỉ đọc view báo cáo của tổ chức đó (`08-tenant.sql`).
+- Ca ORG-12..16 và UPG-01 (đường nâng cấp CSDL từ 1.8.2).
+
+### Changed
+- Xuất bản ứng dụng cấp quyền view báo cáo cho vai trò BI của tổ chức sở hữu.
+- Tài liệu nâng cấp: áp 05..08, biến Keycloak cho bridge, phần Keycloak làm tay.
+
 ## [1.13.0] - 2026-11-16
 
 ### Added

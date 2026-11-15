@@ -17,6 +17,7 @@ import Submission from './pages/Submission.vue'
 import Documents from './pages/Documents.vue'
 import Stats from './pages/Stats.vue'
 import SensorMap from './pages/Map.vue'
+import OrgUsers from './pages/OrgUsers.vue'
 import Assistant from './pages/Assistant.vue'
 import Builder from './pages/Builder.vue'
 import Processes from './pages/Processes.vue'
@@ -38,6 +39,7 @@ login().then(() => {
       { path: '/tai-lieu', component: Documents },
       { path: '/so-lieu', component: Stats },
       { path: '/ban-do', component: SensorMap },
+      { path: '/to-chuc', component: OrgUsers },
       { path: '/tro-ly', component: Assistant },
       { path: '/soan', component: Builder },
       { path: '/quy-trinh', component: Processes },
