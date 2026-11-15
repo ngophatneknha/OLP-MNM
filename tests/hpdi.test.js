@@ -276,7 +276,7 @@ describe('I: Không gian Trí tuệ số — AI có kiểm soát', () => {
     await waitStatus('manager1', s, { current_step: 'truong_phong' })
     assert.ok(!(await act('manager1', s, 'truong_phong', 'approve')).errors)
   })
-  test('I-07 [todo] tìm kiếm véc-tơ ngữ nghĩa, OCR, đọc PDF (toàn văn và RAG kiểm quyền đã có: tests/search.test.js)', { todo: 'chưa làm: Qdrant, OCR, PDF' }, () => assert.fail('chưa có'))
+  test('I-07 đọc PDF, OCR và tìm ngữ nghĩa: trạm extractor (poppler, Tesseract) và mô hình nhúng bật bằng SEARCH_EMBEDDER đã có (ca chạy thật I-SEARCH-06, I-SEARCH-07 ở tests/search.test.js)', () => { assert.match(readFileSync(join(ROOT, 'docker-compose.optional.yml'), 'utf8'), /extractor:[\s\S]*profiles: \["search"\]/); assert.match(readFileSync(join(ROOT, 'services/workflow-bridge/search.js'), 'utf8'), /SEARCH_EMBEDDER/) })
 })
 
 describe('Z: Nguyên lý Zero-Trust và vận hành (đề thi mục 4, nguyên lý iv) — điểm chưa làm', () => {

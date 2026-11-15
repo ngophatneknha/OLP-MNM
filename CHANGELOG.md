@@ -9,6 +9,17 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-16
+
+### Added
+- Không gian [I]: trạm `extractor` (poppler, Tesseract OCR tiếng Việt + Anh) đọc chữ từ PDF và ảnh vào chỉ mục tìm kiếm (profile `search`).
+- Tìm ngữ nghĩa tùy chọn bằng Meilisearch lai: đặt `SEARCH_EMBEDDER`, tỉ lệ `SEARCH_SEMANTIC_RATIO`.
+- Ca I-SEARCH-06 (PDF, ảnh, PDF quét), I-SEARCH-07 (ngữ nghĩa); tiện ích tạo PDF thử bằng mã.
+
+### Changed
+- Tìm kiếm quét nhiều trang kết quả (tối đa 1000) cho đến khi đủ kết quả người hỏi được xem, thay vì chỉ trang đầu 100 kết quả.
+- I-07 không còn `todo`; copyleft poppler thêm vào THIRD_PARTY.
+
 ## [1.12.0] - 2026-11-16
 
 ### Added

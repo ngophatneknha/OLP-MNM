@@ -20,7 +20,11 @@ Cách hoạt động:
 3. Meilisearch tìm đoạn khớp, rồi **Hasura kiểm lại từng kết quả bằng chính token của người hỏi**. Chỉ mục không quyết định quyền, nên hồ sơ người đó không được xem không bao giờ xuất hiện, cả trong kết quả lẫn trong ngữ cảnh gửi cho AI.
 4. Nếu đã cấu hình AI (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` trong `.env`), AI trả lời **chỉ dựa trên các đoạn đó**, mỗi ý ghi số nguồn. Nguồn được coi là dữ liệu, không phải mệnh lệnh. Không có đoạn nào khớp thì không gọi AI. Không cấu hình AI thì vẫn tìm kiếm và xem nguồn được.
 
-Giới hạn hiện tại, nói thẳng: tìm kiếm toàn văn (BM25), chưa có véc-tơ ngữ nghĩa (Qdrant), chưa đọc PDF hay ảnh (OCR). Kiểm thử: `SEARCH_OPTIONAL=1 node --test tests/search.test.js`.
+**PDF và ảnh (OCR).** Cùng profile `search` còn dựng trạm `extractor` (chỉ mạng nội bộ): PDF có lớp chữ đọc bằng poppler `pdftotext`; PDF quét và ảnh PNG/JPEG/TIFF/BMP/GIF đọc bằng Tesseract (tiếng Việt + Anh), tối đa 10 trang, mỗi tệp tối đa 10 MB. Chữ đọc được đi vào chỉ mục như tệp văn bản và chịu cùng kiểm quyền.
+
+**Tìm ngữ nghĩa (tùy chọn).** Đặt `SEARCH_EMBEDDER=intfloat/multilingual-e5-small` trong `.env` rồi dựng lại `workflow-bridge`: Meilisearch tự nhúng văn bản bằng mô hình HuggingFace (tải khoảng 470 MB lần đầu; nhúng lại toàn bộ chỉ mục mất vài phút) và tìm lai từ khóa + ngữ nghĩa (`SEARCH_SEMANTIC_RATIO`, mặc định 0.5). Nhờ đó "thiết bị laptop cho văn phòng" tìm ra "mua máy tính xách tay cho phòng kế toán". Kết quả vẫn qua Hasura kiểm quyền, và vì tìm ngữ nghĩa luôn trả về láng giềng gần nhất nên hệ thống quét từng trang kết quả (tối đa 1000) cho đến khi đủ phần người hỏi được xem.
+
+Giới hạn hiện tại, nói thẳng: không dùng cơ sở dữ liệu véc-tơ riêng như Qdrant (Meilisearch lo cả hai); tìm ngữ nghĩa mặc định tắt, mô hình nhỏ nên độ chính xác vừa phải và điểm xếp hạng không tách bạch tài liệu liên quan khỏi không liên quan; OCR chỉ đọc 10 trang đầu và phụ thuộc chất lượng ảnh. Kiểm thử: `SEARCH_OPTIONAL=1 node --test tests/search.test.js`.
 
 ## Mô hình AI chạy tại chỗ (Ollama)
 
