@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Trang web của dự án (GitHub Pages, nguồn: thư mục docs/ của nhánh main). Các tệp .md trong docs/ được hiển thị thành trang web.
+title: DX-Lab Project Hub
+description: Quy trình của tổ chức được quản lý như mã nguồn mở, trên nền DX-OS Open-Core
+theme: jekyll-theme-cayman
+plugins:
+  - jekyll-optional-front-matter
+  - jekyll-relative-links
+  - jekyll-default-layout
+  - jekyll-titles-from-headings
+optional_front_matter:
+  remove_originals: true
+relative_links:
+  enabled: true
+  collection: false
+exclude:
+  - KE_HOACH_GUI_GIANG_VIEN.md
+  - images/README.md
