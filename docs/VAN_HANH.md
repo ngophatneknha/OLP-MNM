@@ -21,11 +21,29 @@ sh scripts/restore.sh backups/20261115-101500
 node tests/wait-ready.js
 ```
 
-Nên sao lưu theo lịch (ví dụ `cron` mỗi đêm) và chép thư mục `backups/` sang máy khác. Giới hạn: kho tệp được nén khi đang chạy, cần ảnh chụp nhất quán tuyệt đối thì dừng `seaweedfs` trước. Bộ kiểm thử `tests/restore.test.js` chạy trọn vòng sao lưu, phá dữ liệu, khôi phục trên hệ thống thật:
+**Sao lưu tự động theo lịch:** bật dịch vụ `backup` (mặc định mỗi 24 giờ, giữ 7 bản mới nhất trong `backups/`, đổi bằng `BACKUP_INTERVAL_HOURS`, `BACKUP_KEEP`):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile backup up -d
+```
+
+Bản tự động chỉ gồm ba cơ sở dữ liệu (kèm `SHA256SUMS`); `restore.sh` khôi phục được từ nó và giữ nguyên kho tệp. Cần cả kho tệp thì chạy `scripts/backup.sh`. Nên chép thư mục `backups/` sang máy khác. Giới hạn: kho tệp được nén khi đang chạy, cần ảnh chụp nhất quán tuyệt đối thì dừng `seaweedfs` trước. Bộ kiểm thử `tests/restore.test.js` chạy trọn vòng sao lưu, phá dữ liệu, khôi phục trên hệ thống thật:
 
 ```bash
 RESTORE_TEST=1 node --test tests/restore.test.js   # phá và khôi phục dữ liệu thật, không chạy cùng bộ khác
 ```
+
+## GitOps nhẹ
+
+Cấu hình hạ tầng (compose, Hasura, cổng API, Keycloak) là mã trong kho; `scripts/gitops.sh` giữ máy chạy khớp với kho:
+
+```bash
+sh scripts/gitops.sh check        # kiểm cấu hình trong kho hợp lệ, không đổi gì
+sh scripts/gitops.sh apply        # lấy bản mới (chỉ tiến), kiểm, rồi `up -d --build` và nạp lại metadata Hasura
+sh scripts/gitops.sh watch 300    # lặp lại apply mỗi 300 giây
+```
+
+Giới hạn: không phải ArgoCD/Flux (một máy, không tự hoàn tác); nhánh cục bộ lệch khỏi `origin` thì `apply` dừng thay vì ghi đè.
 
 ## TLS tại biên (Caddy)
 

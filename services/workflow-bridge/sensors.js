@@ -87,6 +87,16 @@ async function openRepair(sensor, value) {
   return json.data.insert_submission_one.id
 }
 
+// shortcut: khóa trong bộ nhớ của một tiến trình bridge; chạy nhiều bản bridge thì chuyển sang khóa cố vấn của PostgreSQL (pg_advisory_lock).
+const locks = new Map()
+export async function withLock(key, fn) {
+  const prev = locks.get(key) ?? Promise.resolve()
+  const run = prev.then(fn, fn)
+  const tail = run.catch(() => {})
+  locks.set(key, tail)
+  try { return await run } finally { if (locks.get(key) === tail) locks.delete(key) }
+}
+
 async function telemetry(req, key) {
   if (!KEY.test(key)) throw new HttpError(404, 'Không tìm thấy cảm biến')
   const row = (await sql(`SELECT token_hash, name, unit, threshold, direction, repair_app, owner_id, open_submission_id FROM sensor WHERE key = ${lit(key)}`))[0]
@@ -109,13 +119,15 @@ async function telemetry(req, key) {
   const bad = readings.find((r) => breaches(r.value, sensor.threshold, sensor.direction))
   let request = null
   if (bad) {
-    // Còn hồ sơ sửa chữa đang chạy cho cảm biến này thì không mở thêm, khỏi ngập hồ sơ khi số đo cứ vượt ngưỡng.
-    const open = row[7] && (await sql(`SELECT 1 FROM submission WHERE id = '${row[7]}' AND status = 'running'`)).length
-    if (open) request = row[7]
-    else {
-      request = await openRepair(sensor, bad.value)
-      await sql(`UPDATE sensor SET open_submission_id = '${request}' WHERE key = ${lit(key)}`)
-    }
+    // Khóa theo cảm biến: hai số đo vượt ngưỡng đến cùng lúc không mở hai hồ sơ. Đọc lại hồ sơ đang mở bên trong khóa.
+    request = await withLock(key, async () => {
+      const cur = (await sql(`SELECT open_submission_id FROM sensor WHERE key = ${lit(key)}`))[0]?.[0]
+      // Còn hồ sơ sửa chữa đang chạy cho cảm biến này thì không mở thêm, khỏi ngập hồ sơ khi số đo cứ vượt ngưỡng.
+      if (cur && (await sql(`SELECT 1 FROM submission WHERE id = '${cur}' AND status = 'running'`)).length) return cur
+      const id = await openRepair(sensor, bad.value)
+      await sql(`UPDATE sensor SET open_submission_id = '${id}' WHERE key = ${lit(key)}`)
+      return id
+    })
   }
   notify()
   return { accepted: readings.length, alarm: Boolean(bad), request }

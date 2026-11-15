@@ -9,9 +9,9 @@
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import https from 'node:https'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { ROOT, GW, until, run } from './lib.js'
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
@@ -81,4 +81,26 @@ describe('OPS: thành phần tùy chọn đang chạy', { skip }, () => {
       return r.length && Number(r[0].value[1]) >= 1
     }, 'Prometheus thấy yêu cầu 401', 90_000)
   })
+})
+
+test('OPS-BACKUP sao lưu tự động: dịch vụ backup (profile backup) chạy được một lần, ra đủ ba cơ sở dữ liệu kèm mã băm hợp lệ', { timeout: 180_000 }, () => {
+  const root = join(ROOT, 'backups')
+  const before = new Set(existsSync(root) ? readdirSync(root) : [])
+  const compose = ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.optional.yml', '--profile', 'backup']
+  let dir
+  try {
+    run('docker', [...compose, 'run', '--rm', '--no-deps', '-e', 'BACKUP_ONCE=1', '-e', 'BACKUP_KEEP=1000', 'backup'], { stdio: 'pipe' })
+    dir = join(root, readdirSync(root).find((d) => !before.has(d)))
+    for (const f of ['dxlab.sql.gz', 'keycloak.sql.gz', 'flowable.sql.gz', 'SHA256SUMS']) assert.ok(existsSync(join(dir, f)), f)
+    assert.equal(run('sh', ['-c', 'cd "$1" && sha256sum -c SHA256SUMS >/dev/null && gunzip -c dxlab.sql.gz | grep -c "CREATE TABLE public.submission "', 'sh', dir]).trim(), '1')
+  } finally {
+    // Tệp do container (root) tạo nên dọn bằng chính container, không dọn từ máy chạy kiểm thử (Linux báo EACCES).
+    if (dir) run('docker', [...compose, 'run', '--rm', '--no-deps', '--entrypoint', 'rm', 'backup', '-rf', `/backups/${basename(dir)}`], { stdio: 'pipe' })
+  }
+})
+
+test('OPS-GITOPS kiểm cấu hình trong kho: lệnh check chạy được; cấu hình hỏng thì bị bắt', { timeout: 120_000 }, () => {
+  assert.match(run('sh', ['scripts/gitops.sh', 'check']), /hợp lệ/)
+  assert.throws(() => run('sh', ['scripts/gitops.sh', 'bogus'], { stdio: 'pipe' }), 'lệnh lạ phải thất bại')
+  assert.throws(() => run('node', ['-e', 'JSON.parse("{")'], { stdio: 'pipe' }))
 })

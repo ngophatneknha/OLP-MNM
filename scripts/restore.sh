@@ -18,6 +18,11 @@ for db in dxlab keycloak flowable; do
   docker compose exec -T postgres psql -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $db WITH (FORCE)" -c "CREATE DATABASE $db"
   gunzip -c "$dir/$db.sql.gz" | docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$db" -v ON_ERROR_STOP=1 -q -o /dev/null
 done
-docker compose run --rm --no-deps -T --entrypoint sh seaweedfs -c 'rm -rf /data/* && tar xzf - -C /' < "$dir/s3data.tar.gz"
+# Bản sao lưu tự động theo lịch (dịch vụ backup) chỉ có CSDL, không có kho tệp: bỏ qua bước trả kho tệp.
+if [ -f "$dir/s3data.tar.gz" ]; then
+  docker compose run --rm --no-deps -T --entrypoint sh seaweedfs -c 'rm -rf /data/* && tar xzf - -C /' < "$dir/s3data.tar.gz"
+else
+  echo "Không có s3data.tar.gz: giữ nguyên kho tệp hiện tại." >&2
+fi
 docker compose up -d
 echo "Đã khôi phục từ $dir. Chờ hệ thống sẵn sàng: node tests/wait-ready.js"

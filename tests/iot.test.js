@@ -83,4 +83,13 @@ describe('IOT: cảm biến (OT) mở yêu cầu sửa chữa trong quy trình n
     assert.ok(next.request && next.request !== firstRequest)
     assert.equal(sql(`select count(*) from submission where app_key = '${app}'`), '2')
   })
+  test('IOT-07 khóa theo cảm biến: nhiều số đo vượt ngưỡng đến cùng lúc chỉ mở một hồ sơ sửa chữa', async () => {
+    const app2 = await publishApp(REPAIR)
+    const key2 = `lanh_${uid()}`
+    const reg = await call('director1', '/sensors', { method: 'POST', body: JSON.stringify({ key: key2, name: 'Tủ lạnh song song', unit: '°C', threshold: 8, direction: 'above', repair_app: app2 }) })
+    const { token: token2 } = await reg.json()
+    const results = await Promise.all(Array.from({ length: 8 }, () => send(key2, token2, { value: 20 }).then((r) => r.json())))
+    assert.equal(new Set(results.map((r) => r.request)).size, 1, 'số đo đồng thời mở nhiều hồ sơ')
+    assert.equal(sql(`select count(*) from submission where app_key = '${app2}'`), '1')
+  })
 })

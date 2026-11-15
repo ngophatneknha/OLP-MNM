@@ -81,6 +81,8 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | D-04b | Trưởng phòng và giám đốc đọc đủ nhật ký của hồ sơ họ được xem, người không liên quan không thấy; hồ sơ đã xong qua đúng quy trình có nhật ký đủ |
 | DEMO | Sau `seed.js`, điểm H-P-D-I tính riêng trên các quy trình mẫu hợp lý, `tam_ung` có phiên bản 2 (`tests/demo.check.js`) |
 | OPS-RESTORE | Sao lưu, xóa bảng và thêm hồ sơ mới, khôi phục: hồ sơ trở về đúng lúc sao lưu, tệp đính kèm giống từng byte (chạy bằng `RESTORE_TEST=1`) |
+| OPS-BACKUP | Dịch vụ `backup` (profile `backup`) chạy được: ra ba cơ sở dữ liệu kèm mã băm hợp lệ, đọc lại được |
+| OPS-GITOPS | `scripts/gitops.sh check` xác nhận compose, metadata Hasura, tuyến cổng API trong kho hợp lệ |
 
 ## Kho lạnh, phả hệ và nạp hàng loạt (phiên bản 1.8.1)
 
@@ -106,6 +108,7 @@ Giới hạn nói thẳng: kho lạnh là tệp JSONL, chưa phải bảng Parqu
 | IOT-04 | Không token, sai token và cảm biến không tồn tại cùng bị 401; số đo sai, quá cũ, ở tương lai, quá 100 bị 400 | như trên |
 | IOT-05 | Số đo bất biến ở tầng CSDL; "bản sao số" `GET /sensors` phản ánh trạng thái hiện tại; nhân viên bị 403 | trigger `forbid_change` |
 | IOT-06 | Hồ sơ sửa chữa đi hết quy trình (trưởng phòng duyệt, kỹ thuật viên xác nhận); vượt ngưỡng lại thì mở hồ sơ mới | luồng thật qua Flowable |
+| IOT-07 | Nhiều số đo vượt ngưỡng đến cùng lúc chỉ mở một hồ sơ (khóa theo cảm biến) | 8 yêu cầu song song |
 
 Giới hạn nói thẳng: thiết bị gọi HTTP (chưa có MQTT/OPC UA); ngưỡng một chiều; token thiết bị gửi qua HTTP thường nên môi trường thật phải đặt sau TLS (profile `tls`); hai số đo vượt ngưỡng đến cùng lúc có thể mở hai hồ sơ (chưa khóa theo cảm biến).
 
@@ -173,9 +176,8 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | D-06 | Lakehouse định dạng Parquet/Iceberg, NGSI-LD, WebGIS [D] | Ngoài phạm vi hiện tại; kho lạnh JSONL, phả hệ và nạp hàng loạt đã có (COLD, LIN, ING) |
 | I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
 | Z-07 | HSM giữ khóa, thu hồi chứng thư (CRL/OCSP), ký ở trình duyệt | Chữ ký số PKI phần mềm đã có (PKI-01 đến PKI-07); khóa nằm trong CSDL (mã hóa), ký phía máy chủ |
-| Z-08 | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
 | Z-09 | WebSocket cho thời gian thực, MQTT/OPC UA cho thiết bị | Hiện là SSE (Z-03) và HTTP (IOT) |
-| Z-10 | GitOps thật (ArgoCD/Flux tự đồng bộ hạ tầng từ kho) | Cấu hình hạ tầng là mã trong kho và CI kiểm, nhưng áp dụng thủ công bằng `docker compose` |
+| Z-10 | GitOps thật (ArgoCD/Flux: nhiều máy, tự hoàn tác) | Đã có GitOps nhẹ cho một máy: `scripts/gitops.sh check/apply/watch` (OPS-GITOPS) |
 | Z-11 | Gom nhật ký truy vết phân tán; trục sự kiện streaming | Hiện có nhật ký kiểm toán bất biến trong CSDL, SSE và Prometheus |
 
 ## Zero-Trust: các ca đã làm (nguyên lý iv của đề)
@@ -198,7 +200,7 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | Nguyên lý (iv): cấu hình hạ tầng bằng mã, tự phục hồi tức thì | Đạt | `docker-compose.yml`, OPS-06, OPS-07 |
 | Lớp 1 tham chiếu: truyền phát trạng thái thời gian thực | Đạt bằng SSE (không dùng WebSocket) | Z-03 |
 | Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh | Đạt ở mức tệp JSONL bất biến trong S3 (chưa phải bảng lakehouse Parquet/Iceberg) | COLD-01 đến COLD-04 |
-| Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | Đạt ở mức HTTP: cảm biến gửi số đo bằng token riêng, vượt ngưỡng tự mở hồ sơ sửa chữa qua quy trình của người | IOT-01 đến IOT-06 |
+| Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | Đạt ở mức HTTP: cảm biến gửi số đo bằng token riêng, vượt ngưỡng tự mở hồ sơ sửa chữa qua quy trình của người | IOT-01 đến IOT-07 |
 | Nguyên lý (iii): phả hệ dữ liệu | Đạt: lấy tự động từ danh mục PostgreSQL, thêm luồng xuống kho lạnh và số liệu | LIN-01 |
 | Chứng thư số (PKI) cho chữ ký phê duyệt | Đạt ở mức PKI phần mềm: mỗi duyệt/từ chối được ký bằng chứng thư X.509 do CA của tổ chức cấp. **Chưa** có HSM, CRL/OCSP; không phải chữ ký số có giá trị pháp lý theo luật | PKI-01 đến PKI-07; nói thẳng khi trình bày |
 
