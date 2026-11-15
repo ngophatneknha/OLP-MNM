@@ -9,9 +9,9 @@
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import https from 'node:https'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { ROOT, GW, until, run } from './lib.js'
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
@@ -93,7 +93,10 @@ test('OPS-BACKUP sao lưu tự động: dịch vụ backup (profile backup) ch�
     dir = join(root, readdirSync(root).find((d) => !before.has(d)))
     for (const f of ['dxlab.sql.gz', 'keycloak.sql.gz', 'flowable.sql.gz', 'SHA256SUMS']) assert.ok(existsSync(join(dir, f)), f)
     assert.equal(run('sh', ['-c', 'cd "$1" && sha256sum -c SHA256SUMS >/dev/null && gunzip -c dxlab.sql.gz | grep -c "CREATE TABLE public.submission "', 'sh', dir]).trim(), '1')
-  } finally { if (dir) rmSync(dir, { recursive: true, force: true }) }
+  } finally {
+    // Tệp do container (root) tạo nên dọn bằng chính container, không dọn từ máy chạy kiểm thử (Linux báo EACCES).
+    if (dir) run('docker', [...compose, 'run', '--rm', '--no-deps', '--entrypoint', 'rm', 'backup', '-rf', `/backups/${basename(dir)}`], { stdio: 'pipe' })
+  }
 })
 
 test('OPS-GITOPS kiểm cấu hình trong kho: lệnh check chạy được; cấu hình hỏng thì bị bắt', { timeout: 120_000 }, () => {
