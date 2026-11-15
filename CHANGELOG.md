@@ -9,6 +9,18 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-16
+
+Bản đóng băng nộp bài: gom các đợt 1.10.0 đến 1.14.0 và rà soát cuối; không đổi tính năng so với 1.14.0.
+
+### Added
+- `docs/NOP_BAI.md`: hướng dẫn nộp bài và danh sách kiểm tra trước hạn.
+- Bước 6 và 7 của `scripts/demo-platform.mjs`: chữ ký số X.509 và NGSI-LD kèm vị trí.
+
+### Changed
+- Slide, kịch bản demo và báo cáo đối chiếu cập nhật theo tính năng thật (PKI phần mềm, NGSI-LD, DuckDB, OCR, quản trị tổ chức); số ca kiểm thử trên slide là 180+.
+- Tuyến API đọc (`/signatures`, `/pki`, `/ngsi-ld`, `/orgs`) tách khỏi giới hạn 60 lần/phút của tuyến dữ liệu, tăng lên 300.
+
 ## [1.14.0] - 2026-11-16
 
 ### Added

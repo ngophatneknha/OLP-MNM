@@ -206,7 +206,7 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | OPS-08 | **Tài nguyên**: bản lõi dùng dưới 5 GiB RAM khi nhàn rỗi, đo thật bằng `docker stats` (`scripts/measure.sh` in từng dịch vụ) | Đo trên máy phát triển: khoảng 3 GiB cho 9 dịch vụ lõi, trong đó ClamAV gần 1 GiB và Keycloak 650 MiB; thành phần tùy chọn tách profile để máy yếu bỏ qua |
 | Z-04 | **Ẩn thông tin cá nhân** (email, số điện thoại, CCCD, số thẻ) trước khi gửi tới máy chủ AI; kiểm bằng máy chủ AI giả ghi lại nội dung nhận được | Nhận dạng theo mẫu, chưa nhận được họ tên và địa chỉ |
 
-## Đối chiếu lần cuối với Đề thi (phiên bản 1.8.0)
+## Đối chiếu lần cuối với Đề thi (phiên bản 2.0.0)
 
 | Yêu cầu của Đề | Tình trạng | Bằng chứng |
 |---|---|---|
@@ -217,6 +217,10 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | Lớp 1 tham chiếu: truyền phát trạng thái thời gian thực | Đạt bằng SSE (không dùng WebSocket) | Z-03 |
 | Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh | Đạt ở mức tệp JSONL bất biến trong S3 (chưa phải bảng lakehouse Parquet/Iceberg) | COLD-01 đến COLD-04 |
 | Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | Đạt ở mức HTTP: cảm biến gửi số đo bằng token riêng, vượt ngưỡng tự mở hồ sơ sửa chữa qua quy trình của người | IOT-01 đến IOT-07 |
+| Lớp dữ liệu [D]: SQL trên kho lạnh, NGSI-LD, bản đồ | Đạt ở mức tối thiểu: DuckDB đọc JSONL trong S3, NGSI-LD chỉ đọc, bản đồ SVG không nền | LAKE-01, IOT-08 |
+| Lớp trí tuệ [I]: đọc PDF, OCR, tìm ngữ nghĩa | Đạt: trạm poppler + Tesseract; tìm ngữ nghĩa tùy chọn qua Meilisearch lai | I-SEARCH-06, I-SEARCH-07 |
+| Vận hành: sao lưu theo lịch, GitOps nhẹ | Đạt: dịch vụ `backup`, `scripts/gitops.sh` (một máy, chưa ArgoCD/Flux) | OPS-BACKUP, OPS-GITOPS |
+| Nhiều tổ chức: quản trị người dùng, BI riêng, đường nâng cấp | Đạt; còn `app.key` duy nhất toàn hệ thống | ORG-12 đến ORG-16, UPG-01 |
 | Nguyên lý (iii): phả hệ dữ liệu | Đạt: lấy tự động từ danh mục PostgreSQL, thêm luồng xuống kho lạnh và số liệu | LIN-01 |
 | Chứng thư số (PKI) cho chữ ký phê duyệt | Đạt ở mức PKI phần mềm: mỗi duyệt/từ chối được ký bằng chứng thư X.509 do CA của tổ chức cấp. **Chưa** có HSM, CRL/OCSP; không phải chữ ký số có giá trị pháp lý theo luật | PKI-01 đến PKI-07; nói thẳng khi trình bày |
 

@@ -174,7 +174,7 @@ Các mục dưới đây khai báo là `todo` trong báo cáo kiểm thử, khô
 
 Báo lỗi, đề xuất: [Issues](https://github.com/ngophatneknha/OLP-MNM/issues). Việc nhỏ hợp người mới có nhãn [`good first issue`](https://github.com/ngophatneknha/OLP-MNM/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22): đóng góp quy trình mẫu vào `library/`, thêm quy tắc cảnh báo, viết thêm ca kiểm thử. Cách làm từng bước: [CONTRIBUTING.md](CONTRIBUTING.md). Mọi đóng góp đi qua pull request và CI.
 
-Tài liệu: [người dùng](docs/HUONG_DAN.md) · [kỹ thuật](docs/KY_THUAT.md) · [vận hành](docs/VAN_HANH.md) · [kiến trúc](docs/architecture.md) · [kiểm thử](docs/KIEM_THU.md) · [AI và tìm kiếm](docs/TRI_TUE.md) · [đầu việc](docs/BACKLOG.md) · [lịch sử thay đổi](CHANGELOG.md).
+Tài liệu: [người dùng](docs/HUONG_DAN.md) · [kỹ thuật](docs/KY_THUAT.md) · [vận hành](docs/VAN_HANH.md) · [kiến trúc](docs/architecture.md) · [kiểm thử](docs/KIEM_THU.md) · [AI và tìm kiếm](docs/TRI_TUE.md) · [đầu việc](docs/BACKLOG.md) · [nộp bài](docs/NOP_BAI.md) · [lịch sử thay đổi](CHANGELOG.md).
 
 ## Giấy phép
 

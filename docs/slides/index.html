@@ -135,13 +135,15 @@ Space hoặc bấm vào trang để chuyển slide; F để toàn màn hình; in
 <!-- Mục 3 của Đề: kết quả và trình diễn -->
 <section class="slide">
   <span class="tag">3 · Demo nền tảng</span>
-  <h2>Hai phút trên dòng lệnh: Tầng 1 chạy ngầm</h2>
+  <h2>Ba phút trên dòng lệnh: Tầng 1 chạy ngầm</h2>
   <p class="lead"><span class="kbd">node scripts/demo-platform.mjs</span></p>
   <ul>
     <li>Cảm biến gửi 12 °C, vượt ngưỡng 8: hệ thống <b>tự mở hồ sơ sửa chữa</b>.</li>
     <li>Xuất kho lạnh rồi <b>kiểm chứng sổ cái</b>; xem phả hệ dữ liệu.</li>
     <li>Tổ chức B <b>không thấy</b> dữ liệu của tổ chức mặc định.</li>
     <li>Không token, token giả: <b>bị chặn 401</b> tại cổng API.</li>
+    <li>Duyệt hồ sơ sửa chữa: hành động có <b>chữ ký số X.509</b> do CA của tổ chức cấp, kiểm chứng được.</li>
+    <li>Cảm biến đọc theo chuẩn <b>NGSI-LD</b> kèm vị trí, hiện trên bản đồ.</li>
   </ul>
 </section>
 
@@ -173,6 +175,7 @@ Space hoặc bấm vào trang để chuyển slide; F để toàn màn hình; in
     <div class="card"><b>Hỏi đáp có dẫn nguồn</b><span>Chỉ trả lời từ tài liệu người hỏi được xem. Quyền do Hasura quyết định, không phải chỉ mục tìm kiếm.</span></div>
     <div class="card"><b>Trợ lý thử việc</b><span>Bốn nấc: người làm, chạy bóng, gợi ý, tự duyệt. Chỉ nâng khi có ≥ 10 quyết định thật khớp ≥ 90%.</span></div>
     <div class="card"><b>Giới hạn cứng</b><span>Tự duyệt không bao giờ tự từ chối; AI lỗi thì mọi thứ chạy như người làm.</span></div>
+    <div class="card"><b>Đọc PDF, ảnh, ngữ nghĩa</b><span>PDF và ảnh quét qua OCR vào chỉ mục; tìm theo nghĩa (tùy chọn). Vẫn kiểm quyền từng kết quả.</span></div>
   </div>
 </section>
 
@@ -180,7 +183,7 @@ Space hoặc bấm vào trang để chuyển slide; F để toàn màn hình; in
   <span class="tag">3 · Kết quả</span>
   <h2>Kiểm thử trên hệ thống thật, mã nguồn mở đúng nghĩa</h2>
   <div class="grid">
-    <div class="card"><b class="big" style="font-size:2.6rem">150+</b><span>ca đối chiếu đề thi và thể lệ trên Keycloak, APISIX, Hasura, Flowable, SeaweedFS, ClamAV, AI thật; ca nghịch: token giả, tiêm mã, mã độc, đồng thời</span></div>
+    <div class="card"><b class="big" style="font-size:2.6rem">180+</b><span>ca đối chiếu đề thi và thể lệ trên Keycloak, APISIX, Hasura, Flowable, SeaweedFS, ClamAV, AI thật; ca nghịch: token giả, tiêm mã, mã độc, đồng thời</span></div>
     <div class="card"><b>Giấy phép và phát hành</b><span>Apache-2.0, SPDX từng tệp, REUSE trong CI; mỗi lần đẩy là một bản SemVer <span class="kbd">.tar.gz</span></span></div>
     <div class="card"><b>Cộng đồng</b><span>Bug tracker dùng thật, Discussions, CONTRIBUTING, nhãn <span class="kbd">good first issue</span>, trang web tài liệu</span></div>
   </div>
@@ -191,9 +194,9 @@ Space hoặc bấm vào trang để chuyển slide; F để toàn màn hình; in
   <span class="tag">4 · Định hướng</span>
   <h2>Việc tiếp theo, nói thẳng điều chưa làm</h2>
   <ul>
-    <li><b>Chữ ký số PKI</b> có chứng thư cho phê duyệt (hiện là xác nhận trong nhật ký bất biến).</li>
+    <li><b>Chữ ký số</b>: đã có PKI phần mềm (chứng thư X.509 mỗi tổ chức); còn HSM giữ khóa, thu hồi chứng thư (CRL/OCSP) và CA được cấp phép để có giá trị pháp lý.</li>
     <li><b>Lakehouse</b> bảng Parquet/Iceberg cho kho lạnh (đã có SQL DuckDB trên JSONL); NGSI-LD ghi và bản đồ có nền (đã có đọc NGSI-LD và bản đồ tối giản); MQTT/OPC UA thay HTTP.</li>
-    <li>Cơ sở dữ liệu véc-tơ riêng và mô hình nhúng lớn hơn (đã có tìm ngữ nghĩa tùy chọn, đọc PDF và OCR); WebSocket; sao lưu theo lịch; quản trị tổ chức bằng giao diện.</li>
+    <li>Cơ sở dữ liệu véc-tơ riêng và mô hình nhúng lớn hơn (đã có tìm ngữ nghĩa tùy chọn, đọc PDF và OCR); WebSocket; GitOps nhiều máy (ArgoCD/Flux); mã ứng dụng riêng theo từng tổ chức.</li>
     <li>Tầng 3: ứng dụng ngành cắm vào nền tảng, kho quy trình mẫu do cộng đồng đóng góp.</li>
   </ul>
   <p class="lead">Cảm ơn ban giám khảo. Xin mời đặt câu hỏi.</p>
