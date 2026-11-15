@@ -4,6 +4,7 @@
 // Đăng nhập (Keycloak, PKCE) và gọi GraphQL qua gateway. Cấu hình đọc từ /config.json lúc chạy,
 // nên một image dùng được cho mọi môi trường.
 
+import { startStream } from './live.js'
 import Keycloak from 'keycloak-js'
 import { reactive } from 'vue'
 import { i18n, locale, t } from './i18n.js'
@@ -16,16 +17,22 @@ export const ROLE_LABEL = {
 /** Bốn nấc tự chủ của trợ lý AI ở một bước duyệt (nấc 0 để chỉ số khớp với mã nấc 1..4). */
 export const AUTONOMY = [
   null,
-  { name: 'Người làm', help: 'Trợ lý đứng ngoài, người duyệt như bình thường.' },
-  { name: 'Trợ lý chạy bóng', help: 'Trợ lý âm thầm cho ý kiến để so với quyết định của người; người duyệt chưa thấy ý kiến đó.' },
-  { name: 'Trợ lý gợi ý', help: 'Người duyệt thấy gợi ý của trợ lý kèm lý do, và vẫn là người bấm duyệt hay từ chối.' },
-  { name: 'Trợ lý tự duyệt', help: 'Hồ sơ hợp lệ được trợ lý duyệt luôn; từ chối thì không bao giờ tự làm, hồ sơ luôn trở về cho người quyết định.' },
+  ...[1, 2, 3, 4].map((n) => ({ get name() { return t(`auto.${n}.name`) }, get help() { return t(`auto.${n}.help`) } })),
 ]
-export const CATEGORIES = ['Tài chính', 'Nhân sự', 'Mua sắm', 'Hành chính', 'Khác']
+/** Giá trị nhóm lưu trong cơ sở dữ liệu (dữ liệu, không phải chữ giao diện); tên hiển thị lấy qua t('cat.<giá trị>'). */
+export const CATEGORIES = ['Tài chính', 'Nhân sự', 'Mua sắm', 'Hành chính', 'Khác'] // i18n-ok: giá trị lưu trong cơ sở dữ liệu
 
-export const auth = reactive({ name: '', userId: '', role: 'staff', roles: [] })
+export const auth = reactive({ name: '', userId: '', role: 'staff', roles: [], orgName: '' })
 let keycloak
 let apiUrl
+
+/** Mở kênh thời gian thực (SSE) qua cổng API; gọi một lần sau khi đăng nhập. */
+export function startLiveUpdates() {
+  startStream(`${apiUrl}/events`, async () => {
+    await keycloak.updateToken(30).catch(() => {})
+    return { authorization: `Bearer ${keycloak.token}`, 'x-hasura-role': auth.role }
+  })
+}
 
 export async function login() {
   const config = await (await fetch('/config.json')).json()
@@ -38,6 +45,8 @@ export async function login() {
   auth.roles = Object.keys(ROLE_LABEL).filter((r) => token.realm_access?.roles.includes(r))
   // Mỗi tài khoản làm việc dưới vai trò chuyên trách của mình; ai cũng có thể gửi hồ sơ.
   auth.role = auth.roles.find((r) => r !== 'staff') ?? 'staff'
+  // Tên tổ chức chỉ để hiển thị; lỗi thì bỏ qua, không chặn đăng nhập.
+  auth.orgName = (await gql('{ org { name } }').catch(() => ({ org: [] }))).org?.[0]?.name ?? ''
 }
 
 export const logout = () => keycloak.logout({ redirectUri: location.origin })
@@ -68,9 +77,18 @@ export async function postJson(path, body) {
   return json
 }
 
+/** GET một điểm cuối JSON của gateway (kiểm chứng chữ ký số). */
+export async function getJson(path) {
+  await keycloak.updateToken(30)
+  const res = await fetch(`${apiUrl}${path}`, { headers: { authorization: `Bearer ${keycloak.token}`, 'x-hasura-role': auth.role } })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.message ?? t('err.http', { status: res.status }))
+  return json
+}
+
 /** "Số tiền tạm ứng" -> "so_tien_tam_ung" (mã hợp lệ cho trường / bước / ứng dụng). */
 export function slug(text) {
-  const s = text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+  const s = text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D') // i18n-ok: bỏ dấu tiếng Việt khi sinh mã
     .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 31)
   return /^[a-z]/.test(s) ? s : `x_${s}`.slice(0, 31)
 }

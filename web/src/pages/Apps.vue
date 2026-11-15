@@ -5,6 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 Gửi hồ sơ: chọn loại hồ sơ, điền form (dựng hoàn toàn từ quy trình), thấy trước ai sẽ ký.
 -->
 <script setup>
+import { t } from '../i18n.js'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, ChevronRight, Paperclip, Send, X } from 'lucide-vue-next'
@@ -39,10 +40,10 @@ async function submit() {
   for (const field of selected.value.spec.fields) {
     const value = form[field.key]
     if (value === undefined || value === null || value === '') {
-      if (field.required) errors[field.key] = `Cần điền ${field.label.toLowerCase()}`
+      if (field.required) errors[field.key] = t('apps.needField', { field: field.label.toLowerCase() })
       continue
     }
-    if (field.type === 'number' && !Number.isFinite(Number(value))) errors[field.key] = 'Cần là một con số'
+    if (field.type === 'number' && !Number.isFinite(Number(value))) errors[field.key] = t('apps.needNumber')
     data[field.key] = field.type === 'number' ? Number(value) : String(value)
   }
   if (Object.keys(errors).length) {
@@ -58,10 +59,10 @@ async function submit() {
     for (const file of files.value) {
       try { await uploadFile(created.id, file) } catch (err) { failed.push(err.message) }
     }
-    toast(failed.length ? `Đã gửi hồ sơ số ${created.no}, nhưng chưa đính kèm được: ${failed.join('; ')}. Bạn có thể thêm lại ở trang hồ sơ` : `Đã gửi hồ sơ số ${created.no}`, !failed.length)
+    toast(failed.length ? t('apps.sentPartial', { no: created.no, failed: failed.join('; ') }) : t('apps.sent', { no: created.no }), !failed.length)
     router.push(`/ho-so/${created.id}`)
   } catch (err) {
-    toast(`Chưa gửi được hồ sơ: ${err.message}. Kiểm tra lại các ô rồi thử lại.`, false)
+    toast(t('apps.sendFail', { err: err.message }), false)
   } finally {
     sending.value = false
   }
@@ -70,21 +71,21 @@ async function submit() {
 
 <template>
   <template v-if="!route.params.key">
-    <h1 class="page-title">Gửi hồ sơ</h1>
-    <p class="page-lead">Chọn loại hồ sơ bạn cần. Mỗi loại cho biết trước hồ sơ sẽ qua những ai.</p>
+    <h1 class="page-title">{{ t('apps.title') }}</h1>
+    <p class="page-lead">{{ t('apps.lead') }}</p>
 
-    <p v-if="apps === null" class="mt-8 text-pencil">Đang tải…</p>
+    <p v-if="apps === null" class="mt-8 text-pencil">{{ t('common.loading') }}</p>
     <div v-else-if="apps.length === 0" class="panel mt-8 px-4 py-5 text-pencil">
-      Chưa có quy trình nào được xuất bản.
-      <template v-if="auth.role === 'manager'"><RouterLink to="/soan" class="font-medium text-pen hover:underline">Soạn quy trình đầu tiên</RouterLink>.</template>
-      <template v-else>Trưởng phòng có thể soạn quy trình đầu tiên.</template>
+      {{ t('home.noProcess') }}
+      <template v-if="auth.role === 'manager'"><RouterLink to="/soan" class="font-medium text-pen hover:underline">{{ t('home.firstProcess') }}</RouterLink>.</template>
+      <template v-else>{{ t('home.askManager') }}</template>
     </div>
     <div v-else class="panel mt-8">
       <RouterLink v-for="app in apps" :key="app.key" :to="`/gui/${app.key}`" class="panel-row">
         <CategoryIcon :category="app.category" />
         <div class="min-w-[min(100%,12rem)] flex-1">
           <div class="font-medium">{{ app.name }}</div>
-          <div class="text-sm text-pencil">{{ app.description || `Hồ sơ đi qua ${routeText(app.spec)}` }}</div>
+          <div class="text-sm text-pencil">{{ app.description || t('apps.routeDefault', { route: routeText(app.spec) }) }}</div>
         </div>
         <span v-if="app.category" class="pill pill-plain">{{ app.category }}</span>
         <ChevronRight :size="18" class="hidden text-pencil sm:block" aria-hidden="true" />
@@ -93,9 +94,9 @@ async function submit() {
   </template>
 
   <template v-else>
-    <RouterLink to="/gui" class="inline-flex items-center gap-1.5 text-sm text-pencil hover:text-pen"><ArrowLeft :size="16" aria-hidden="true" /> Tất cả loại hồ sơ</RouterLink>
-    <p v-if="apps === null" class="mt-6 text-pencil">Đang tải…</p>
-    <div v-else-if="!selected" class="panel mt-6 px-4 py-5 text-pencil">Loại hồ sơ này không còn được dùng. Hãy chọn một loại khác.</div>
+    <RouterLink to="/gui" class="inline-flex items-center gap-1.5 text-sm text-pencil hover:text-pen"><ArrowLeft :size="16" aria-hidden="true" /> {{ t('apps.back') }}</RouterLink>
+    <p v-if="apps === null" class="mt-6 text-pencil">{{ t('common.loading') }}</p>
+    <div v-else-if="!selected" class="panel mt-6 px-4 py-5 text-pencil">{{ t('apps.gone') }}</div>
 
     <template v-else>
       <h1 class="page-title mt-4">{{ selected.name }}</h1>
@@ -105,7 +106,7 @@ async function submit() {
         <div class="panel space-y-5 p-5">
           <div v-for="field in selected.spec.fields" :key="field.key">
             <label class="label" :for="`f-${field.key}`">
-              {{ field.label }} <span v-if="!field.required" class="font-normal text-pencil">(không bắt buộc)</span>
+              {{ field.label }} <span v-if="!field.required" class="font-normal text-pencil">{{ t('apps.optional') }}</span>
             </label>
             <textarea
               v-if="field.type === 'longtext'" :id="`f-${field.key}`" v-model="form[field.key]" class="input" rows="3"
@@ -115,7 +116,7 @@ async function submit() {
               v-else-if="field.type === 'select'" :id="`f-${field.key}`" v-model="form[field.key]" class="input"
               :aria-invalid="!!errors[field.key]" :aria-describedby="errors[field.key] ? `e-${field.key}` : undefined"
             >
-              <option value="">Chọn một mục</option>
+              <option value="">{{ t('apps.pick') }}</option>
               <option v-for="option in field.options" :key="option">{{ option }}</option>
             </select>
             <input
@@ -128,21 +129,21 @@ async function submit() {
         </div>
 
         <div class="panel mt-4 p-5">
-          <div class="label">Tệp đính kèm <span class="font-normal text-pencil">(không bắt buộc, mỗi tệp tối đa 10 MB)</span></div>
+          <div class="label">{{ t('apps.files') }} <span class="font-normal text-pencil">{{ t('apps.filesHint') }}</span></div>
           <ul v-if="files.length" class="mb-3 space-y-1 text-sm">
             <li v-for="(file, i) in files" :key="i" class="flex items-center gap-2">
               <Paperclip :size="14" class="text-pencil" aria-hidden="true" /> <span class="min-w-0 flex-1 truncate">{{ file.name }}</span>
               <span class="num text-pencil">{{ formatSize(file.size) }}</span>
-              <button type="button" class="btn-icon !h-7 !w-7" :aria-label="`Bỏ tệp ${file.name}`" @click="files.splice(i, 1)"><X :size="14" aria-hidden="true" /></button>
+              <button type="button" class="btn-icon !h-7 !w-7" :aria-label="t('apps.removeFile', { name: file.name })" @click="files.splice(i, 1)"><X :size="14" aria-hidden="true" /></button>
             </li>
           </ul>
-          <label class="btn-quiet cursor-pointer"><Paperclip :size="16" aria-hidden="true" /> Chọn tệp<input type="file" multiple class="sr-only" @change="pick" /></label>
+          <label class="btn-quiet cursor-pointer"><Paperclip :size="16" aria-hidden="true" /> {{ t('apps.chooseFile') }}<input type="file" multiple class="sr-only" @change="pick" /></label>
         </div>
 
-        <h2 class="section-title mt-8">Hồ sơ sẽ cần chữ ký của</h2>
+        <h2 class="section-title mt-8">{{ t('apps.signers') }}</h2>
         <div class="mt-3"><SignatureRow :spec="selected.spec" /></div>
 
-        <button class="btn-primary mt-6" :disabled="sending"><Send :size="16" aria-hidden="true" /> {{ sending ? 'Đang gửi…' : 'Gửi hồ sơ' }}</button>
+        <button class="btn-primary mt-6" :disabled="sending"><Send :size="16" aria-hidden="true" /> {{ sending ? t('apps.sending') : t('apps.send') }}</button>
       </form>
     </template>
   </template>

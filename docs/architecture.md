@@ -17,6 +17,7 @@ flowchart TB
   BR -- "tệp đính kèm" --> S3[("SeaweedFS S3<br/>không mở ra ngoài")]
   BR -- "quét mã độc" --> AV["ClamAV"]
   GW -- "/search, /ask" --> BR
+  GW -- "/events (SSE)" --> BR
   BR -. "tùy chọn" .-> MS["Meilisearch"]
 ```
 
@@ -35,6 +36,12 @@ Nguyên tắc: tầng lõi **headless** – chỉ cung cấp dịch vụ qua API
 
 ## Tệp đính kèm
 
+**Kho lạnh và phả hệ.** Mỗi ngày (hoặc khi giám đốc gọi `POST /archive`), hồ sơ đã kết thúc quá `ARCHIVE_AFTER_DAYS` (mặc định 90) được xuất kèm nhật ký ra một tệp JSONL trong bucket `dxlab-cold`. Bảng `cold_archive` là sổ cái băm nối chuỗi (mỗi dòng ghi mã băm tệp và mã băm dòng trước) và cùng `cold_item` đều chỉ thêm, không sửa/xóa được ở tầng CSDL; `GET /archive/verify` kiểm lại chuỗi và từng tệp. `GET /lineage` trả đồ thị phả hệ: view báo cáo `bi.app_*` đọc từ bảng nào lấy tự động từ danh mục PostgreSQL, cộng các luồng xuống kho lạnh và số liệu. `POST /ingest?app=<mã>` nạp hàng loạt (tối đa 500 dòng CSV hoặc JSON), từng dòng đi bằng token của người nạp nên mọi rào chắn vẫn nguyên. Dữ liệu kho lạnh nằm trong volume `s3data` nên được `scripts/backup.sh` sao lưu.
+
+**Cảm biến IT/OT.** Giám đốc đăng ký cảm biến (`POST /sensors`: ngưỡng, chiều vượt, ứng dụng sửa chữa) và nhận token thiết bị một lần; CSDL chỉ giữ mã băm. Thiết bị gửi `POST /telemetry/<mã>` kèm `x-sensor-token` (cổng API chỉ giới hạn tần suất, vì thiết bị không có tài khoản Keycloak; bridge kiểm token). Số đo ghi vào `sensor_reading` (bất biến). Vượt ngưỡng thì bridge mở một hồ sơ trong ứng dụng sửa chữa (mẫu `library/iot/sua_chua.json`) nhân danh chủ cảm biến; hồ sơ đó đi qua Flowable như mọi hồ sơ khác. Còn hồ sơ đang chạy thì không mở thêm. `GET /sensors` cho trưởng phòng và giám đốc thấy trạng thái hiện tại (bản sao số) và cập nhật theo thời gian thực qua kênh SSE.
+
+**Thời gian thực.** `GET /events` là kênh Server-Sent Events qua cổng API (cần token). Mỗi khi `workflow-bridge` xử lý xong một sự kiện của Hasura (hồ sơ mới, có người ký, ứng dụng xuất bản) hoặc nhận tệp, nó đẩy một nhịp rỗng tới mọi trình duyệt đang mở. Trình duyệt nhận nhịp rồi tự tải lại bằng GraphQL **với token của chính người dùng**, nên kênh không mang dữ liệu và không thể làm lộ gì. Kênh đứt thì giao diện quay về hỏi định kỳ 3 giây; kênh sống thì chỉ hỏi bù 30 giây một lần (`web/src/live.js`, dùng chung cho mọi màn hình). Giới hạn: danh sách kết nối giữ trong bộ nhớ của một tiến trình bridge.
+
 Nội dung tệp nằm trong kho S3 (SeaweedFS); bảng `attachment` giữ tên, kích thước và khóa đối tượng. Tệp đi qua `POST /files` và `GET /files/<id>` của cổng API:
 
 1. Cổng API kiểm chữ ký token (JWKS của Keycloak).
@@ -43,6 +50,10 @@ Nội dung tệp nằm trong kho S3 (SeaweedFS); bảng `attachment` giữ tên,
 4. Tải về luôn là `attachment` kèm `nosniff`: tệp do người dùng gửi không bao giờ được trình duyệt mở như trang web.
 
 Mọi tệp được quét bằng ClamAV (chạy container riêng) **trước khi** ghi vào cơ sở dữ liệu hay kho S3; tệp nhiễm bị từ chối (422), trạm quét lỗi thì từ chối luôn (503) thay vì cho qua. Mỗi tệp tối đa 10 MB.
+
+## Nhiều tổ chức
+
+Cách ly theo tổ chức nằm ở dữ liệu, không ở giao diện. Keycloak đặt thuộc tính `org_id` của người dùng vào token; Hasura đọc thành `x-hasura-org-id` (thiếu thì `default`) và thêm điều kiện tổ chức vào mọi quyền đọc, ghi của mọi vai trò. `app` và `submission` mang cột `org_id` (hồ sơ lấy `org_id` từ quy trình nhận nó bằng trigger, người gửi không chọn được); các bảng còn lại cách ly qua quan hệ tới `app` hoặc `submission`. Các đường đi bằng quyền người dùng (tệp, tìm kiếm, nạp hàng loạt) kế thừa cách ly này. Các đường dùng quyền quản trị tự lọc theo tổ chức lấy từ token: kho lạnh (mỗi tổ chức một chuỗi sổ cái, một thư mục trong kho) và cảm biến. Giới hạn: mã ứng dụng vẫn duy nhất toàn hệ thống. Chi tiết kiểm thử: [KIEM_THU.md](KIEM_THU.md).
 
 ## Trợ lý AI thử việc
 
@@ -124,3 +135,7 @@ Phân quyền chỉ đặt ở một nơi (Hasura); Flowable là nguồn sự th
 ## Xác thực
 
 Keycloak cấp JWT; APISIX kiểm tra chữ ký tại biên (JWKS), Hasura kiểm tra lại và lấy role từ `realm_access.roles`, mã người dùng từ `sub`.
+
+## Chữ ký số
+
+Sau khi `actOnSubmission` hoàn tất tác vụ, bridge ký sự kiện duyệt (`signEvent`): nội dung chuẩn hóa (JSON, thứ tự khóa cố định) gồm mã băm SHA-256 của dữ liệu hồ sơ được ký bằng khóa của người duyệt; chứng thư người ký do CA của tổ chức cấp. Chữ ký ghi vào `event_signature` (chỉ thêm, có trigger chặn sửa/xóa); Hasura chỉ mở quyền đọc theo đúng quyền xem sự kiện, còn `pki_key` (khóa riêng mã hóa) chỉ bridge đọc. Kiểm chứng ở `GET /signatures/verify` đối chiếu với CA của tổ chức và thời điểm ký.

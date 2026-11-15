@@ -17,6 +17,120 @@ SPDX-License-Identifier: Apache-2.0
 ### Chưa làm
 - PDF scan (cần OCR) và PDF mã hoá: bỏ qua, không lỗi. Font không có bảng ToUnicode mà dùng bảng mã riêng (kể cả font tiếng Việt cũ TCVN3/VNI) cho ra chữ sai. Font bitmap Type3 của pdfTeX mất các chữ ghép fi, fl.
 
+## [1.11.0] - 2026-11-16
+
+### Added
+- Sao lưu tự động theo lịch: dịch vụ `backup` (profile `backup`, mặc định 24 giờ, giữ 7 bản); `restore.sh` khôi phục được từ bản chỉ có CSDL.
+- GitOps nhẹ: `scripts/gitops.sh check|apply|watch`.
+- Khóa theo cảm biến: số đo vượt ngưỡng đến cùng lúc không còn mở nhiều hồ sơ sửa chữa (IOT-07).
+- Ca kiểm thử OPS-BACKUP, OPS-GITOPS, IOT-07.
+
+### Changed
+- Z-08 không còn `todo`; Z-10 ghi rõ phần GitOps nhẹ đã có.
+
+## [1.10.0] - 2026-11-16
+
+### Added
+- Chữ ký số PKI phần mềm cho phê duyệt: CA riêng từng tổ chức, chứng thư X.509 cho người ký, mỗi duyệt/từ chối được ký RSA-SHA256 và lưu ở `event_signature` (chỉ thêm); khóa riêng mã hóa AES-256-GCM.
+- `GET /signatures/verify`, `GET /pki/ca` qua cổng API; mục "Chữ ký số" trên trang hồ sơ; biến `PKI_MASTER_KEY`.
+- Bộ kiểm thử `tests/pki.test.js` (PKI-01..07) và kiểm thử đơn vị `pki.test.js`; migration `06-pki.sql`.
+
+### Changed
+- Z-07 không còn là `todo`; giới hạn còn lại (HSM, CRL/OCSP, ký phía máy chủ) ghi trong tài liệu.
+
+## [1.9.1] - 2026-11-16
+
+### Added
+- Workflow `packages.yml` tự tạo bản phát hành GitHub kèm `.tar.gz` khi gắn thẻ phiên bản (trước đây tạo thủ công); chạy lại được bằng `workflow_dispatch`.
+- Hai ca `todo` trung thực: Z-10 (GitOps thật), Z-11 (gom nhật ký truy vết phân tán, trục sự kiện streaming).
+
+### Fixed
+- Hai liên kết trong tài liệu trỏ ra ngoài thư mục `docs/` bị 404 trên trang web (nay trỏ tới GitHub).
+
+### Verified
+- Slide trên trang GitHub Pages vừa khít màn hình 1280x720 (15 slide), mọi trang tài liệu trên Pages mở được.
+- Áp `05-org.sql` lên CSDL có dữ liệu cũ: dòng cũ thành tổ chức mặc định, chạy lại không lỗi.
+
+## [1.9.0] - 2026-11-15
+
+### Added
+- `scripts/demo-platform.mjs`: trình diễn nền tảng Tầng 1 trong hai phút (cảm biến mở hồ sơ sửa chữa, kho lạnh và kiểm chứng sổ cái, phả hệ, cách ly đa tổ chức, cổng API chặn token giả), không cần mở giao diện.
+- Ba ca `todo` trung thực trong `tests/hpdi.test.js`: Z-07 (PKI), Z-08 (sao lưu theo lịch), Z-09 (WebSocket, MQTT).
+
+### Changed
+- Slide và kịch bản trình diễn 15 phút sắp lại theo đúng bốn nội dung Đề quy định (giải pháp và công nghệ; tính năng nền tảng và bài toán minh họa; kết quả và demo; định hướng). Trước đây nền tảng Tầng 1 và bốn nguyên lý chỉ chiếm vài phút cuối; nay chiếm mục 1, mục 2 và một cảnh demo riêng.
+- Câu trả lời thường gặp của ban giám khảo cập nhật theo các tính năng mới (két bí mật, WAF, ẩn thông tin cá nhân, đa tổ chức đã có; PKI chưa).
+- Trang web GitHub Pages cho dự án (`docs/_config.yml`, `docs/index.md`).
+
+## [1.8.4] - 2026-11-15
+
+### Added
+- **Đa tổ chức (multi-tenancy)**: nhiều tổ chức dùng chung một hệ thống, cách ly bằng `org_id` ở CSDL và Hasura. Bảng `org`, cột `org_id` ở `app`, `submission`, `sensor`, `cold_archive`; hồ sơ luôn mang `org_id` của quy trình nhận nó (trigger). `infra/postgres/init/05-org.sql` chạy lại được trên CSDL đang dùng.
+- Token mang claim `org_id` (Keycloak: thuộc tính người dùng cùng mapper), Hasura đọc thành `x-hasura-org-id` (mặc định `default`). Mọi quyền đọc, ghi của 4 vai trò đều thêm điều kiện tổ chức; thêm quan hệ `app` cho `app_version`, `app_change`, `app_issue`, `step_autonomy`.
+- Kho lạnh mỗi tổ chức một chuỗi sổ cái riêng và thư mục riêng trong kho S3; cảm biến và ứng dụng sửa chữa gắn với tổ chức của giám đốc đăng ký; việc xuất kho hằng ngày chạy cho từng tổ chức.
+- Tổ chức B để thử cách ly: `staffb1`, `managerb1`, `directorb1`. Giao diện hiện tên tổ chức cạnh vai trò.
+- Bộ kiểm thử `tests/tenant.test.js` (ORG-01..11) và kiểm thử đơn vị cho `orgOf`.
+
+### Changed
+- `GET /archive`, `/archive/verify`, `POST /archive`, `GET /sensors` chỉ trả dữ liệu của tổ chức người gọi.
+- Realm Keycloak khai báo thuộc tính `org_id` trong user profile (Keycloak 26 bỏ thuộc tính chưa khai báo).
+- `tests/cold.test.js` COLD-03 chọn tệp của tổ chức mặc định (có thêm tổ chức B).
+
+## [1.8.3] - 2026-11-15
+
+### Changed
+- README viết lại: chạy thử đặt lên đầu, thêm tóm tắt tiếng Anh, gom phần tính năng, bỏ các bảng trùng với tài liệu (bảng điểm vào của cổng API chuyển sang `docs/KY_THUAT.md`), nói thẳng các điểm chưa làm.
+
+### Fixed
+- `tests/cold.test.js` COLD-01: không còn giả định không có hồ sơ khác kết thúc cùng lúc (các tệp kiểm thử chạy song song).
+
+## [1.8.2] - 2026-11-15
+
+### Added
+- **Hội tụ IT/OT** (nguyên lý (ii) của Đề): `POST /sensors` đăng ký cảm biến (giám đốc), `POST /telemetry/<mã>` nhận số đo bằng token thiết bị, `GET /sensors` là bản sao số. Số đo vượt ngưỡng tự mở hồ sơ sửa chữa đi qua quy trình duyệt của người; không mở trùng khi còn hồ sơ đang chạy. Bảng mới `infra/postgres/init/04-iot.sql`; mẫu `library/iot/sua_chua.json`.
+- Bộ kiểm thử `tests/iot.test.js` (IOT-01..06) và kiểm thử đơn vị `sensors.test.js`.
+
+### Changed
+- `services/workflow-bridge/db.js`: hàm chạy SQL dùng chung (kho lạnh và cảm biến); giá trị NULL trả về `null` thay vì chuỗi "NULL".
+
+## [1.8.1] - 2026-11-15
+
+### Added
+- **Kho dữ liệu lạnh** (nguyên lý (i) của Đề): hồ sơ đã kết thúc xuất ra JSONL trong bucket `dxlab-cold`; sổ cái `cold_archive` băm nối chuỗi, bất biến ở tầng CSDL; `POST /archive`, `GET /archive`, `GET /archive/verify` (chỉ giám đốc); tự chạy mỗi ngày. Bảng mới trong `infra/postgres/init/03-cold.sql` (đang chạy thì áp tệp này bằng psql, hoặc `docker compose down -v` rồi dựng lại).
+- **Phả hệ dữ liệu** (nguyên lý (iii)): `GET /lineage` lấy tự động từ danh mục PostgreSQL.
+- **Nạp hàng loạt**: `POST /ingest?app=<mã>` nhận CSV hoặc mảng JSON tối đa 500 dòng; từng dòng đi bằng token người nạp.
+- Bộ kiểm thử `tests/cold.test.js` (COLD-01..04, LIN-01, ING-01..02) và kiểm thử đơn vị cho `cold.js`, `ingest.js`.
+
+## [1.8.0] - 2026-11-15
+
+### Added
+- **Thời gian thực** (Z-03, WF-05): `GET /events` (SSE) qua cổng API; bridge đẩy nhịp mỗi khi hồ sơ, nhật ký, ứng dụng hay tệp đổi. Mọi màn hình dùng chung một kênh (`web/src/live.js`); kênh đứt thì tự hỏi định kỳ.
+- **Đo tài nguyên** (RISK-03): `scripts/measure.sh` và ca OPS-08 (bản lõi dưới 5 GiB RAM, đo khoảng 3 GiB).
+- Mục "Đối chiếu lần cuối với Đề thi" trong `docs/KIEM_THU.md` (RISK-01), nói thẳng phần chưa có: kho lạnh, IT/OT, phả hệ, chứng thư số.
+
+### Changed
+- Số lần hỏi máy chủ giảm rõ rệt: có kênh sống thì mỗi màn hình chỉ hỏi bù 30 giây một lần thay vì 3 đến 5 giây.
+
+## [1.7.9] - 2026-11-15
+
+### Added
+- **Tường lửa ứng dụng web** (Z-02): Coraza + OWASP CRS đứng trước cổng API (profile `waf`, cổng 9081). SQL injection, XSS, đi ngược thư mục bị 403.
+- **Két bí mật OpenBao** (Z-01): `scripts/vault.sh init|unseal|export|up`; mật khẩu, khóa, token chuyển từ `.env` vào két (profile `vault`).
+- **Ẩn thông tin cá nhân** (Z-04): email, số điện thoại, CCCD, số thẻ bị thay bằng nhãn trước khi gửi tới máy chủ AI (`services/workflow-bridge/pii.js`).
+- Ba ca Z-01, Z-02, Z-04 chuyển từ `todo` thành ca chạy thật; CI chạy chúng cùng các thành phần tùy chọn.
+
+## [1.7.8] - 2026-11-15
+
+### Security
+- Kho đối tượng S3 (SeaweedFS) nay **bắt buộc xác thực AWS Signature V4**: yêu cầu không ký hoặc ký sai bị `403`. Khóa truy cập đặt trong `.env` (`S3_ACCESS_KEY`, `S3_SECRET_KEY`), chỉ cầu nối có khóa. Bộ ký `services/workflow-bridge/s3.js` dùng thư viện chuẩn của Node, kiểm chứng bằng ví dụ chính thức của AWS. Đóng DA-05 (#94).
+- Ca kiểm thử mới T1-OBJ-09: không ký, ký sai bị 403; ký đúng đọc/ghi được.
+
+## [1.7.7] - 2026-11-15
+
+### Changed
+- Các màn hình còn lại (Số liệu, Gửi hồ sơ, Trợ lý AI, Tài liệu, Soạn quy trình) dùng đủ hai ngôn ngữ Việt và Anh; đóng giai đoạn 2 của #111. Thời lượng ("2 giờ", "1,5 ngày"), bốn nấc tự chủ của trợ lý và tên nhóm hồ sơ cũng đổi theo ngôn ngữ.
+- `web/src/hardcoded.test.js` nay chặn chữ Việt viết thẳng ở mọi màn hình, `lib.js` và `metrics.js`. Dòng là dữ liệu (giá trị nhóm lưu trong cơ sở dữ liệu) đánh dấu `i18n-ok`.
+
 ## [1.7.6] - 2026-11-15
 
 ### Added

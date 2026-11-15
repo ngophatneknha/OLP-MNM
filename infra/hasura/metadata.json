@@ -28,9 +28,18 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "status": {
-                        "_eq": "published"
-                      }
+                      "_and": [
+                        {
+                          "org_id": {
+                            "_eq": "X-Hasura-Org-Id"
+                          }
+                        },
+                        {
+                          "status": {
+                            "_eq": "published"
+                          }
+                        }
+                      ]
                     }
                   }
                 },
@@ -38,7 +47,11 @@
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "org_id": {
+                        "_eq": "X-Hasura-Org-Id"
+                      }
+                    }
                   }
                 },
                 {
@@ -46,9 +59,18 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "status": {
-                        "_eq": "published"
-                      }
+                      "_and": [
+                        {
+                          "org_id": {
+                            "_eq": "X-Hasura-Org-Id"
+                          }
+                        },
+                        {
+                          "status": {
+                            "_eq": "published"
+                          }
+                        }
+                      ]
                     }
                   }
                 },
@@ -57,9 +79,18 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "status": {
-                        "_eq": "published"
-                      }
+                      "_and": [
+                        {
+                          "org_id": {
+                            "_eq": "X-Hasura-Org-Id"
+                          }
+                        },
+                        {
+                          "status": {
+                            "_eq": "published"
+                          }
+                        }
+                      ]
                     }
                   }
                 }
@@ -78,7 +109,8 @@
                     ],
                     "set": {
                       "owner_id": "X-Hasura-User-Id",
-                      "owner_name": "X-Hasura-User-Name"
+                      "owner_name": "X-Hasura-User-Name",
+                      "org_id": "X-Hasura-Org-Id"
                     }
                   }
                 }
@@ -223,23 +255,32 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "_or": [
+                      "_and": [
                         {
-                          "submitter_id": {
-                            "_eq": "X-Hasura-User-Id"
+                          "org_id": {
+                            "_eq": "X-Hasura-Org-Id"
                           }
                         },
                         {
-                          "waiting_role": {
-                            "_eq": "X-Hasura-Role"
-                          }
-                        },
-                        {
-                          "events": {
-                            "actor_id": {
-                              "_eq": "X-Hasura-User-Id"
+                          "_or": [
+                            {
+                              "submitter_id": {
+                                "_eq": "X-Hasura-User-Id"
+                              }
+                            },
+                            {
+                              "waiting_role": {
+                                "_eq": "X-Hasura-Role"
+                              }
+                            },
+                            {
+                              "events": {
+                                "actor_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              }
                             }
-                          }
+                          ]
                         }
                       ]
                     }
@@ -249,14 +290,22 @@
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "org_id": {
+                        "_eq": "X-Hasura-Org-Id"
+                      }
+                    }
                   }
                 },
                 {
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "org_id": {
+                        "_eq": "X-Hasura-Org-Id"
+                      }
+                    }
                   }
                 },
                 {
@@ -264,23 +313,32 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "_or": [
+                      "_and": [
                         {
-                          "submitter_id": {
-                            "_eq": "X-Hasura-User-Id"
+                          "org_id": {
+                            "_eq": "X-Hasura-Org-Id"
                           }
                         },
                         {
-                          "waiting_role": {
-                            "_eq": "X-Hasura-Role"
-                          }
-                        },
-                        {
-                          "events": {
-                            "actor_id": {
-                              "_eq": "X-Hasura-User-Id"
+                          "_or": [
+                            {
+                              "submitter_id": {
+                                "_eq": "X-Hasura-User-Id"
+                              }
+                            },
+                            {
+                              "waiting_role": {
+                                "_eq": "X-Hasura-Role"
+                              }
+                            },
+                            {
+                              "events": {
+                                "actor_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              }
                             }
-                          }
+                          ]
                         }
                       ]
                     }
@@ -291,7 +349,13 @@
                 {
                   "role": "staff",
                   "permission": {
-                    "check": {},
+                    "check": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "columns": [
                       "app_key",
                       "data"
@@ -305,7 +369,13 @@
                 {
                   "role": "manager",
                   "permission": {
-                    "check": {},
+                    "check": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "columns": [
                       "app_key",
                       "data"
@@ -319,7 +389,13 @@
                 {
                   "role": "director",
                   "permission": {
-                    "check": {},
+                    "check": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "columns": [
                       "app_key",
                       "data"
@@ -333,7 +409,13 @@
                 {
                   "role": "accountant",
                   "permission": {
-                    "check": {},
+                    "check": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "columns": [
                       "app_key",
                       "data"
@@ -380,6 +462,20 @@
                   "using": {
                     "foreign_key_constraint_on": "submission_id"
                   }
+                },
+                {
+                  "name": "signature",
+                  "using": {
+                    "manual_configuration": {
+                      "remote_table": {
+                        "schema": "public",
+                        "name": "event_signature"
+                      },
+                      "column_mapping": {
+                        "id": "event_id"
+                      }
+                    }
+                  }
                 }
               ],
               "select_permissions": [
@@ -388,25 +484,36 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "_or": [
-                        {
-                          "actor_id": {
-                            "_eq": "X-Hasura-User-Id"
-                          }
-                        },
+                      "_and": [
                         {
                           "submission": {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
                           }
                         },
                         {
-                          "submission": {
-                            "waiting_role": {
-                              "_eq": "X-Hasura-Role"
+                          "_or": [
+                            {
+                              "actor_id": {
+                                "_eq": "X-Hasura-User-Id"
+                              }
+                            },
+                            {
+                              "submission": {
+                                "submitter_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              }
+                            },
+                            {
+                              "submission": {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              }
                             }
-                          }
+                          ]
                         }
                       ]
                     }
@@ -416,14 +523,26 @@
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "submission": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "submission": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
@@ -431,25 +550,36 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "_or": [
-                        {
-                          "actor_id": {
-                            "_eq": "X-Hasura-User-Id"
-                          }
-                        },
+                      "_and": [
                         {
                           "submission": {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
                           }
                         },
                         {
-                          "submission": {
-                            "waiting_role": {
-                              "_eq": "X-Hasura-Role"
+                          "_or": [
+                            {
+                              "actor_id": {
+                                "_eq": "X-Hasura-User-Id"
+                              }
+                            },
+                            {
+                              "submission": {
+                                "submitter_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              }
+                            },
+                            {
+                              "submission": {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              }
                             }
-                          }
+                          ]
                         }
                       ]
                     }
@@ -461,17 +591,28 @@
                   "role": "staff",
                   "permission": {
                     "check": {
-                      "submission": {
-                        "status": {
-                          "_eq": "running"
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
+                            }
+                          }
                         },
-                        "waiting_role": {
-                          "_eq": "X-Hasura-Role"
-                        },
-                        "submitter_id": {
-                          "_neq": "X-Hasura-User-Id"
+                        {
+                          "submission": {
+                            "status": {
+                              "_eq": "running"
+                            },
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            },
+                            "submitter_id": {
+                              "_neq": "X-Hasura-User-Id"
+                            }
+                          }
                         }
-                      }
+                      ]
                     },
                     "columns": [
                       "submission_id",
@@ -489,17 +630,28 @@
                   "role": "manager",
                   "permission": {
                     "check": {
-                      "submission": {
-                        "status": {
-                          "_eq": "running"
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
+                            }
+                          }
                         },
-                        "waiting_role": {
-                          "_eq": "X-Hasura-Role"
-                        },
-                        "submitter_id": {
-                          "_neq": "X-Hasura-User-Id"
+                        {
+                          "submission": {
+                            "status": {
+                              "_eq": "running"
+                            },
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            },
+                            "submitter_id": {
+                              "_neq": "X-Hasura-User-Id"
+                            }
+                          }
                         }
-                      }
+                      ]
                     },
                     "columns": [
                       "submission_id",
@@ -517,17 +669,28 @@
                   "role": "director",
                   "permission": {
                     "check": {
-                      "submission": {
-                        "status": {
-                          "_eq": "running"
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
+                            }
+                          }
                         },
-                        "waiting_role": {
-                          "_eq": "X-Hasura-Role"
-                        },
-                        "submitter_id": {
-                          "_neq": "X-Hasura-User-Id"
+                        {
+                          "submission": {
+                            "status": {
+                              "_eq": "running"
+                            },
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            },
+                            "submitter_id": {
+                              "_neq": "X-Hasura-User-Id"
+                            }
+                          }
                         }
-                      }
+                      ]
                     },
                     "columns": [
                       "submission_id",
@@ -545,17 +708,28 @@
                   "role": "accountant",
                   "permission": {
                     "check": {
-                      "submission": {
-                        "status": {
-                          "_eq": "running"
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
+                            }
+                          }
                         },
-                        "waiting_role": {
-                          "_eq": "X-Hasura-Role"
-                        },
-                        "submitter_id": {
-                          "_neq": "X-Hasura-User-Id"
+                        {
+                          "submission": {
+                            "status": {
+                              "_eq": "running"
+                            },
+                            "waiting_role": {
+                              "_eq": "X-Hasura-Role"
+                            },
+                            "submitter_id": {
+                              "_neq": "X-Hasura-User-Id"
+                            }
+                          }
                         }
-                      }
+                      ]
                     },
                     "columns": [
                       "submission_id",
@@ -604,28 +778,60 @@
                   "role": "staff",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "accountant",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
+              "object_relationships": [
+                {
+                  "name": "app",
+                  "using": {
+                    "foreign_key_constraint_on": "app_key"
                   }
                 }
               ]
@@ -640,28 +846,52 @@
                   "role": "staff",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "accountant",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 }
               ],
@@ -669,7 +899,13 @@
                 {
                   "role": "manager",
                   "permission": {
-                    "check": {},
+                    "check": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "columns": [
                       "app_key",
                       "name",
@@ -692,20 +928,42 @@
                       "review_note"
                     ],
                     "filter": {
-                      "status": {
-                        "_eq": "open"
-                      },
-                      "author_id": {
-                        "_neq": "X-Hasura-User-Id"
-                      }
+                      "_and": [
+                        {
+                          "app": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
+                            }
+                          }
+                        },
+                        {
+                          "status": {
+                            "_eq": "open"
+                          },
+                          "author_id": {
+                            "_neq": "X-Hasura-User-Id"
+                          }
+                        }
+                      ]
                     },
                     "check": {
-                      "status": {
-                        "_in": [
-                          "merged",
-                          "rejected"
-                        ]
-                      }
+                      "_and": [
+                        {
+                          "app": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
+                            }
+                          }
+                        },
+                        {
+                          "status": {
+                            "_in": [
+                              "merged",
+                              "rejected"
+                            ]
+                          }
+                        }
+                      ]
                     },
                     "set": {
                       "reviewer_id": "X-Hasura-User-Id",
@@ -736,6 +994,14 @@
                     }
                   ]
                 }
+              ],
+              "object_relationships": [
+                {
+                  "name": "app",
+                  "using": {
+                    "foreign_key_constraint_on": "app_key"
+                  }
+                }
               ]
             },
             {
@@ -748,28 +1014,52 @@
                   "role": "staff",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "accountant",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 }
               ],
@@ -777,7 +1067,13 @@
                 {
                   "role": "staff",
                   "permission": {
-                    "check": {},
+                    "check": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "columns": [
                       "app_key",
                       "title",
@@ -792,7 +1088,13 @@
                 {
                   "role": "manager",
                   "permission": {
-                    "check": {},
+                    "check": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "columns": [
                       "app_key",
                       "title",
@@ -807,7 +1109,13 @@
                 {
                   "role": "director",
                   "permission": {
-                    "check": {},
+                    "check": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "columns": [
                       "app_key",
                       "title",
@@ -822,7 +1130,13 @@
                 {
                   "role": "accountant",
                   "permission": {
-                    "check": {},
+                    "check": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "columns": [
                       "app_key",
                       "title",
@@ -842,7 +1156,13 @@
                     "columns": [
                       "status"
                     ],
-                    "filter": {},
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "check": null
                   }
                 },
@@ -852,8 +1172,22 @@
                     "columns": [
                       "status"
                     ],
-                    "filter": {},
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "check": null
+                  }
+                }
+              ],
+              "object_relationships": [
+                {
+                  "name": "app",
+                  "using": {
+                    "foreign_key_constraint_on": "app_key"
                   }
                 }
               ]
@@ -877,27 +1211,38 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "submission": {
-                        "_or": [
-                          {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
-                            }
-                          },
-                          {
-                            "waiting_role": {
-                              "_eq": "X-Hasura-Role"
-                            }
-                          },
-                          {
-                            "events": {
-                              "actor_id": {
-                                "_eq": "X-Hasura-User-Id"
-                              }
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
                           }
-                        ]
-                      }
+                        },
+                        {
+                          "submission": {
+                            "_or": [
+                              {
+                                "submitter_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              },
+                              {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              },
+                              {
+                                "events": {
+                                  "actor_id": {
+                                    "_eq": "X-Hasura-User-Id"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
                     }
                   }
                 },
@@ -905,14 +1250,26 @@
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "submission": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "submission": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
@@ -920,27 +1277,38 @@
                   "permission": {
                     "columns": "*",
                     "filter": {
-                      "submission": {
-                        "_or": [
-                          {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
-                            }
-                          },
-                          {
-                            "waiting_role": {
-                              "_eq": "X-Hasura-Role"
-                            }
-                          },
-                          {
-                            "events": {
-                              "actor_id": {
-                                "_eq": "X-Hasura-User-Id"
-                              }
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
                           }
-                        ]
-                      }
+                        },
+                        {
+                          "submission": {
+                            "_or": [
+                              {
+                                "submitter_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              },
+                              {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              },
+                              {
+                                "events": {
+                                  "actor_id": {
+                                    "_eq": "X-Hasura-User-Id"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
                     }
                   }
                 }
@@ -950,29 +1318,40 @@
                   "role": "staff",
                   "permission": {
                     "check": {
-                      "submission": {
-                        "_or": [
-                          {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
-                          },
-                          {
-                            "_and": [
+                          }
+                        },
+                        {
+                          "submission": {
+                            "_or": [
                               {
-                                "status": {
-                                  "_eq": "running"
+                                "submitter_id": {
+                                  "_eq": "X-Hasura-User-Id"
                                 }
                               },
                               {
-                                "waiting_role": {
-                                  "_eq": "X-Hasura-Role"
-                                }
+                                "_and": [
+                                  {
+                                    "status": {
+                                      "_eq": "running"
+                                    }
+                                  },
+                                  {
+                                    "waiting_role": {
+                                      "_eq": "X-Hasura-Role"
+                                    }
+                                  }
+                                ]
                               }
                             ]
                           }
-                        ]
-                      }
+                        }
+                      ]
                     },
                     "columns": [
                       "submission_id",
@@ -991,29 +1370,40 @@
                   "role": "manager",
                   "permission": {
                     "check": {
-                      "submission": {
-                        "_or": [
-                          {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
-                          },
-                          {
-                            "_and": [
+                          }
+                        },
+                        {
+                          "submission": {
+                            "_or": [
                               {
-                                "status": {
-                                  "_eq": "running"
+                                "submitter_id": {
+                                  "_eq": "X-Hasura-User-Id"
                                 }
                               },
                               {
-                                "waiting_role": {
-                                  "_eq": "X-Hasura-Role"
-                                }
+                                "_and": [
+                                  {
+                                    "status": {
+                                      "_eq": "running"
+                                    }
+                                  },
+                                  {
+                                    "waiting_role": {
+                                      "_eq": "X-Hasura-Role"
+                                    }
+                                  }
+                                ]
                               }
                             ]
                           }
-                        ]
-                      }
+                        }
+                      ]
                     },
                     "columns": [
                       "submission_id",
@@ -1032,29 +1422,40 @@
                   "role": "director",
                   "permission": {
                     "check": {
-                      "submission": {
-                        "_or": [
-                          {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
-                          },
-                          {
-                            "_and": [
+                          }
+                        },
+                        {
+                          "submission": {
+                            "_or": [
                               {
-                                "status": {
-                                  "_eq": "running"
+                                "submitter_id": {
+                                  "_eq": "X-Hasura-User-Id"
                                 }
                               },
                               {
-                                "waiting_role": {
-                                  "_eq": "X-Hasura-Role"
-                                }
+                                "_and": [
+                                  {
+                                    "status": {
+                                      "_eq": "running"
+                                    }
+                                  },
+                                  {
+                                    "waiting_role": {
+                                      "_eq": "X-Hasura-Role"
+                                    }
+                                  }
+                                ]
                               }
                             ]
                           }
-                        ]
-                      }
+                        }
+                      ]
                     },
                     "columns": [
                       "submission_id",
@@ -1073,29 +1474,40 @@
                   "role": "accountant",
                   "permission": {
                     "check": {
-                      "submission": {
-                        "_or": [
-                          {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
-                          },
-                          {
-                            "_and": [
+                          }
+                        },
+                        {
+                          "submission": {
+                            "_or": [
                               {
-                                "status": {
-                                  "_eq": "running"
+                                "submitter_id": {
+                                  "_eq": "X-Hasura-User-Id"
                                 }
                               },
                               {
-                                "waiting_role": {
-                                  "_eq": "X-Hasura-Role"
-                                }
+                                "_and": [
+                                  {
+                                    "status": {
+                                      "_eq": "running"
+                                    }
+                                  },
+                                  {
+                                    "waiting_role": {
+                                      "_eq": "X-Hasura-Role"
+                                    }
+                                  }
+                                ]
                               }
                             ]
                           }
-                        ]
-                      }
+                        }
+                      ]
                     },
                     "columns": [
                       "submission_id",
@@ -1122,14 +1534,26 @@
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 }
               ],
@@ -1140,7 +1564,13 @@
                     "columns": [
                       "level"
                     ],
-                    "filter": {},
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "check": null,
                     "set": {
                       "updated_by": "X-Hasura-User-Name"
@@ -1153,11 +1583,25 @@
                     "columns": [
                       "level"
                     ],
-                    "filter": {},
+                    "filter": {
+                      "app": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    },
                     "check": null,
                     "set": {
                       "updated_by": "X-Hasura-User-Name"
                     }
+                  }
+                }
+              ],
+              "object_relationships": [
+                {
+                  "name": "app",
+                  "using": {
+                    "foreign_key_constraint_on": "app_key"
                   }
                 }
               ]
@@ -1180,7 +1624,13 @@
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {}
+                    "filter": {
+                      "submission": {
+                        "org_id": {
+                          "_eq": "X-Hasura-Org-Id"
+                        }
+                      }
+                    }
                   }
                 },
                 {
@@ -1198,21 +1648,32 @@
                     "filter": {
                       "_and": [
                         {
-                          "level": {
-                            "_gte": 3
-                          }
-                        },
-                        {
-                          "human_action": {
-                            "_is_null": true
-                          }
-                        },
-                        {
                           "submission": {
-                            "waiting_role": {
-                              "_eq": "X-Hasura-Role"
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
                           }
+                        },
+                        {
+                          "_and": [
+                            {
+                              "level": {
+                                "_gte": 3
+                              }
+                            },
+                            {
+                              "human_action": {
+                                "_is_null": true
+                              }
+                            },
+                            {
+                              "submission": {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -1233,21 +1694,32 @@
                     "filter": {
                       "_and": [
                         {
-                          "level": {
-                            "_gte": 3
-                          }
-                        },
-                        {
-                          "human_action": {
-                            "_is_null": true
-                          }
-                        },
-                        {
                           "submission": {
-                            "waiting_role": {
-                              "_eq": "X-Hasura-Role"
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
                             }
                           }
+                        },
+                        {
+                          "_and": [
+                            {
+                              "level": {
+                                "_gte": 3
+                              }
+                            },
+                            {
+                              "human_action": {
+                                "_is_null": true
+                              }
+                            },
+                            {
+                              "submission": {
+                                "waiting_role": {
+                                  "_eq": "X-Hasura-Role"
+                                }
+                              }
+                            }
+                          ]
                         }
                       ]
                     }
@@ -1266,8 +1738,241 @@
                       "created_at"
                     ],
                     "filter": {
-                      "level": {
-                        "_gt": 4
+                      "_and": [
+                        {
+                          "submission": {
+                            "org_id": {
+                              "_eq": "X-Hasura-Org-Id"
+                            }
+                          }
+                        },
+                        {
+                          "level": {
+                            "_gt": 4
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "org"
+              },
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": [
+                      "id",
+                      "name"
+                    ],
+                    "filter": {
+                      "id": {
+                        "_eq": "X-Hasura-Org-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": [
+                      "id",
+                      "name"
+                    ],
+                    "filter": {
+                      "id": {
+                        "_eq": "X-Hasura-Org-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": [
+                      "id",
+                      "name"
+                    ],
+                    "filter": {
+                      "id": {
+                        "_eq": "X-Hasura-Org-Id"
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": [
+                      "id",
+                      "name"
+                    ],
+                    "filter": {
+                      "id": {
+                        "_eq": "X-Hasura-Org-Id"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "event_signature"
+              },
+              "object_relationships": [
+                {
+                  "name": "event",
+                  "using": {
+                    "foreign_key_constraint_on": "event_id"
+                  }
+                }
+              ],
+              "select_permissions": [
+                {
+                  "role": "staff",
+                  "permission": {
+                    "columns": [
+                      "event_id",
+                      "payload",
+                      "signature",
+                      "cert_pem",
+                      "cert_fingerprint",
+                      "signed_at"
+                    ],
+                    "filter": {
+                      "event": {
+                        "_and": [
+                          {
+                            "submission": {
+                              "org_id": {
+                                "_eq": "X-Hasura-Org-Id"
+                              }
+                            }
+                          },
+                          {
+                            "_or": [
+                              {
+                                "actor_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              },
+                              {
+                                "submission": {
+                                  "submitter_id": {
+                                    "_eq": "X-Hasura-User-Id"
+                                  }
+                                }
+                              },
+                              {
+                                "submission": {
+                                  "waiting_role": {
+                                    "_eq": "X-Hasura-Role"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "manager",
+                  "permission": {
+                    "columns": [
+                      "event_id",
+                      "payload",
+                      "signature",
+                      "cert_pem",
+                      "cert_fingerprint",
+                      "signed_at"
+                    ],
+                    "filter": {
+                      "event": {
+                        "submission": {
+                          "org_id": {
+                            "_eq": "X-Hasura-Org-Id"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": [
+                      "event_id",
+                      "payload",
+                      "signature",
+                      "cert_pem",
+                      "cert_fingerprint",
+                      "signed_at"
+                    ],
+                    "filter": {
+                      "event": {
+                        "submission": {
+                          "org_id": {
+                            "_eq": "X-Hasura-Org-Id"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "role": "accountant",
+                  "permission": {
+                    "columns": [
+                      "event_id",
+                      "payload",
+                      "signature",
+                      "cert_pem",
+                      "cert_fingerprint",
+                      "signed_at"
+                    ],
+                    "filter": {
+                      "event": {
+                        "_and": [
+                          {
+                            "submission": {
+                              "org_id": {
+                                "_eq": "X-Hasura-Org-Id"
+                              }
+                            }
+                          },
+                          {
+                            "_or": [
+                              {
+                                "actor_id": {
+                                  "_eq": "X-Hasura-User-Id"
+                                }
+                              },
+                              {
+                                "submission": {
+                                  "submitter_id": {
+                                    "_eq": "X-Hasura-User-Id"
+                                  }
+                                }
+                              },
+                              {
+                                "submission": {
+                                  "waiting_role": {
+                                    "_eq": "X-Hasura-Role"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
                       }
                     }
                   }

@@ -19,6 +19,11 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { validateSpec, toBpmn, toViewSql, simulate } from './compile.js'
 import { generateApp } from './ai.js'
 import { handleFiles } from './files.js'
+import { handleEvents, notify } from './events.js'
+import { handleCold, archiveAll } from './cold.js'
+import { handleIngest } from './ingest.js'
+import { handleSensors } from './sensors.js'
+import { handlePki, signEvent } from './pki.js'
 import { handleSearch, syncIndex } from './search.js'
 import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
@@ -82,6 +87,7 @@ async function syncSubmission(id) {
   }
   await gql('mutation($id: uuid!, $set: submission_set_input!) { update_submission_by_pk(pk_columns: {id: $id}, _set: $set) { id } }', { id, set })
   // AI cho ý kiến ở nền: chậm hay lỗi thì cũng không làm trễ hay hỏng luồng của người.
+  notify()
   if (set.current_step) opine(id, set.current_step).catch((err) => console.error('AI thử việc:', err.message))
 }
 
@@ -107,6 +113,8 @@ async function actOnSubmission(ev) {
     })
   }
   await syncSubmission(ev.submission_id)
+  // Ký số hành động duyệt của người; lỗi thì Hasura gửi lại sự kiện (các bước trên chạy lại được an toàn).
+  await signEvent(ev)
 }
 
 /** "CI" cho một đề xuất thay đổi quy trình: kết quả ghi vào app_change.checks, thiếu nó thì không ai chấp nhận được. */
@@ -162,7 +170,15 @@ setInterval(async () => {
   }
 }, 10000)
 
+// Mỗi ngày đẩy hồ sơ đã kết thúc quá ARCHIVE_AFTER_DAYS (mặc định 90) xuống kho lạnh.
+setInterval(() => archiveAll().catch((err) => console.error('Xuất kho lạnh:', err.message)), 24 * 3600 * 1000).unref()
+
 createServer(async (req, res) => {
+  if (req.url.startsWith('/events')) return handleEvents(req, res)
+  if (req.url.startsWith('/archive') || req.url.startsWith('/lineage')) return handleCold(req, res)
+  if (req.url.startsWith('/ingest')) return handleIngest(req, res)
+  if (req.url.startsWith('/signatures') || req.url.startsWith('/pki')) return handlePki(req, res)
+  if (req.url.startsWith('/sensors') || req.url.startsWith('/telemetry')) return handleSensors(req, res)
   if (req.url.startsWith('/files')) return handleFiles(req, res)
   if (req.url.startsWith('/search') || req.url.startsWith('/ask')) return handleSearch(req, res)
   try {
@@ -187,6 +203,7 @@ createServer(async (req, res) => {
       }
     } else {
       await handlers[payload.trigger.name](payload.event.data.new)
+      notify() // hồ sơ, nhật ký hay ứng dụng vừa đổi: báo các trình duyệt đang mở tải lại
     }
     res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(result))
   } catch (err) {

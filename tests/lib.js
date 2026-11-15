@@ -41,7 +41,8 @@ export async function login(user, password = PASSWORD, client = 'dxlab-cli') {
   if (password === PASSWORD) cache.set(key, { token, exp: Date.now() + 200_000 })
   return token
 }
-export const ROLE = { staff1: 'staff', staff2: 'staff', manager1: 'manager', director1: 'director', accountant1: 'accountant' }
+// staffb1, managerb1, directorb1 thuộc tổ chức B (org_id = orgb), dùng để kiểm tra cách ly giữa các tổ chức.
+export const ROLE = { staff1: 'staff', staff2: 'staff', manager1: 'manager', director1: 'director', accountant1: 'accountant', staffb1: 'staff', managerb1: 'manager', directorb1: 'director' }
 
 export async function gqlRaw(token, query, variables, role) {
   const res = await fetch(`${GW}/v1/graphql`, {
@@ -80,11 +81,11 @@ export const SPEC = {
 }
 
 /** Quản lý xuất bản một quy trình thử và chờ hệ thống sinh xong. */
-export async function publishApp(spec = SPEC) {
+export async function publishApp(spec = SPEC, user = 'manager1') {
   const key = `kt_${uid()}`
-  const r = await as('manager1', 'mutation($o: app_insert_input!) { insert_app_one(object: $o) { key } }', { o: { key, name: `Kiểm thử ${key}`, spec } })
+  const r = await as(user, 'mutation($o: app_insert_input!) { insert_app_one(object: $o) { key } }', { o: { key, name: `Kiểm thử ${key}`, spec } })
   if (r.errors) throw new Error(JSON.stringify(r.errors))
-  await until(async () => (await as('manager1', 'query($k: String!) { app_by_pk(key: $k) { status } }', { k: key })).data?.app_by_pk?.status === 'published', `quy trình ${key} xuất bản`)
+  await until(async () => (await as(user, 'query($k: String!) { app_by_pk(key: $k) { status } }', { k: key })).data?.app_by_pk?.status === 'published', `quy trình ${key} xuất bản`)
   return key
 }
 export async function submit(user, appKey, data) {

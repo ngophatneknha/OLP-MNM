@@ -9,9 +9,9 @@
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import https from 'node:https'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { ROOT, GW, until, run } from './lib.js'
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
@@ -44,6 +44,21 @@ describe('OPS: tự phục hồi khi sự cố (đề thi: Zero-Trust gắn vớ
   })
 })
 
+describe('OPS: tài nguyên (máy yếu vẫn chạy được bản lõi)', () => {
+  test('OPS-08 bản lõi dùng dưới 5 GiB RAM khi nhàn rỗi (đo thật bằng docker stats; scripts/measure.sh in từng dịch vụ)', () => {
+    const core = ['postgres', 'keycloak', 'hasura', 'apisix', 'flowable', 'workflow-bridge', 'seaweedfs', 'clamav', 'web']
+    const unit = { B: 1 / 1024 ** 2, KiB: 1 / 1024, MiB: 1, GiB: 1024 }
+    // Tên container phụ thuộc tên thư mục dự án, nên tra dịch vụ qua docker compose ps thay vì cắt chuỗi tên.
+    const service = Object.fromEntries(run('docker', ['compose', 'ps', '--format', '{{.Name}}|{{.Service}}']).trim().split(/\r?\n/).map((l) => l.split('|')))
+    const rows = run('docker', ['stats', '--no-stream', '--format', '{{.Name}}|{{.MemUsage}}']).trim().split(/\r?\n/)
+      .map((l) => l.split('|')).map(([name, mem]) => [service[name], mem.split('/')[0].trim().match(/^([\d.]+)(\w+)$/)])
+      .filter(([name]) => core.includes(name))
+    assert.equal(rows.length, core.length, 'thiếu dịch vụ lõi đang chạy')
+    const total = rows.reduce((sum, [, m]) => sum + Number(m[1]) * unit[m[2]], 0)
+    assert.ok(total < 5 * 1024, `bản lõi dùng ${Math.round(total)} MiB, vượt 5 GiB`)
+  })
+})
+
 describe('OPS: thành phần tùy chọn đang chạy', { skip }, () => {
   test('OPS-03 TLS: web, API và đăng nhập đều trả lời qua HTTPS, có HSTS', async () => {
     for (const url of ['https://localhost:8443/', 'https://localhost:9443/v1/graphql', 'https://localhost:8444/realms/dxlab/.well-known/openid-configuration']) {
@@ -66,4 +81,26 @@ describe('OPS: thành phần tùy chọn đang chạy', { skip }, () => {
       return r.length && Number(r[0].value[1]) >= 1
     }, 'Prometheus thấy yêu cầu 401', 90_000)
   })
+})
+
+test('OPS-BACKUP sao lưu tự động: dịch vụ backup (profile backup) chạy được một lần, ra đủ ba cơ sở dữ liệu kèm mã băm hợp lệ', { timeout: 180_000 }, () => {
+  const root = join(ROOT, 'backups')
+  const before = new Set(existsSync(root) ? readdirSync(root) : [])
+  const compose = ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.optional.yml', '--profile', 'backup']
+  let dir
+  try {
+    run('docker', [...compose, 'run', '--rm', '--no-deps', '-e', 'BACKUP_ONCE=1', '-e', 'BACKUP_KEEP=1000', 'backup'], { stdio: 'pipe' })
+    dir = join(root, readdirSync(root).find((d) => !before.has(d)))
+    for (const f of ['dxlab.sql.gz', 'keycloak.sql.gz', 'flowable.sql.gz', 'SHA256SUMS']) assert.ok(existsSync(join(dir, f)), f)
+    assert.equal(run('sh', ['-c', 'cd "$1" && sha256sum -c SHA256SUMS >/dev/null && gunzip -c dxlab.sql.gz | grep -c "CREATE TABLE public.submission "', 'sh', dir]).trim(), '1')
+  } finally {
+    // Tệp do container (root) tạo nên dọn bằng chính container, không dọn từ máy chạy kiểm thử (Linux báo EACCES).
+    if (dir) run('docker', [...compose, 'run', '--rm', '--no-deps', '--entrypoint', 'rm', 'backup', '-rf', `/backups/${basename(dir)}`], { stdio: 'pipe' })
+  }
+})
+
+test('OPS-GITOPS kiểm cấu hình trong kho: lệnh check chạy được; cấu hình hỏng thì bị bắt', { timeout: 120_000 }, () => {
+  assert.match(run('sh', ['scripts/gitops.sh', 'check']), /hợp lệ/)
+  assert.throws(() => run('sh', ['scripts/gitops.sh', 'bogus'], { stdio: 'pipe' }), 'lệnh lạ phải thất bại')
+  assert.throws(() => run('node', ['-e', 'JSON.parse("{")'], { stdio: 'pipe' }))
 })

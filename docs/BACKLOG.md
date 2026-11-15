@@ -11,7 +11,7 @@ Mốc cứng: **nộp bài 06/12/2026**, **chung kết 10/12/2026**.
 ## Cách dùng
 
 - Mỗi dòng là một đầu việc: `ID — Tên — Người phụ trách · Tuần · Mức ưu tiên`.
-- **Người phụ trách:** `A` Platform & Security · `B` Data & Workflow · `C` Product, Frontend & Docs (xem [kế hoạch](../README.md)). `ALL` = cả đội.
+- **Người phụ trách:** `A` Platform & Security · `B` Data & Workflow · `C` Product, Frontend & Docs (xem [README](https://github.com/ngophatneknha/OLP-MNM/blob/main/README.md)). `ALL` = cả đội.
 - **Ưu tiên:** `MVP` = bắt buộc theo đề · `Stretch` = làm nếu còn thời gian (quyết định ở Tuần 5).
 - Dòng thụt lề bên dưới là **tiêu chí hoàn thành**. Mọi việc còn phải thỏa *Definition of Done* chung (mục dưới).
 - Trạng thái chi tiết theo dõi trên **GitHub Issues/Projects**; đánh dấu `[x]` tại đây trong buổi review hàng tuần rồi chạy `python scripts/backlog.py progress --write` để cập nhật bảng tiến độ.

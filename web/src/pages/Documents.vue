@@ -5,6 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 Tài liệu (không gian [H]): mọi tệp đính kèm mà tôi được phép xem, gom về một chỗ.
 -->
 <script setup>
+import { t } from '../i18n.js'
 import { computed, onMounted, ref } from 'vue'
 import { Download, FileText } from 'lucide-vue-next'
 import { gql, downloadFile, formatSize, ago, toast } from '../lib.js'
@@ -22,30 +23,30 @@ const save = (file) => downloadFile(file).catch((err) => toast(err.message, fals
 </script>
 
 <template>
-  <h1 class="page-title">Tài liệu</h1>
-  <p class="page-lead">Mọi tệp đính kèm trong các hồ sơ mà bạn được xem. Tệp luôn nằm trong hồ sơ của nó, nên ai thấy hồ sơ mới thấy tệp.</p>
+  <h1 class="page-title">{{ t('doc.title') }}</h1>
+  <p class="page-lead">{{ t('doc.lead') }}</p>
 
-  <p v-if="files === null" class="mt-8 text-pencil">Đang tải…</p>
+  <p v-if="files === null" class="mt-8 text-pencil">{{ t('common.loading') }}</p>
   <div v-else-if="files.length === 0" class="panel mt-8 px-4 py-5 text-pencil">
-    Chưa có tệp nào. Khi gửi hồ sơ, bạn có thể đính kèm báo giá, hóa đơn hay bất kỳ tài liệu nào cần cho người duyệt.
+    {{ t('doc.none') }}
   </div>
   <template v-else>
-    <label class="label mt-6" for="doc-search">Tìm tệp</label>
-    <input id="doc-search" v-model="query" class="input max-w-sm" placeholder="Tên tệp, người tải lên hoặc loại hồ sơ" />
+    <label class="label mt-6" for="doc-search">{{ t('doc.find') }}</label>
+    <input id="doc-search" v-model="query" class="input max-w-sm" :placeholder="t('doc.findPh')" />
     <ul class="panel mt-4">
       <li v-for="f in shown" :key="f.id" class="panel-row">
         <span class="tile-icon"><FileText :size="20" aria-hidden="true" /></span>
         <div class="min-w-[min(100%,12rem)] flex-1">
           <div class="font-medium">{{ f.name }}</div>
           <div class="text-sm text-pencil">
-            {{ f.uploader_name }} tải lên {{ ago(f.created_at) }}, trong
-            <RouterLink :to="`/ho-so/${f.submission.id}`" class="text-pen hover:underline">{{ f.submission.app.name }}, hồ sơ số {{ f.submission.no }}</RouterLink>
+            {{ t('doc.uploaded', { who: f.uploader_name, when: ago(f.created_at) }) }}
+            <RouterLink :to="`/ho-so/${f.submission.id}`" class="text-pen hover:underline">{{ t('doc.ref', { name: f.submission.app.name, no: f.submission.no }) }}</RouterLink>
           </div>
         </div>
         <span class="num text-sm text-pencil">{{ formatSize(f.size) }}</span>
-        <button class="btn-quiet" :aria-label="`Tải ${f.name}`" @click="save(f)"><Download :size="16" aria-hidden="true" /> Tải về</button>
+        <button class="btn-quiet" :aria-label="t('doc.downloadAria', { name: f.name })" @click="save(f)"><Download :size="16" aria-hidden="true" /> {{ t('doc.download') }}</button>
       </li>
-      <li v-if="!shown.length" class="panel-row text-pencil">Không có tệp nào khớp “{{ query }}”.</li>
+      <li v-if="!shown.length" class="panel-row text-pencil">{{ t('doc.noMatch', { q: query }) }}</li>
     </ul>
   </template>
 </template>

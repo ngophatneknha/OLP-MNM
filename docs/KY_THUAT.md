@@ -42,7 +42,7 @@ Lần khởi động đầu mất 1-2 phút; ClamAV cần thêm vài phút để
 
 ## Cấu hình
 
-Mọi cấu hình nằm trong `.env` (mẫu `.env.example`), không phải sửa mã. Gồm mật khẩu cơ sở dữ liệu, quản trị Keycloak, khóa nội bộ giữa Hasura và cầu nối, địa chỉ công khai (`KEYCLOAK_PUBLIC_URL`, `API_PUBLIC_URL`, `APP_ORIGIN`), và trợ lý AI (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`). **Đổi mọi giá trị `change-me` trước khi đưa lên Internet.** Khóa AI chỉ nằm trong `.env`, tệp này không được commit.
+Mọi cấu hình nằm trong `.env` (mẫu `.env.example`), không phải sửa mã. Gồm mật khẩu cơ sở dữ liệu, quản trị Keycloak, khóa nội bộ giữa Hasura và cầu nối, địa chỉ công khai (`KEYCLOAK_PUBLIC_URL`, `API_PUBLIC_URL`, `APP_ORIGIN`), khóa kho tệp S3 (`S3_ACCESS_KEY`, `S3_SECRET_KEY`) và trợ lý AI (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`). **Đổi mọi giá trị `change-me` trước khi đưa lên Internet.** Khóa AI chỉ nằm trong `.env`, tệp này không được commit.
 
 Sau khi sửa `.env`: `docker compose up -d` (dịch vụ nào đổi cấu hình sẽ được tạo lại). Sửa tệp trong `infra/apisix/` cần `docker compose restart apisix`.
 
@@ -86,4 +86,20 @@ Ca chạy thật cho thành phần tùy chọn: `OPS_OPTIONAL=1`, `SEARCH_OPTION
 
 ## Phát hành
 
-Mỗi lần đẩy lên `main` là một phiên bản SemVer mới: cập nhật `CHANGELOG.md`, `web/package.json`, gắn thẻ `vX.Y.Z`, tạo bản phát hành kèm `.tar.gz`. Quy trình chi tiết: [CONTRIBUTING.md](../CONTRIBUTING.md). Image container được GitHub Actions đưa lên GitHub Packages khi có thẻ phiên bản.
+Mỗi lần đẩy lên `main` là một phiên bản SemVer mới: cập nhật `CHANGELOG.md`, `web/package.json`, gắn thẻ `vX.Y.Z`. Khi thẻ được đẩy lên, workflow `packages.yml` tự tạo bản phát hành trên GitHub kèm `.tar.gz` (ghi chú lấy từ mục tương ứng trong `CHANGELOG.md`) và đưa image lên GitHub Packages; có thể chạy lại bằng `workflow_dispatch` với thẻ cần phát hành. Quy trình chi tiết: [CONTRIBUTING.md](https://github.com/ngophatneknha/OLP-MNM/blob/main/CONTRIBUTING.md). Image container được GitHub Actions đưa lên GitHub Packages khi có thẻ phiên bản.
+
+## Các điểm vào của cổng API
+
+Mọi yêu cầu đi qua APISIX (cổng 9080), nơi kiểm JWT, giới hạn tần suất và CORS trước khi tới dịch vụ phía sau.
+
+| Đường dẫn | Dùng để | Ai gọi |
+|---|---|---|
+| `/v1/graphql` | Dữ liệu qua Hasura, phân quyền theo dòng | mọi người dùng đã đăng nhập |
+| `/files` | Đính kèm và tải tệp (quét mã độc, tối đa 10 MB) | người có quyền với hồ sơ |
+| `/search`, `/ask` | Tìm kiếm và hỏi đáp có kiểm quyền | mọi người dùng (cần profile `search`) |
+| `/events` | Kênh thời gian thực (SSE), chỉ đẩy nhịp rỗng | mọi người dùng |
+| `/ingest` | Nạp hàng loạt hồ sơ CSV/JSON | người dùng nạp, bằng quyền của mình |
+| `/archive`, `/archive/verify`, `/lineage` | Kho lạnh, kiểm chứng sổ cái, phả hệ dữ liệu | giám đốc |
+| `/sensors` | Đăng ký cảm biến (giám đốc), xem trạng thái (trưởng phòng, giám đốc) | người dùng |
+| `/telemetry/<mã>` | Thiết bị gửi số đo | cảm biến, bằng token thiết bị riêng |
+| `/auth/*` | Đăng nhập (Keycloak) | trình duyệt |

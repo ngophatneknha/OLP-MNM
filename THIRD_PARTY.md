@@ -21,6 +21,9 @@ Các thành phần chạy dưới dạng **container độc lập, không sửa 
 | Flowable (REST) | 7.2.0 | Apache-2.0 | `LICENSE` trong github.com/flowable/flowable-engine | ☑ |
 | ClamAV (trạm kiểm dịch mã độc) | 1.4.3 | GPL-2.0 | `COPYING.txt` trong github.com/Cisco-Talos/clamav (GitHub báo GPL-2.0) | ☑ |
 | Caddy (TLS tại biên, tùy chọn) | 2.8.4 | Apache-2.0 | `LICENSE` trong github.com/caddyserver/caddy | ☑ |
+| Coraza + coraza-caddy (tường lửa ứng dụng, tùy chọn) | 2.6.2 | Apache-2.0 | `LICENSE` trong github.com/corazawaf/coraza-caddy | ☑ |
+| OWASP Core Rule Set (bộ luật của Coraza, tùy chọn) | đi kèm coraza-caddy | Apache-2.0 | `LICENSE` trong github.com/coreruleset/coreruleset | ☑ |
+| OpenBao (két bí mật, tùy chọn) | 2.1.0 | MPL-2.0 | `LICENSE` trong github.com/openbao/openbao | ☑ |
 | Meilisearch (tìm kiếm toàn văn, tùy chọn) | 1.11.3 | MIT | `LICENSE` trong github.com/meilisearch/meilisearch | ☑ |
 | Ollama (mô hình AI chạy tại chỗ, tùy chọn) | 0.5.7 | MIT | `LICENSE` trong github.com/ollama/ollama | ☑ |
 | Prometheus (giám sát, tùy chọn) | 2.55.1 | Apache-2.0 | `LICENSE` trong github.com/prometheus/prometheus | ☑ |
@@ -54,7 +57,7 @@ Toàn bộ cây phụ thuộc cài lúc build (khoảng 80 gói) chỉ gồm cá
 
 ## Kết luận về tương thích giấy phép
 
-- Có đúng **một** thành phần copyleft: ClamAV (GPL-2.0), chạy trong container riêng, không sửa, không đính kèm mã vào kho, và chỉ giao tiếp với hệ thống qua cổng mạng (giao thức clamd). Vì vậy GPL-2.0 không lan sang mã Apache-2.0 của dự án (đây là việc chạy một chương trình riêng, không phải liên kết hay trộn mã). Không thành phần nào dùng AGPL hay giấy phép không được OSI chấp thuận; MinIO (AGPL-3.0) đã được thay bằng SeaweedFS (Apache-2.0), và Grafana (AGPL-3.0) không được dùng: giám sát dùng giao diện truy vấn của Prometheus (Apache-2.0).
+- Có **hai** thành phần copyleft: ClamAV (GPL-2.0, mạnh) và OpenBao (MPL-2.0, yếu, chỉ ràng buộc ở mức tệp và là thành phần tùy chọn). Cả hai chạy trong container riêng, không sửa, không đính kèm mã vào kho, và chỉ giao tiếp với hệ thống qua cổng mạng (giao thức clamd; HTTP API của két). Vì vậy GPL-2.0 không lan sang mã Apache-2.0 của dự án (đây là việc chạy một chương trình riêng, không phải liên kết hay trộn mã). Không thành phần nào dùng AGPL hay giấy phép không được OSI chấp thuận; MinIO (AGPL-3.0) đã được thay bằng SeaweedFS (Apache-2.0), và Grafana (AGPL-3.0) không được dùng: giám sát dùng giao diện truy vấn của Prometheus (Apache-2.0).
 - Mã tự viết của dự án phát hành theo Apache-2.0; phông chữ OFL-1.1 được phép đóng gói kèm miễn là không bán riêng, và dự án không làm vậy.
 - Dự án không phát hành cùng gói đính kèm của dự án khác và không chỉnh sửa mã của bất kỳ gói nào.
 - Đọc chữ trong tệp PDF (tìm kiếm, hỏi đáp) dùng mã tự viết `services/workflow-bridge/pdftext.js` (Apache-2.0, chỉ thư viện chuẩn của Node.js), không thêm thư viện hay container nào; `workflow-bridge` vẫn không có gói phụ thuộc bên thứ ba.

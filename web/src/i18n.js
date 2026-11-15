@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Đa ngôn ngữ vi/en không thêm thư viện: một bảng khoá, ngôn ngữ lưu ở trình duyệt.
-// shortcut: mới dịch khung điều hướng và các trang Bảng công việc, Lịch, Cá nhân; các trang cũ còn tiếng Việt, dịch dần theo từng trang.
+// Mọi màn hình đều dịch qua t(); ca web/src/hardcoded.test.js chặn chữ Việt viết thẳng quay lại.
 
 import { reactive } from 'vue'
 import { MESSAGES } from './messages.js'

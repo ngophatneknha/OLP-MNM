@@ -10,7 +10,7 @@ import '@fontsource/noto-serif/400.css'
 import '@fontsource/noto-serif/700.css'
 import './style.css'
 import App from './App.vue'
-import { login } from './lib.js'
+import { login, startLiveUpdates } from './lib.js'
 import Home from './pages/Home.vue'
 import Apps from './pages/Apps.vue'
 import Submission from './pages/Submission.vue'
@@ -27,6 +27,7 @@ import Ask from './pages/Ask.vue'
 // Đăng nhập trước khi dựng giao diện: mọi màn hình đều cần token.
 // Router tạo sau khi đăng nhập, để nó không giữ lại mã xác thực mà Keycloak vừa gỡ khỏi thanh địa chỉ.
 login().then(() => {
+  startLiveUpdates()
   const router = createRouter({
     history: createWebHistory(),
     routes: [

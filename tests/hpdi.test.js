@@ -10,7 +10,8 @@ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT, WEB, as, publishApp, submit, act, waitStatus, sql, until, uid, SPEC } from './lib.js'
+import { tmpdir } from 'node:os'
+import { ROOT, WEB, GW, login, run, as, publishApp, submit, act, waitStatus, sql, until, uid, SPEC } from './lib.js'
 import { validateSpec, simulate, toBpmn } from '../services/workflow-bridge/compile.js'
 import { computeMaturity, incompleteLogs } from '../web/src/maturity.js'
 
@@ -178,7 +179,7 @@ describe('D: Không gian Dữ liệu số — số liệu thực chứng', () =>
     assert.equal(sql("select count(*) from submission_event where created_at > now() + interval '1 minute'"), '0')
     assert.equal(sql('select count(*) from (select created_at, lag(created_at) over (partition by submission_id order by id) p from submission_event) t where created_at < p'), '0')
   })
-  test('D-06 [todo] kho dữ liệu lạnh/lakehouse (Iceberg), NGSI-LD, WebGIS, phả hệ dữ liệu', { todo: 'chưa làm: ngoài phạm vi sản phẩm hiện tại' }, () => assert.fail('chưa có'))
+  test('D-06 [todo] lakehouse bảng Iceberg/Parquet, NGSI-LD, WebGIS (kho lạnh JSONL, phả hệ, nạp hàng loạt đã có: tests/cold.test.js)', { todo: 'chưa làm: ngoài phạm vi sản phẩm hiện tại' }, () => assert.fail('chưa có'))
 })
 
 describe('H: Không gian Con người số — tài liệu và hộp việc', () => {
@@ -279,10 +280,75 @@ describe('I: Không gian Trí tuệ số — AI có kiểm soát', () => {
 })
 
 describe('Z: Nguyên lý Zero-Trust và vận hành (đề thi mục 4, nguyên lý iv) — điểm chưa làm', () => {
-  test('Z-01 [todo] két bí mật (Vault): không còn bí mật nằm trong .env', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
-  test('Z-02 [todo] tường lửa ứng dụng web (WAF) tại biên', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
-  test('Z-03 [todo] truyền phát sự kiện thời gian thực (streaming) và WebSocket', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
-  test('Z-04 [todo] ẩn thông tin định danh cá nhân (PII masking)', { todo: 'chưa làm' }, () => assert.fail('chưa có'))
+  test('Z-01 két bí mật OpenBao: bí mật nằm trong két, đọc ra đúng, không có token thì bị từ chối', { skip: process.env.VAULT_OPTIONAL ? false : 'đặt VAULT_OPTIONAL=1 sau khi bật profile vault' }, () => {
+    const env = { ...process.env, VAULT_KEYS_FILE: process.env.VAULT_KEYS_FILE ?? join(tmpdir(), 'dxlab-vault-keys') }
+    run('sh', ['scripts/vault.sh', 'init'], { env })
+    const exported = run('sh', ['scripts/vault.sh', 'export'], { env })
+    const dotenv = readFileSync(join(ROOT, '.env'), 'utf8')
+    for (const name of ['POSTGRES_PASSWORD', 'HASURA_ADMIN_SECRET', 'BRIDGE_SECRET', 'S3_SECRET_KEY']) {
+      const inEnv = dotenv.match(new RegExp(`^${name}=(.+)$`, 'm'))[1]
+      assert.ok(exported.includes(`export ${name}='${inEnv}'`), `${name} không có trong két hoặc khác .env`)
+    }
+    // Không có token thì két từ chối; tệp khóa mở/token gốc không bao giờ vào kho mã.
+    assert.throws(() => run('docker', ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.optional.yml', '--profile', 'vault', 'exec', '-T', '-e', 'BAO_ADDR=http://127.0.0.1:8200', 'openbao', 'bao', 'kv', 'get', 'secret/dxlab'], { stdio: 'pipe' }), /permission denied|403/)
+  })
+  test('Z-02 tường lửa ứng dụng (Coraza + OWASP CRS) trước cổng API: tấn công bị 403, yêu cầu sạch đi tiếp', { skip: process.env.WAF_OPTIONAL ? false : 'đặt WAF_OPTIONAL=1 sau khi bật profile waf' }, async () => {
+    const WAF = process.env.WAF_URL ?? 'http://localhost:9081'
+    const status = async (path) => (await fetch(`${WAF}${path}`)).status
+    assert.equal(await status('/files'), 401, 'yêu cầu sạch phải tới được cổng API (401 vì thiếu token)')
+    assert.equal(await status(`/v1/graphql?id=${encodeURIComponent("1' OR '1'='1")}`), 403, 'SQL injection')
+    assert.equal(await status(`/?q=${encodeURIComponent('<script>alert(1)</script>')}`), 403, 'XSS')
+    assert.equal(await status(`/files?f=${encodeURIComponent('../../etc/passwd')}`), 403, 'path traversal')
+  })
+  test('Z-03 thời gian thực: kênh SSE qua cổng API (cần token) đẩy nhịp ngay khi ứng dụng xuất bản và khi có hồ sơ mới', async () => {
+    assert.equal((await fetch(`${GW}/events`)).status, 401, 'không token phải bị từ chối')
+    const ctl = new AbortController()
+    const res = await fetch(`${GW}/events`, { headers: { authorization: `Bearer ${await login('staff1')}`, 'x-hasura-role': 'staff' }, signal: ctl.signal })
+    assert.equal(res.status, 200)
+    assert.match(res.headers.get('content-type'), /text\/event-stream/)
+    let text = ''
+    const reader = res.body.getReader()
+    const pump = (async () => { for (;;) { const { done, value } = await reader.read(); if (done) return; text += new TextDecoder().decode(value) } })().catch(() => {})
+    const ticks = () => text.split('data: tick').length - 1
+    try {
+      // Chèn thẳng bằng SQL để chạy được cả khi không đăng nhập được trưởng phòng; sự kiện Hasura vẫn kích hoạt như thường.
+      const key = `rt_${uid()}`
+      sql(`insert into app(key, name, owner_id, spec) values ('${key}', 'Thời gian thực', gen_random_uuid(), '${JSON.stringify(SPEC).replaceAll("'", "''")}')`)
+      await until(() => ticks() >= 1, 'nhịp sau khi xuất bản ứng dụng', 30_000)
+      await until(async () => sql(`select status from app where key = '${key}'`) === 'published', 'ứng dụng xuất bản')
+      const before = ticks()
+      assert.ok(!(await submit('staff1', key, { so_tien: 1 })).errors)
+      await until(() => ticks() > before, 'nhịp sau khi gửi hồ sơ', 30_000)
+    } finally { ctl.abort(); await pump }
+  })
+  test('Z-04 thông tin định danh cá nhân bị ẩn trước khi gửi tới máy chủ AI (email, số điện thoại, CCCD, số thẻ)', async () => {
+    // Máy chủ AI giả ghi lại đúng những gì nhận được; chạy mã thật của cầu nối (ai.js), không giả lập hàm.
+    const seen = []
+    const { createServer } = await import('node:http')
+    const srv = createServer((req, res) => {
+      let body = ''
+      req.on('data', (c) => { body += c })
+      req.on('end', () => { seen.push(body); res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ choices: [{ message: { content: '{}' } }] })) })
+    }).listen(0)
+    try {
+      process.env.AI_BASE_URL = `http://127.0.0.1:${srv.address().port}`
+      process.env.AI_MODEL = 'stub'
+      const { chat, complete } = await import(`../services/workflow-bridge/ai.js?z04=${Date.now()}`)
+      const pii = 'Gửi an.nguyen@congty.vn, gọi 0912 345 678, CCCD 079123456789, thẻ 4111 1111 1111 1111, chi 5000000 đồng'
+      await chat([{ role: 'user', content: pii }])
+      await complete([{ role: 'user', content: pii }])
+      assert.equal(seen.length, 2)
+      for (const body of seen) {
+        for (const raw of ['an.nguyen@congty.vn', '0912 345 678', '079123456789', '4111 1111 1111 1111']) assert.ok(!body.includes(raw), `${raw} lọt ra ngoài`)
+        for (const tag of ['[EMAIL]', '[SĐT]', '[CCCD]', '[SỐ THẺ]', '5000000']) assert.ok(body.includes(tag), tag)
+      }
+    } finally { srv.close() }
+  })
   test('Z-05 sao lưu và khôi phục thảm họa: script thủ công đã có (ca chạy thật ở tests/restore.test.js), chưa có lịch tự động', () => assert.ok(existsSync(join(ROOT, 'scripts/restore.sh'))))
   test('Z-06 TLS tại biên và giám sát: thành phần tùy chọn đã có (ca chạy thật ở tests/ops.test.js)', () => assert.match(readFileSync(join(ROOT, 'docker-compose.optional.yml'), 'utf8'), /caddy:[\s\S]*prometheus:/))
+  test('Z-07 chữ ký số PKI phần mềm cho phê duyệt: mã đã có (ca chạy thật ở tests/pki.test.js); chưa có HSM, CRL/OCSP', () => assert.ok(existsSync(join(ROOT, 'services/workflow-bridge/pki.js'))))
+  test('Z-08 sao lưu tự động theo lịch: dịch vụ backup (ca chạy thật OPS-BACKUP ở tests/ops.test.js)', () => assert.match(readFileSync(join(ROOT, 'docker-compose.optional.yml'), 'utf8'), /backup:[\s\S]*profiles: \["backup"\]/))
+  test('Z-09 [todo] truyền thông thời gian thực bằng WebSocket và thiết bị bằng MQTT/OPC UA (hiện là SSE và HTTP: Z-03, IOT)', { todo: 'chưa làm: WebSocket, MQTT' }, () => assert.fail('chưa có'))
+  test('Z-10 [todo] GitOps thật (bộ điều khiển như ArgoCD/Flux, nhiều máy, tự hoàn tác); đã có GitOps nhẹ cho một máy: scripts/gitops.sh (OPS-GITOPS)', { todo: 'chưa làm: ArgoCD/Flux' }, () => assert.fail('chưa có'))
+  test('Z-11 [todo] nhật ký truy vết phân tán (như Vector/Parseable) và trục sự kiện streaming (như Redpanda); hiện có nhật ký kiểm toán bất biến trong CSDL, SSE và số đo Prometheus', { todo: 'chưa làm: gom nhật ký tập trung, Kafka/Redpanda' }, () => assert.fail('chưa có'))
 })

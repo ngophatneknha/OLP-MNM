@@ -6,6 +6,7 @@
 // AI chỉ ĐỀ XUẤT: kết quả luôn đi qua validateSpec và phải được con người xem lại trước khi xuất bản.
 
 import { validateSpec, isKey, ROLES, FIELD_TYPES } from './compile.js'
+import {maskMessages} from './pii.js'
 
 const { AI_BASE_URL, AI_API_KEY, AI_MODEL } = process.env
 
@@ -48,7 +49,7 @@ export async function chat(messages) {
   const res = await fetch(`${AI_BASE_URL.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
     headers: { authorization: `Bearer ${AI_API_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: AI_MODEL, temperature: 0, response_format: { type: 'json_object' }, messages }),
+    body: JSON.stringify({ model: AI_MODEL, temperature: 0, response_format: { type: 'json_object' }, messages: maskMessages(messages) }),
     signal: AbortSignal.timeout(45000),
   })
   if (!res.ok) throw new Error(`Máy chủ AI trả mã ${res.status}`)
@@ -65,7 +66,7 @@ export async function complete(messages) {
   const res = await fetch(`${AI_BASE_URL.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
     headers: { authorization: `Bearer ${AI_API_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: AI_MODEL, temperature: 0, messages }),
+    body: JSON.stringify({ model: AI_MODEL, temperature: 0, messages: maskMessages(messages) }),
     signal: AbortSignal.timeout(45000),
   })
   if (!res.ok) throw new Error(`Máy chủ AI trả mã ${res.status}`)

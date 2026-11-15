@@ -30,10 +30,10 @@ jobs:
         with:
           node-version: 22
       - run: pip install reuse
-      - name: Kiểm thử đơn vị
-        run: node --test services/workflow-bridge/*.test.js web/src/*.test.js
       - run: npm ci --no-audit --no-fund && npm run lint && npm run build
         working-directory: web
+      - name: Kiểm thử đơn vị (web cần vue đã cài ở bước trên)
+        run: node --test services/workflow-bridge/*.test.js web/src/*.test.js
       - name: Dựng hệ thống từ đầu
         run: |
           cp .env.example .env
@@ -41,11 +41,11 @@ jobs:
           node tests/wait-ready.js 900
       - name: Kiểm thử Tầng 1, H-P-D-I và PoF
         run: node --test --test-reporter=spec tests/*.test.js
-      - name: TLS, giám sát, tìm kiếm (thành phần tùy chọn)
+      - name: TLS, giám sát, tìm kiếm, tường lửa, két bí mật (thành phần tùy chọn)
         run: |
-          docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tls --profile monitoring --profile search up -d
+          docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tls --profile monitoring --profile search --profile waf --profile vault up -d --build
           node tests/wait-ready.js 300
-          OPS_OPTIONAL=1 SEARCH_OPTIONAL=1 node --test --test-reporter=spec tests/ops.test.js tests/search.test.js
+          OPS_OPTIONAL=1 SEARCH_OPTIONAL=1 WAF_OPTIONAL=1 VAULT_OPTIONAL=1 node --test --test-reporter=spec tests/ops.test.js tests/search.test.js tests/hpdi.test.js
       - name: Tự phục hồi khi dịch vụ gặp sự cố
         run: RECOVERY_TEST=1 node --test --test-reporter=spec tests/recovery.test.js
       - name: Dữ liệu mẫu cho bản demo cho điểm hợp lý

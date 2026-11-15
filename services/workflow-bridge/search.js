@@ -9,12 +9,13 @@
 // Chữ trong PDF được trích bằng pdftext.js (chỉ thư viện chuẩn của Node.js, chạy trong worker riêng).
 // shortcut: chỉ mục toàn văn (BM25), chưa có véc-tơ ngữ nghĩa, chưa OCR (PDF scan, ảnh); thêm khi có mô hình nhúng và OCR.
 
+import { s3fetch } from './s3.js'
 import { createHash } from 'node:crypto'
 import { aiConfigured, complete } from './ai.js'
 import { HttpError, asUser, MAX_BYTES } from './files.js'
 import { isPdf, extractPdfTextIsolated } from './pdftext.js'
 
-const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET, S3_URL = 'http://seaweedfs:8333' } = process.env
+const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET } = process.env
 const INDEX = 'docs'
 const MAX_TEXT = 100_000
 const TEXTY = /\.(txt|md|csv|json|log|tsv|xml|yml|yaml)$/i
@@ -74,7 +75,7 @@ async function fileText(att) {
   if (!(texty || pdfy) || att.size > (pdfy ? MAX_BYTES : 1_000_000)) return null
   let body
   try {
-    const res = await fetch(`${S3_URL}/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(pdfy ? 30_000 : 10_000) })
+    const res = await s3fetch(`/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(pdfy ? 30_000 : 10_000) })
     if (!res.ok) return null
     body = Buffer.from(await res.arrayBuffer())
   } catch (err) {

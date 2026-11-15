@@ -308,6 +308,18 @@ describe('T1-OBJ: Quản trị dữ liệu phi cấu trúc (kho đối tượng 
     assert.equal(await open(8333), false)
     assert.equal(await open(8888), false)
   })
+  test('T1-OBJ-09 kho S3 bắt buộc chữ ký SigV4: không ký hoặc ký sai bị 403, chỉ cầu nối có khóa mới đọc/ghi được', () => {
+    // Chạy trong container cầu nối (cùng mạng nội bộ với kho S3): thử không ký, ký sai, rồi ký đúng.
+    const script = `
+      import { s3fetch } from '/app/s3.js'
+      const u = 'http://seaweedfs:8333/dxlab/obj09-probe'
+      const bad = { authorization: 'AWS4-HMAC-SHA256 Credential=x/20260101/us-east-1/s3/aws4_request, SignedHeaders=host, Signature=00' }
+      const out = [(await fetch(u)).status, (await fetch(u, { method: 'PUT', body: 'x' })).status, (await fetch(u, { headers: bad })).status,
+        (await s3fetch('/dxlab/obj09-probe', { method: 'PUT', body: 'ok' })).status, await (await s3fetch('/dxlab/obj09-probe')).text()]
+      console.log(JSON.stringify(out))`
+    const out = JSON.parse(run('docker', ['compose', 'exec', '-T', 'workflow-bridge', 'node', '--input-type=module', '-e', script]).trim())
+    assert.deepEqual(out, [403, 403, 403, 200, 'ok'])
+  })
   test('T1-OBJ-07 tải lên lỗi không để lại dòng dữ liệu mồ côi', async () => {
     const count = () => sql(`select count(*) from attachment where submission_id = '${sid}'`)
     const before = count()

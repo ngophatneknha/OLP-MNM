@@ -9,3 +9,4 @@ dist/
 # Tài liệu của BTC (chỉ để tham khảo, không phải mã nguồn)
 *.pdf
 backups/
+/.vault-keys
