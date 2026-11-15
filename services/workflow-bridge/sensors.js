@@ -46,6 +46,10 @@ async function register(req) {
   if (!KEY.test(b.key ?? '')) throw new HttpError(400, 'Mã cảm biến: chữ thường không dấu, số, gạch dưới, 2 đến 31 ký tự')
   if (typeof b.name !== 'string' || !b.name.trim() || b.name.length > 120) throw new HttpError(400, 'Thiếu tên cảm biến')
   if (!Number.isFinite(threshold)) throw new HttpError(400, 'Ngưỡng phải là số')
+  const hasGeo = b.lat !== undefined || b.lon !== undefined
+  const lat = Number(b.lat)
+  const lon = Number(b.lon)
+  if (hasGeo && !(typeof b.lat === 'number' && typeof b.lon === 'number' && Math.abs(lat) <= 90 && Math.abs(lon) <= 180)) throw new HttpError(400, 'Vị trí: lat (-90..90) và lon (-180..180) phải là số, đi cùng nhau')
   if (!['above', 'below'].includes(b.direction)) throw new HttpError(400, 'direction phải là above hoặc below')
   if (typeof b.repair_app !== 'string' || !KEY.test(b.repair_app)) throw new HttpError(400, 'Thiếu mã ứng dụng sửa chữa')
   const app = (await sql(`SELECT status, spec->'fields' FROM app WHERE key = ${lit(b.repair_app)} AND org_id = ${lit(org)}`))[0]
@@ -55,17 +59,17 @@ async function register(req) {
   if (missing.length) throw new HttpError(400, `Ứng dụng sửa chữa thiếu trường: ${missing.join(', ')}`)
   if ((await sql(`SELECT 1 FROM sensor WHERE key = ${lit(b.key)}`)).length) throw new HttpError(409, 'Mã cảm biến đã tồn tại')
   const token = randomBytes(24).toString('base64url')
-  await sql(`INSERT INTO sensor (key, org_id, name, unit, threshold, direction, repair_app, owner_id, owner_name, token_hash)
-    VALUES (${lit(b.key)}, ${lit(org)}, ${lit(b.name.trim())}, ${lit(String(b.unit ?? '').slice(0, 20))}, ${threshold}, ${lit(b.direction)}, ${lit(b.repair_app)}, ${lit(claims.sub ?? '')}, ${lit(claims.name ?? claims.preferred_username ?? '')}, '${sha(token)}')`)
+  await sql(`INSERT INTO sensor (key, org_id, name, unit, threshold, direction, repair_app, owner_id, owner_name, token_hash, lat, lon)
+    VALUES (${lit(b.key)}, ${lit(org)}, ${lit(b.name.trim())}, ${lit(String(b.unit ?? '').slice(0, 20))}, ${threshold}, ${lit(b.direction)}, ${lit(b.repair_app)}, ${lit(claims.sub ?? '')}, ${lit(claims.name ?? claims.preferred_username ?? '')}, '${sha(token)}', ${hasGeo ? lat : 'NULL'}, ${hasGeo ? lon : 'NULL'})`)
   return { key: b.key, token, note: 'Token chỉ hiện một lần: cất vào thiết bị' }
 }
 
-async function list(org) {
-  return (await sql(`SELECT s.key, s.name, s.unit, s.threshold, s.direction, s.last_value, s.last_at, s.open_submission_id,
+export async function listSensors(org) {
+  return (await sql(`SELECT s.key, s.name, s.unit, s.threshold, s.direction, s.last_value, s.last_at, s.open_submission_id, s.lat, s.lon,
       (s.last_value IS NOT NULL AND CASE s.direction WHEN 'above' THEN s.last_value > s.threshold ELSE s.last_value < s.threshold END) AS alarm
     FROM sensor s WHERE s.org_id = ${lit(org)} ORDER BY s.key`))
-    .map(([key, name, unit, threshold, direction, last, at, open, alarm]) => ({
-      key, name, unit, threshold: Number(threshold), direction, last_value: last === null ? null : Number(last), last_at: at, open_submission_id: open, alarm: alarm === 't' || alarm === true,
+    .map(([key, name, unit, threshold, direction, last, at, open, lat, lon, alarm]) => ({
+      key, name, unit, threshold: Number(threshold), direction, last_value: last === null ? null : Number(last), last_at: at, open_submission_id: open, lat: lat === null ? null : Number(lat), lon: lon === null ? null : Number(lon), alarm: alarm === 't' || alarm === true,
     }))
 }
 
@@ -141,7 +145,7 @@ export async function handleSensors(req, res) {
     if (req.method === 'POST' && path === '/sensors') return json(res, 201, await register(req))
     if (req.method === 'GET' && path === '/sensors') {
       if (!rolesOf(req).some((r) => ['director', 'manager'].includes(r))) throw new HttpError(403, 'Chỉ trưởng phòng và giám đốc xem cảm biến')
-      return json(res, 200, await list(orgOf(req)))
+      return json(res, 200, await listSensors(orgOf(req)))
     }
     const m = path.match(/^\/telemetry\/([^/]+)$/)
     if (req.method === 'POST' && m) return json(res, 200, await telemetry(req, m[1]))

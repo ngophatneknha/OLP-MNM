@@ -163,7 +163,7 @@ Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kh
 
 Các mục dưới đây khai báo là `todo` trong báo cáo kiểm thử, không tô hồng:
 
-- Kho lạnh là tệp JSONL, chưa phải bảng lakehouse Parquet/Iceberg; chưa có NGSI-LD, WebGIS.
+- Kho lạnh là tệp JSONL (truy vấn được bằng SQL qua DuckDB), chưa phải bảng lakehouse Parquet/Iceberg; NGSI-LD chỉ đọc; bản đồ cảm biến là SVG tối giản, chưa có nền bản đồ.
 - Chưa có tìm kiếm véc-tơ ngữ nghĩa, đọc PDF, OCR.
 - Chữ ký số là PKI phần mềm (chứng thư X.509 do CA của từng tổ chức cấp, ký phía máy chủ, khóa mã hóa trong CSDL): **chưa có HSM, CRL/OCSP** và chưa phải chữ ký số có giá trị pháp lý theo luật.
 - Thời gian thực dùng SSE (chưa WebSocket); thiết bị gọi HTTP (chưa MQTT/OPC UA).

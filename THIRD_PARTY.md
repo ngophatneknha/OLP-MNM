@@ -27,6 +27,8 @@ Các thành phần chạy dưới dạng **container độc lập, không sửa 
 | Meilisearch (tìm kiếm toàn văn, tùy chọn) | 1.11.3 | MIT | `LICENSE` trong github.com/meilisearch/meilisearch | ☑ |
 | Ollama (mô hình AI chạy tại chỗ, tùy chọn) | 0.5.7 | MIT | `LICENSE` trong github.com/ollama/ollama | ☑ |
 | Prometheus (giám sát, tùy chọn) | 2.55.1 | Apache-2.0 | `LICENSE` trong github.com/prometheus/prometheus | ☑ |
+| DuckDB (SQL trên kho lạnh, tùy chọn; gói `duckdb` cài trong ảnh dựng từ `infra/duckdb`) | 1.1.3 | MIT | `LICENSE` trong github.com/duckdb/duckdb (GitHub báo MIT) | ☑ |
+| Python (image `python:3.12-slim`, nền của ảnh DuckDB) | 3.12 | PSF-2.0 | `LICENSE` trong github.com/python/cpython | ☑ |
 | Node.js (image `node`) | 22.19.0 | MIT | `LICENSE` trong github.com/nodejs/node | ☑ |
 | nginx (image phục vụ tệp tĩnh) | 1.28.0 | BSD-2-Clause | `LICENSE` trong github.com/nginx/nginx | ☑ |
 | curl (image `curlimages/curl`, nạp cấu hình Hasura) | 8.10.1 | giấy phép curl (kiểu MIT) | `COPYING` trong github.com/curl/curl | ☑ |

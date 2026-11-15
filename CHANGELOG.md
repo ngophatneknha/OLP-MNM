@@ -9,6 +9,19 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-16
+
+### Added
+- Không gian dữ liệu [D]: vị trí cảm biến (`lat`, `lon`), đầu ra NGSI-LD chỉ đọc (`GET /ngsi-ld/v1/entities`), trang "Bản đồ cảm biến" (SVG, không phụ thuộc thêm).
+- SQL trên kho lạnh bằng DuckDB: `scripts/cold-sql.sh`, dịch vụ `lakehouse` (profile `lakehouse`).
+- Ca IOT-08, COLD-05, LAKE-01; migration `07-geo.sql`; DuckDB và Python vào THIRD_PARTY.
+
+### Fixed
+- Tệp JSONL của kho lạnh có dòng bị ngắt khi hồ sơ có từ hai sự kiện (`json_agg` chèn xuống dòng): nay dùng `jsonb_agg`.
+
+### Changed
+- D-06 vẫn `todo` nhưng chỉ còn phần Parquet/Iceberg, NGSI-LD ghi và nền bản đồ.
+
 ## [1.11.0] - 2026-11-16
 
 ### Added
