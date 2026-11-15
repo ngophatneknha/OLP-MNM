@@ -47,7 +47,7 @@ node --test --test-reporter=spec tests/*.test.js
 | Không gian | Mã ca | Kiểm cái gì |
 |---|---|---|
 | [P] Quy trình số | P-01…08 | Bản mô tả sai không bao giờ được xuất bản; chống tiêm mã SQL/XML/JUEL qua mã và nhãn; thoát ký tự đặc biệt trong BPMN; mọi quy trình mẫu hợp lệ; chỉ trưởng phòng được tạo; phiên bản bất biến; đề xuất thay đổi có mô phỏng, người đề xuất không tự chấp nhận, hồ sơ cũ giữ phiên bản cũ |
-| [D] Dữ liệu số | D-01…05 | View BI khớp dữ liệu gốc bằng SQL độc lập; không lộ qua API; phạm vi nhìn của từng vai trò; dấu thời gian xử lý đúng; chuỗi thời gian đơn điệu |
+| [D] Dữ liệu số | D-01…05, D-07 | View BI khớp dữ liệu gốc bằng SQL độc lập; không lộ qua API; phạm vi nhìn của từng vai trò; dấu thời gian xử lý đúng; chuỗi thời gian đơn điệu; mức trưởng thành H-P-D-I tính được từ dữ liệu thật (D-07) |
 | [H] Con người số | H-01…03 | Tệp theo quyền hồ sơ; hộp việc theo vai trò; bản web phát hành có Kanban, lịch, trang cá nhân, nhãn H/P/D/I |
 | [I] Trí tuệ số | I-01…06, I-SEARCH-01…05 | Chỉ trưởng phòng/giám đốc dùng trợ lý soạn; AI thật sinh bản mô tả hợp lệ, đúng vai trò và điều kiện; mô tả tiêm lệnh không lọt vai trò lạ; không giả được danh tính AI; nâng nấc tự chủ cần bằng chứng thật (≥ 10, ≥ 90%, dữ liệu mẫu không tính); AI lỗi không chặn luồng người |
 

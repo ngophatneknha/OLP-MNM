@@ -40,7 +40,7 @@ Thông tin của bạn, số hồ sơ đã gửi, số việc đang chờ, và *
 ## [P] Quy trình
 
 ### Gửi hồ sơ
-Chọn loại hồ sơ, điền các ô (ô có dấu * bắt buộc), đính kèm tệp nếu cần (mỗi tệp tối đa 10 MB; tệp bị phát hiện mã độc sẽ bị từ chối) rồi gửi. Trang hồ sơ hiện **hàng ô ký**: ai đã ký có dấu đỏ kèm tên và giờ, ô đang chờ sáng lên, và nhật ký đầy đủ bên dưới. Bạn không thể tự duyệt hồ sơ của chính mình.
+Chọn loại hồ sơ, điền các ô (ô có dấu * bắt buộc), đính kèm tệp nếu cần (mỗi tệp tối đa 10 MB; tệp bị phát hiện mã độc sẽ bị từ chối) rồi gửi. Trang hồ sơ hiện **sơ đồ quy trình** (bước đang chờ sáng lên, bước đã ký có dấu ✓, bước không áp dụng nét đứt có đường vòng; tự cập nhật sau vài giây khi hồ sơ chuyển bước) và **hàng ô ký**: ai đã ký có dấu đỏ kèm tên và giờ, ô đang chờ sáng lên, và nhật ký đầy đủ bên dưới. Bạn không thể tự duyệt hồ sơ của chính mình.
 
 ### Quy trình
 Danh sách quy trình đang chạy, mỗi quy trình có **phiên bản** bất biến. Từ đây:
@@ -53,7 +53,18 @@ Ba cách tạo: lấy từ **kho quy trình mẫu**, tự khai báo ô và bư�
 ## [D] Dữ liệu
 
 ### Số liệu (trưởng phòng, giám đốc)
-Bao nhiêu hồ sơ đang chờ, hoàn tất, bị từ chối; thời gian xử lý trung bình; **bước nào làm hồ sơ chờ lâu nhất**; hồ sơ đang chờ lâu. Mọi con số tính từ chính hồ sơ và nhật ký ký duyệt, dòng nào cũng bấm vào được hồ sơ gốc. Trang tự làm mới.
+**Mức trưởng thành H-P-D-I** (điểm 0 đến 100 cho từng không gian, và điểm chung); bao nhiêu hồ sơ đang chờ, hoàn tất, bị từ chối; thời gian xử lý trung bình; **bước nào làm hồ sơ chờ lâu nhất**; hồ sơ đang chờ lâu. Mọi con số tính từ chính hồ sơ và nhật ký ký duyệt, dòng nào cũng bấm vào được hồ sơ gốc. Trang tự làm mới.
+
+**Cách tính mức trưởng thành** (thang điểm của dự án, không phải chuẩn công nghiệp; dưới 5 hồ sơ thì hiện "chưa đủ dữ liệu", không bịa số):
+
+| Không gian | Thành phần (trọng số) |
+|---|---|
+| H, Con người | hồ sơ không chờ quá 48 giờ ở mỗi bước (50%); mọi vai trò mà quy trình cần đều đã tham gia (50%) |
+| P, Quy trình | quy trình có từ 2 phiên bản (40%); đề xuất thay đổi đã được xử lý (40%); hồ sơ đang chạy đúng phiên bản mới nhất (20%) |
+| D, Dữ liệu | hồ sơ xong có nhật ký đủ mọi bước áp dụng (60%); quy trình có từ 5 hồ sơ trở lên (40%) |
+| I, Trí tuệ | bước đã có ý kiến của trợ lý AI (50%); bước đã nâng nấc tự chủ (50%) |
+
+Thành phần chưa có dữ liệu thì bỏ ra khỏi trung bình. Mức: dưới 40 "Khởi đầu", từ 40 "Đang phát triển", từ 70 "Trưởng thành". Công thức nằm ở `web/src/maturity.js`, có kiểm thử.
 
 ## [I] Trí tuệ
 

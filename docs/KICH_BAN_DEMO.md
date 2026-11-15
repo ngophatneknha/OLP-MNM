@@ -13,7 +13,8 @@ Câu chuyện xuyên suốt: **một doanh nghiệp nhỏ muốn số hóa quy t
 cp .env.example .env            # điền AI_BASE_URL, AI_MODEL, AI_API_KEY nếu muốn trợ lý AI thật
 docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile search up -d --build
 node tests/wait-ready.js
-docker compose exec workflow-bridge node seed.js     # 4 quy trình, 9 hồ sơ nhiều trạng thái
+docker compose exec workflow-bridge node seed.js     # 4 quy trình, 11 hồ sơ nhiều trạng thái
+# hoặc dựng lại sạch cả hệ thống trước mỗi lần diễn tập: sh scripts/demo-reset.sh
 ```
 
 Danh sách kiểm tra:
@@ -48,7 +49,7 @@ Danh sách kiểm tra:
 
 ### Cảnh 2 (5:00): dùng ngay
 1. `staff1`: **Gửi hồ sơ**, điền số tiền 12.000.000 và lý do, đính kèm `bao-gia.txt`, gửi.
-2. `manager1`: **Bàn làm việc** hiện hồ sơ chờ. Duyệt. Chỉ vào **hàng ô ký** có dấu đỏ.
+2. `manager1`: **Bàn làm việc** hiện hồ sơ chờ. Mở hồ sơ: chỉ vào **sơ đồ quy trình** (bước đang chờ sáng lên). Duyệt, và sau vài giây sơ đồ chuyển sang bước kế tiếp. Chỉ vào **hàng ô ký** có dấu đỏ.
 3. `director1` thấy hồ sơ vì trên 5 triệu: duyệt. `accountant1` thực hiện bước chi tiền.
 4. Thử **từ chối không ghi lý do** ở một hồ sơ khác để cho thấy hệ thống bắt buộc phải có lý do.
 5. Mở **Bảng công việc** và **Lịch** trong 20 giây để thấy cùng dữ liệu dưới dạng khác.
@@ -60,7 +61,7 @@ Danh sách kiểm tra:
 4. **Nhấn mạnh:** hồ sơ đang chạy giữ phiên bản cũ; có phiên bản và nhật ký như commit.
 
 ### Cảnh 4 (10:00): số liệu
-`director1` mở **Số liệu**: thời gian xử lý, **bước làm hồ sơ chờ lâu nhất**. Bấm vào một dòng để mở hồ sơ gốc. Nói: số liệu tính từ chính nhật ký ký duyệt nên không ai nhập tay.
+`director1` mở **Số liệu**: trước hết **Mức trưởng thành H-P-D-I** (nói: thang điểm của dự án, công thức công bố; sau buổi demo điểm P và I sẽ tăng vì vừa đổi quy trình và dùng trợ lý), rồi thời gian xử lý, **bước làm hồ sơ chờ lâu nhất**. Bấm vào một dòng để mở hồ sơ gốc. Nói: số liệu tính từ chính nhật ký ký duyệt nên không ai nhập tay.
 
 ### Cảnh 5 (11:30): trí tuệ có kiểm soát
 1. `staff1` mở **Hỏi đáp tài liệu**, hỏi: *"Báo giá máy in bao nhiêu và nhà cung cấp là ai?"*. Câu trả lời dẫn số nguồn, bấm vào mở hồ sơ.

@@ -9,6 +9,18 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-15
+
+### Added
+- Sơ đồ quy trình (`ProcessFlow.vue`, SVG, không thư viện ngoài) trong trang hồ sơ và trang Quy trình: bước đang chờ sáng lên, bước đã ký, bị từ chối hoặc bỏ qua (nét đứt kèm đường vòng) có trạng thái bằng chữ và ký hiệu chứ không chỉ màu; hồ sơ chuyển bước thì sơ đồ đổi theo ở lần cập nhật kế tiếp.
+- Mức trưởng thành H-P-D-I (điểm 0 đến 100 cho từng không gian) ở trang Số liệu, tính từ dữ liệu thật, công thức công bố ở `docs/HUONG_DAN.md`; dưới 5 hồ sơ thì báo chưa đủ dữ liệu.
+- `scripts/demo-reset.sh`: dựng lại hệ thống sạch và nạp dữ liệu mẫu cho mỗi lần diễn tập.
+- Kiểm thử đơn vị `flow.test.js`, `maturity.test.js`.
+
+### Changed
+- Trạng thái từng bước tách thành `web/src/flow.js`, dùng chung cho hàng ô ký và sơ đồ.
+- Dữ liệu mẫu có thêm 2 hồ sơ "Xin tạm ứng" (tổng 11) để số liệu của quy trình này đủ mẫu.
+
 ## [1.6.4] - 2026-11-15
 
 ### Fixed

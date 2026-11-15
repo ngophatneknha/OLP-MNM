@@ -9,21 +9,31 @@ Mọi con số tính từ hồ sơ và nhật ký bằng mã (metrics.js), mỗi
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { gql, ROLE_LABEL } from '../lib.js'
 import { computeMetrics, formatHours } from '../metrics.js'
+import { computeMaturity, maturityLevel } from '../maturity.js'
+import { t } from '../i18n.js'
 
 const submissions = ref(null)
+const extra = ref(null) // quy trình, phiên bản, đề xuất, nấc tự chủ: chỉ để chấm mức trưởng thành
 let timer
 
 async function load() {
   submissions.value = (await gql(`{ submission(order_by: {created_at: desc}, limit: 500) {
     id no status current_step waiting_role created_at finished_at
-    app { name } version { spec }
+    app { key name } version { spec } app_version data
     events { step_key action created_at }
+    opinions { step_key }
   } }`)).submission
+  try {
+    extra.value = await gql(`{ apps: app(where: {status: {_eq: "published"}}) { key spec versions { version } changes { status } }
+      autonomy: step_autonomy { app_key step_key level } }`)
+  } catch { extra.value = null } // vai trò không đọc được: bỏ phần chấm điểm, các số liệu khác vẫn hiện
 }
 onMounted(() => { load(); timer = setInterval(load, 5000) })
 onUnmounted(() => clearInterval(timer))
 
 const m = computed(() => submissions.value && computeMetrics(submissions.value))
+const maturity = computed(() => submissions.value && extra.value && computeMaturity({ submissions: submissions.value, apps: extra.value.apps, autonomy: extra.value.autonomy }))
+const SPACES = ['H', 'P', 'D', 'I']
 const maxHours = computed(() => Math.max(...(m.value?.steps.map((s) => s.avgHours) ?? [0]), 0.0001))
 const STATUS = [
   { key: 'approved', label: 'Hoàn tất', bar: 'bg-done' },
@@ -57,6 +67,33 @@ const percent = (n) => (m.value.total ? Math.round((n / m.value.total) * 100) : 
       <ul class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
         <li v-for="s in STATUS" :key="s.key" class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full" :class="s.bar" /> {{ s.label }}: <span class="num font-medium">{{ m.status[s.key] }}</span></li>
       </ul>
+    </section>
+
+    <section v-if="maturity" aria-labelledby="mat-title">
+      <h2 id="mat-title" class="section-title">{{ t('mat.title') }}</h2>
+      <p class="mt-1 max-w-[65ch] text-pencil">{{ t('mat.lead') }}</p>
+      <p v-if="!maturity.enough" class="panel mt-3 px-4 py-4 text-pencil">{{ t('mat.need') }} {{ maturity.need }} {{ t('mat.have') }} {{ maturity.have }}.</p>
+      <template v-else>
+        <p class="num mt-3 text-sm text-pencil">{{ t('mat.overall') }}: <strong class="text-2xl text-ink">{{ maturity.overall ?? '–' }}</strong> / 100 · {{ t('mat.level.' + maturityLevel(maturity.overall)) }}</p>
+        <ul class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <li v-for="space in SPACES" :key="space" class="panel p-4">
+            <div class="flex items-baseline justify-between gap-2">
+              <h3 class="font-semibold">{{ space }} · {{ t('space.' + space) }}</h3>
+              <span class="num text-2xl font-semibold">{{ maturity.spaces[space].score ?? '–' }}</span>
+            </div>
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-ground" role="img" :aria-label="`${space}: ${maturity.spaces[space].score ?? t('mat.none')}`">
+              <div class="h-full rounded-full bg-pen" :style="{ width: `${maturity.spaces[space].score ?? 0}%` }" />
+            </div>
+            <p class="mt-1 text-xs text-pencil">{{ t('mat.level.' + maturityLevel(maturity.spaces[space].score)) }}</p>
+            <ul class="mt-3 space-y-1 text-xs text-pencil">
+              <li v-for="part in maturity.spaces[space].parts" :key="part.key" class="flex justify-between gap-2">
+                <span>{{ t('mat.' + space + '.' + part.key) }} <span class="num">({{ part.weight }}%)</span></span>
+                <span class="num font-medium text-ink">{{ part.value === null ? '–' : Math.round(part.value * 100) + '%' }}</span>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </template>
     </section>
 
     <section v-if="m.steps.length" aria-labelledby="slow-title">

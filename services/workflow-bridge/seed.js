@@ -72,6 +72,8 @@ const SUBMISSIONS = [
   ['staff2', 'tam_ung', { so_tien: 12000000, ly_do: 'Đặt cọc thuê hội trường tổng kết năm' }, [['manager1', 'approve'], ['director1', 'approve', 'Đồng ý, lưu ý lấy hóa đơn']]],
   ['staff1', 'tam_ung', { so_tien: 8000000, ly_do: 'Mua quà tặng đối tác' }, [['manager1', 'approve']]],
   ['staff2', 'tam_ung', { so_tien: 1500000, ly_do: 'Tiếp khách' }, [['manager1', 'reject', 'Chưa có kế hoạch tiếp khách được duyệt']]],
+  ['staff1', 'tam_ung', { so_tien: 2200000, ly_do: 'Chi phí đi lại gặp đối tác' }, [['manager1', 'approve'], ['accountant1', 'done', 'Đã chuyển khoản']]],
+  ['staff2', 'tam_ung', { so_tien: 6500000, ly_do: 'Tạm ứng hội nghị khách hàng' }, [['manager1', 'approve']]], // đủ 6 hồ sơ để số liệu của quy trình này có nghĩa
   ['staff1', 'nghi_phep', { tu_ngay: '2026-11-20', so_ngay: 1, loai: 'Việc riêng' }, [['manager1', 'approve']]],
   ['staff2', 'nghi_phep', { tu_ngay: '2026-12-01', so_ngay: 5, loai: 'Phép năm', ly_do: 'Về quê' }, [['manager1', 'approve']]],
   ['staff1', 'mua_thiet_bi', { ten_thiet_bi: 'Máy in màu văn phòng', loai: 'Máy in', gia_du_kien: 9500000, ly_do: 'Máy cũ hỏng trục cuốn' }, []],
