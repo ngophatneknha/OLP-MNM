@@ -66,6 +66,26 @@ for (const { key } of library) {
   console.log(`Đã xuất bản: ${key}`)
 }
 
+// 1b. Một vòng cải tiến quy trình thật: trưởng phòng đề xuất, giám đốc chấp nhận một đề xuất và từ chối một đề xuất,
+// để "Xin tạm ứng" có phiên bản 2 và lịch sử quyết định. Làm trước khi tạo hồ sơ nên mọi hồ sơ mẫu chạy bản mới nhất.
+{
+  const tamUng = library.find((l) => l.key === 'tam_ung')
+  const has = (await gql('manager1', 'query($k: String!) { app_change(where: {app_key: {_eq: $k}}, limit: 1) { id } }', { k: 'tam_ung' })).app_change.length
+  if (tamUng && !has) {
+    const propose = async (note, mutate) => {
+      const spec = JSON.parse(JSON.stringify(tamUng.spec)); mutate(spec)
+      const id = (await gql('manager1', 'mutation($o: app_change_insert_input!) { insert_app_change_one(object: $o) { id } }', { o: { app_key: 'tam_ung', name: tamUng.name, spec, note } })).insert_app_change_one.id
+      await until('kiểm tra tự động của đề xuất', async () => (await gql('manager1', 'query($i: bigint!) { app_change_by_pk(id: $i) { checks } }', { i: id })).app_change_by_pk.checks)
+      return id
+    }
+    const decide = (id, status) => gql('director1', 'mutation($i: bigint!, $s: String!) { update_app_change_by_pk(pk_columns: {id: $i}, _set: {status: $s}) { id } }', { i: id, s: status })
+    await decide(await propose('Thêm ô ghi chú để người gửi nói rõ khoản chi, trưởng phòng đỡ phải hỏi lại', (sp) => { sp.fields.push({ key: 'ghi_chu', label: 'Ghi chú thêm', type: 'text', required: false }) }), 'merged')
+    await until('phiên bản 2 của Xin tạm ứng', async () => (await gql('manager1', 'query { app_version(where: {app_key: {_eq: "tam_ung"}, version: {_eq: 2}}) { version } }')).app_version.length)
+    await decide(await propose('Bỏ bước kế toán chi tiền cho khoản nhỏ', (sp) => { sp.steps.pop() }), 'rejected')
+    console.log('Đã tạo vòng cải tiến mẫu cho tam_ung (phiên bản 2, một đề xuất bị từ chối).')
+  }
+}
+
 // 2. Hồ sơ mẫu: [người gửi, ứng dụng, dữ liệu, các hành động lần lượt [người xử lý, hành động, ghi chú]].
 const SUBMISSIONS = [
   ['staff1', 'tam_ung', { so_tien: 3000000, ly_do: 'Công tác Đà Nẵng 2 ngày' }, [['manager1', 'approve'], ['accountant1', 'done', 'Đã chuyển khoản']]],

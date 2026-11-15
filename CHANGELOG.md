@@ -9,6 +9,18 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-11-15
+
+### Added
+- Mọi dịch vụ chạy lâu có `restart: unless-stopped` và kiểm tra sức khỏe (trước đó chỉ 3 trong 9 dịch vụ có restart). Ca kiểm OPS-06 (cấu hình) và OPS-07 (cho tiến trình thoát đột ngột, Docker phải tự chạy lại).
+- Dữ liệu mẫu có một vòng cải tiến quy trình thật: "Xin tạm ứng" lên phiên bản 2 qua đề xuất được giám đốc chấp nhận, một đề xuất khác bị từ chối.
+- `tests/demo.check.js` và bước CI tương ứng: sau khi nạp dữ liệu mẫu, điểm H-P-D-I của các quy trình mẫu phải hợp lý.
+- Trang Số liệu ghi rõ điểm tính từ bao nhiêu hồ sơ và quy trình.
+
+### Fixed
+- Trưởng phòng và giám đốc xem được mọi hồ sơ nhưng chỉ thấy nhật ký do chính họ ký (quyền đọc `submission_event`), nên trang Số liệu và điểm trưởng thành tính thiếu sự kiện: D "hồ sơ có nhật ký đủ" luôn 0%. Hai vai trò này nay đọc được toàn bộ nhật ký của hồ sơ họ được xem; người không liên quan vẫn không thấy. Ca kiểm D-04b.
+- Điểm trưởng thành thấp (D, I gần 0) trên máy dev lâu ngày là do hàng trăm quy trình do bộ kiểm thử tạo ra lẫn vào mẫu số. Máy demo dựng sạch bằng `scripts/demo-reset.sh` cho điểm đúng; ghi chú trong KICH_BAN_DEMO.
+
 ## [1.7.1] - 2026-11-15
 
 ### Changed

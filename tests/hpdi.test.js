@@ -158,6 +158,20 @@ describe('D: Không gian Dữ liệu số — số liệu thực chứng', () =>
     assert.ok(r.overall >= 0 && r.overall <= 100)
   })
 
+  test('D-04b trưởng phòng và giám đốc đọc được toàn bộ nhật ký của hồ sơ họ được xem (số liệu và điểm không bị tính thiếu); người không liên quan thì không', async () => {
+    const k = await publishApp()
+    const id = (await submit('staff1', k, { so_tien: 8_000_000 })).data.insert_submission_one.id
+    await waitStatus('manager1', id, { current_step: 'truong_phong' })
+    await act('manager1', id, 'truong_phong', 'approve')
+    await waitStatus('director1', id, { current_step: 'giam_doc' })
+    await act('director1', id, 'giam_doc', 'approve')
+    await waitStatus('accountant1', id, { current_step: 'chi_tien' })
+    await act('accountant1', id, 'chi_tien', 'done')
+    await waitStatus('director1', id, { status: 'approved' })
+    const q = 'query($i: uuid!) { submission_by_pk(id: $i) { events { step_key } } }'
+    for (const u of ['manager1', 'director1']) assert.equal((await as(u, q, { i: id })).data.submission_by_pk.events.length, 3, `${u} thấy thiếu nhật ký`)
+    assert.equal((await as('staff2', q, { i: id })).data.submission_by_pk, null, 'nhân viên không liên quan thấy hồ sơ')
+  })
   test('D-05 đóng băng dữ liệu theo chuỗi thời gian: mỗi sự kiện có dấu thời gian đơn điệu, không có sự kiện từ tương lai', async () => {
     assert.equal(sql("select count(*) from submission_event where created_at > now() + interval '1 minute'"), '0')
     assert.equal(sql('select count(*) from (select created_at, lag(created_at) over (partition by submission_id order by id) p from submission_event) t where created_at < p'), '0')

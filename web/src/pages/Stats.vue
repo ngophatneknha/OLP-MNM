@@ -74,7 +74,8 @@ const percent = (n) => (m.value.total ? Math.round((n / m.value.total) * 100) : 
       <p class="mt-1 max-w-[65ch] text-pencil">{{ t('mat.lead') }}</p>
       <p v-if="!maturity.enough" class="panel mt-3 px-4 py-4 text-pencil">{{ t('mat.need') }} {{ maturity.need }} {{ t('mat.have') }} {{ maturity.have }}.</p>
       <template v-else>
-        <p class="num mt-3 text-sm text-pencil">{{ t('mat.overall') }}: <strong class="text-2xl text-ink">{{ maturity.overall ?? '–' }}</strong> / 100 · {{ t('mat.level.' + maturityLevel(maturity.overall)) }}</p>
+        <p class="mt-3 text-xs text-pencil">{{ t('mat.basis', { subs: submissions.length, apps: extra.apps.length }) }}</p>
+        <p class="num mt-1 text-sm text-pencil">{{ t('mat.overall') }}: <strong class="text-2xl text-ink">{{ maturity.overall ?? '–' }}</strong> / 100 · {{ t('mat.level.' + maturityLevel(maturity.overall)) }}</p>
         <ul class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <li v-for="space in SPACES" :key="space" class="panel p-4">
             <div class="flex items-baseline justify-between gap-2">

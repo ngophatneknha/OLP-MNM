@@ -17,6 +17,8 @@ docker compose exec workflow-bridge node seed.js     # 4 quy trình, 11 hồ sơ
 # hoặc dựng lại sạch cả hệ thống trước mỗi lần diễn tập: sh scripts/demo-reset.sh
 ```
 
+**Không chạy bộ kiểm thử trên máy demo**: mỗi lần chạy, `tests/` tạo thêm hàng trăm quy trình thử, kéo điểm H-P-D-I trên trang Số liệu xuống vì lẫn vào mẫu số. Máy demo dựng bằng `scripts/demo-reset.sh` cho điểm đúng (khoảng 60/100; điểm I chỉ lên khi cấu hình AI và chạy `seed.js --ai-demo`).
+
 Danh sách kiểm tra:
 
 - [ ] Mở sẵn bốn cửa sổ ẩn danh, mỗi cửa sổ đăng nhập một tài khoản: `staff1`, `manager1`, `director1`, `accountant1` (mật khẩu mẫu trong `infra/keycloak/realm/dxlab-realm.json`). **`manager1` và `director1` phải thiết lập OTP trước**: quét mã QR bằng điện thoại và để điện thoại cạnh bạn.

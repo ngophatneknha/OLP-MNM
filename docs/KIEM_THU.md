@@ -76,6 +76,9 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | OPS-01, 02 | Có script sao lưu và khôi phục (kiểm mã băm); thành phần tùy chọn không lẫn vào compose lõi |
 | OPS-03 | HTTPS qua Caddy cho web, API, đăng nhập; có HSTS; qua TLS cổng vẫn trả 401 khi không token |
 | OPS-04 | Prometheus thu được số đo APISIX và thấy yêu cầu thật |
+| OPS-06 | Mọi dịch vụ chạy lâu của luồng chính có `restart` và kiểm tra sức khỏe |
+| OPS-07 | Cho tiến trình chính của web và kho S3 thoát đột ngột: Docker tự chạy lại và dịch vụ khỏe trở lại (chạy bằng `RECOVERY_TEST=1`; `docker kill` là dừng thủ công nên không dùng) |
+| DEMO | Sau `seed.js`, điểm H-P-D-I tính riêng trên các quy trình mẫu hợp lý, `tam_ung` có phiên bản 2 (`tests/demo.check.js`) |
 | OPS-RESTORE | Sao lưu, xóa bảng và thêm hồ sơ mới, khôi phục: hồ sơ trở về đúng lúc sao lưu, tệp đính kèm giống từng byte (chạy bằng `RESTORE_TEST=1`) |
 
 ## Tìm kiếm và hỏi đáp (phiên bản 1.5.0)

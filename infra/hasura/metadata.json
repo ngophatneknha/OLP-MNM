@@ -416,58 +416,14 @@
                   "role": "manager",
                   "permission": {
                     "columns": "*",
-                    "filter": {
-                      "_or": [
-                        {
-                          "actor_id": {
-                            "_eq": "X-Hasura-User-Id"
-                          }
-                        },
-                        {
-                          "submission": {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
-                            }
-                          }
-                        },
-                        {
-                          "submission": {
-                            "waiting_role": {
-                              "_eq": "X-Hasura-Role"
-                            }
-                          }
-                        }
-                      ]
-                    }
+                    "filter": {}
                   }
                 },
                 {
                   "role": "director",
                   "permission": {
                     "columns": "*",
-                    "filter": {
-                      "_or": [
-                        {
-                          "actor_id": {
-                            "_eq": "X-Hasura-User-Id"
-                          }
-                        },
-                        {
-                          "submission": {
-                            "submitter_id": {
-                              "_eq": "X-Hasura-User-Id"
-                            }
-                          }
-                        },
-                        {
-                          "submission": {
-                            "waiting_role": {
-                              "_eq": "X-Hasura-Role"
-                            }
-                          }
-                        }
-                      ]
-                    }
+                    "filter": {}
                   }
                 },
                 {

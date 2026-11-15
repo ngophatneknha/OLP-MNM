@@ -46,6 +46,12 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tls --profile monitoring --profile search up -d
           node tests/wait-ready.js 300
           OPS_OPTIONAL=1 SEARCH_OPTIONAL=1 node --test --test-reporter=spec tests/ops.test.js tests/search.test.js
+      - name: Tự phục hồi khi dịch vụ gặp sự cố
+        run: RECOVERY_TEST=1 node --test --test-reporter=spec tests/recovery.test.js
+      - name: Dữ liệu mẫu cho bản demo cho điểm hợp lý
+        run: |
+          docker compose exec -T workflow-bridge node seed.js --force
+          node --test --test-reporter=spec tests/demo.check.js
       - name: Sao lưu và khôi phục thảm họa
         run: RESTORE_TEST=1 node --test --test-reporter=spec tests/restore.test.js
       - if: failure()
