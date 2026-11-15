@@ -111,11 +111,16 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 |---|---|---|
 | D-06 | Lakehouse, NGSI-LD, WebGIS, phả hệ dữ liệu [D] | Ngoài phạm vi hiện tại |
 | I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
-| Z-01 | Két bí mật (Vault) | Bí mật hiện nằm trong `.env` |
 | Z-05b | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
-| Z-02 | WAF tại biên | Chưa làm |
 | Z-03 | Truyền phát sự kiện, WebSocket | Chưa làm |
-| Z-04 | Che thông tin định danh (PII) | Chưa làm |
+
+## Zero-Trust: các ca đã làm (nguyên lý iv của đề)
+
+| Mã | Nội dung | Ghi chú nói thẳng |
+|---|---|---|
+| Z-01 | Két bí mật **OpenBao**: `scripts/vault.sh init` chép mọi mật khẩu/khóa/token trong `.env` vào két, `up` chạy hệ thống với bí mật lấy từ két; không token thì két từ chối | Thành phần tùy chọn (profile `vault`). Khóa mở và token gốc nằm ở `.vault-keys`, người vận hành phải cất ra ngoài; mở khóa bằng một khóa duy nhất (chưa chia khóa Shamir, chưa tự mở khóa) |
+| Z-02 | **Coraza + OWASP CRS** trước cổng API (profile `waf`, cổng 9081): SQL injection, XSS, đi ngược thư mục bị 403, yêu cầu sạch đi tiếp | Mặc định người dùng vẫn đi thẳng cổng 9080; bật WAF là dùng 9081. Chưa chỉnh luật riêng cho GraphQL, có thể cần loại trừ khi gặp báo nhầm |
+| Z-04 | **Ẩn thông tin cá nhân** (email, số điện thoại, CCCD, số thẻ) trước khi gửi tới máy chủ AI; kiểm bằng máy chủ AI giả ghi lại nội dung nhận được | Nhận dạng theo mẫu, chưa nhận được họ tên và địa chỉ |
 
 ## Giới hạn của chính bộ kiểm thử
 

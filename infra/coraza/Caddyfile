@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Tường lửa ứng dụng web (WAF) đứng trước cổng API: mọi yêu cầu qua Coraza + OWASP CRS rồi mới tới APISIX.
+# Tấn công kiểu SQL injection, XSS, path traversal bị chặn 403 ngay tại biên.
+{
+	order coraza_waf first
+	auto_https off
+}
+
+:9081 {
+	coraza_waf {
+		load_owasp_crs
+		directives `
+			Include @coraza.conf-recommended
+			Include @crs-setup.conf.example
+			Include @owasp_crs/*.conf
+			SecRuleEngine On
+		`
+	}
+	reverse_proxy apisix:9080
+}

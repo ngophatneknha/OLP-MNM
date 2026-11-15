@@ -163,7 +163,7 @@ Hướng dẫn đầy đủ từng màn hình: [docs/HUONG_DAN.md](docs/HUONG_DA
 | Keycloak | http://localhost:8081 | Trang đăng nhập; tài khoản quản trị trong `.env` |
 
 Chỉ ba cổng trên được mở ra máy chủ. PostgreSQL, Hasura, Flowable, kho S3 và `workflow-bridge` chỉ nằm trong mạng nội bộ của Docker; mọi truy cập đều đi qua cổng API, nơi token được kiểm tra trước.
-Sao lưu, khôi phục, TLS (Caddy), giám sát (Prometheus) và xác thực nhiều yếu tố: xem [docs/VAN_HANH.md](docs/VAN_HANH.md). Hỏi đáp tài liệu có kiểm quyền và AI chạy tại chỗ: [docs/TRI_TUE.md](docs/TRI_TUE.md).
+Sao lưu, khôi phục, TLS (Caddy), tường lửa (Coraza), két bí mật (OpenBao), giám sát (Prometheus) và xác thực nhiều yếu tố: xem [docs/VAN_HANH.md](docs/VAN_HANH.md). Hỏi đáp tài liệu có kiểm quyền và AI chạy tại chỗ: [docs/TRI_TUE.md](docs/TRI_TUE.md).
 
 Dừng hệ thống: `docker compose down`. Dừng và xóa toàn bộ dữ liệu: `docker compose down -v`.
 
