@@ -31,8 +31,8 @@ jobs:
           node-version: 22
       - run: pip install reuse
       - name: Kiểm thử đơn vị
-        run: node --test services/workflow-bridge/*.test.js web/src/metrics.test.js
-      - run: npm ci --no-audit --no-fund && npm run build
+        run: node --test services/workflow-bridge/*.test.js web/src/metrics.test.js web/src/i18n.test.js
+      - run: npm ci --no-audit --no-fund && npm run lint && npm run build
         working-directory: web
       - name: Dựng hệ thống từ đầu
         run: |

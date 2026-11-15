@@ -44,6 +44,7 @@ Phiên bản và giấy phép dưới đây lấy từ chính gói đã cài; ha
 | @fontsource/noto-serif | 5.3.0 | OFL-1.1 | phông chữ đi kèm | ☑ |
 | Vite, @vitejs/plugin-vue | 8.3.8 / 6.0.11 | MIT | chỉ lúc build | ☑ |
 | Tailwind CSS, @tailwindcss/vite | 4.3.5 | MIT | chỉ lúc build | ☑ |
+| ESLint, eslint-plugin-vue, globals | 10.15.0 / 10.12.1 / 17.14.0 | MIT | chỉ lúc kiểm tra mã (lint) | ☑ |
 
 Toàn bộ cây phụ thuộc cài lúc build (khoảng 80 gói) chỉ gồm các giấy phép MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, OFL-1.1, BlueOak-1.0.0 và MPL-2.0. Hai gói MPL-2.0 (`lightningcss` và bản nhị phân của nó) là công cụ build của Tailwind: không được đưa vào image cuối, không bị sửa, và MPL-2.0 chỉ ràng buộc chính tệp của gói đó.
 

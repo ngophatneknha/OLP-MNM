@@ -9,6 +9,24 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-15
+
+Không gian [H] Con người số hoàn thiện hơn và giao diện nói rõ kiến trúc H-P-D-I.
+
+### Added
+- **Bảng công việc** (`/bang`): hồ sơ xếp cột Kanban theo tình trạng, cột "Chờ bạn" là việc riêng của người đăng nhập.
+- **Lịch** (`/lich`): lưới tháng, hồ sơ theo ngày gửi và ngày hoàn tất.
+- **Trang cá nhân và trung tâm thông báo** (`/ca-nhan`): thông tin, số hồ sơ, thông báo suy ra từ hồ sơ thật.
+- Nhãn không gian **H / P / D / I** cạnh từng mục điều hướng.
+- Đa ngôn ngữ **vi/en** không thêm thư viện (`web/src/i18n.js`): khung điều hướng và ba trang mới đã dịch; các trang cũ còn tiếng Việt.
+- **ESLint** (`npm run lint`) chạy trong CI trước khi dựng frontend; kiểm thử đơn vị bộ khoá dịch.
+
+### Changed
+- Ca kiểm thử H-03 từ "todo" thành ca thật.
+
+### Chưa làm
+- Thông báo vẫn lấy bằng hỏi lại mỗi 4 giây, chưa phải Hasura subscription (gateway chưa nhận token qua WebSocket).
+
 ## [1.2.1] - 2026-11-15
 
 Bản rà soát đúng luật: kiểm các điều khoản của Thể lệ và Đề thi ngoài bảng điểm PoF, và chuẩn bị hồ sơ nộp bài.
