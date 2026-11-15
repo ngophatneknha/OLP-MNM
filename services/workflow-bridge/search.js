@@ -61,15 +61,29 @@ async function ensureIndex() {
   ready = true
 }
 
+const fails = new Map() // id tệp -> số lần đọc lỗi; quá 3 lần thì bỏ qua, khỏi lấy đi lấy lại mãi
+
+/** Văn bản của tệp; null = tệp không phải dạng chữ (bỏ qua hẳn), undefined = đọc lỗi tạm thời (thử lại). */
 async function fileText(att) {
   if (!(att.content_type?.startsWith('text/') || TEXTY.test(att.name)) || att.size > 1_000_000) return null
-  try { // một tệp lỗi không được chặn cả lần nạp: bỏ qua, lần sau thử lại
+  try {
     const res = await fetch(`${S3_URL}/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(10_000) })
     return res.ok ? (await res.text()).slice(0, MAX_TEXT) : null
   } catch (err) {
     console.error(`Không đọc được tệp ${att.id} để lập chỉ mục:`, err.cause?.code ?? err.message)
-    return null
+    return undefined
   }
+}
+
+/** Meilisearch nhận tài liệu rồi mới xử lý ngầm: chờ tác vụ xong, lỗi thì báo để lần sau thử lại. */
+async function waitTask(uid) {
+  for (let i = 0; i < 40; i++) {
+    const t = await meili('GET', `/tasks/${uid}`)
+    if (t.status === 'succeeded') return
+    if (t.status === 'failed' || t.status === 'canceled') throw new Error(`Meilisearch từ chối nạp: ${t.error?.message ?? t.status}`)
+    await new Promise((ok) => setTimeout(ok, 250))
+  }
+  throw new Error('Meilisearch nạp quá lâu')
 }
 
 /** Nạp hồ sơ và tệp văn bản vào chỉ mục. Chạy lại được an toàn: chỉ nạp thứ mới hoặc đã đổi. */
@@ -79,23 +93,30 @@ export async function syncIndex() {
     id no data submitter_name app { name } version { spec } events { note actor_name }
     attachments { id name size content_type object_key } } }`)
   const docs = []
+  const skipped = []
   for (const s of data.submission) {
     const title = `${s.app.name} số ${s.no}`
     const items = [{ id: `sub-${s.id}`, submission_id: s.id, kind: 'submission', title, text: submissionText(s) }]
     for (const a of s.attachments) {
-      if (seen.has(`att-${a.id}`)) continue
+      const key = `att-${a.id}`
+      if (seen.has(key)) continue
       const text = await fileText(a)
-      if (text) items.push({ id: `att-${a.id}`, submission_id: s.id, kind: 'file', title, name: a.name, text })
+      if (text) items.push({ id: key, submission_id: s.id, kind: 'file', title, name: a.name, text })
+      else if (text === null) skipped.push(key)
+      else if (fails.set(key, (fails.get(key) ?? 0) + 1).get(key) >= 3) skipped.push(key)
     }
     for (const d of items) {
       const hash = createHash('sha256').update(JSON.stringify(d)).digest('hex')
       if (seen.get(d.id) !== hash) docs.push([d, hash])
     }
   }
-  if (!docs.length) return 0
-  await ensureIndex()
-  await meili('POST', `/indexes/${INDEX}/documents?primaryKey=id`, docs.map(([d]) => d))
-  for (const [d, hash] of docs) seen.set(d.id, hash)
+  if (docs.length) {
+    await ensureIndex()
+    const task = await meili('POST', `/indexes/${INDEX}/documents?primaryKey=id`, docs.map(([d]) => d))
+    await waitTask(task.taskUid)
+    for (const [d, hash] of docs) seen.set(d.id, hash)
+  }
+  for (const key of skipped) seen.set(key, '-') // chỉ đánh dấu sau khi cả lần nạp thành công
   return docs.length
 }
 

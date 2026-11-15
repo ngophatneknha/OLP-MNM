@@ -9,6 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-11-15
+
+### Fixed
+- Tìm kiếm: chỉ đánh dấu tài liệu là đã nạp sau khi Meilisearch xử lý xong tác vụ; tác vụ lỗi thì báo và lần sau thử lại (trước đây lỗi âm thầm, tài liệu không bao giờ được nạp lại).
+- Tìm kiếm: hai lần nạp không còn chạy chồng nhau; tệp không phải dạng chữ chỉ xét một lần; tệp đọc lỗi chỉ thử tối đa 3 lần thay vì mỗi 10 giây mãi.
+
 ## [1.6.2] - 2026-11-15
 
 ### Fixed

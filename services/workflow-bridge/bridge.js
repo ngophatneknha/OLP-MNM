@@ -146,11 +146,21 @@ const handlers = { app_publish: publishApp, submission_start: startSubmission, s
 
 // Chỉ mục tìm kiếm tự đuổi kịp dữ liệu; chưa bật Meilisearch thì bỏ qua lặng lẽ.
 let lastSyncError = ''
-setInterval(() => syncIndex().then(() => { lastSyncError = '' }, (err) => {
-  const msg = `${err.message} ${err.cause?.code ?? ''}`.trim()
-  if (msg !== lastSyncError) console.error('Nạp chỉ mục tìm kiếm thất bại:', msg) // chỉ ghi khi lỗi đổi, khỏi ngập nhật ký
-  lastSyncError = msg
-}), 10000)
+let syncing = false // lần nạp trước chưa xong thì bỏ qua tick này, khỏi nạp chồng
+setInterval(async () => {
+  if (syncing) return
+  syncing = true
+  try {
+    await syncIndex()
+    lastSyncError = ''
+  } catch (err) {
+    const msg = `${err.message} ${err.cause?.code ?? ''}`.trim()
+    if (msg !== lastSyncError) console.error('Nạp chỉ mục tìm kiếm thất bại:', msg) // chỉ ghi khi lỗi đổi, khỏi ngập nhật ký
+    lastSyncError = msg
+  } finally {
+    syncing = false
+  }
+}, 10000)
 
 createServer(async (req, res) => {
   if (req.url.startsWith('/files')) return handleFiles(req, res)
