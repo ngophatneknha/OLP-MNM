@@ -9,7 +9,7 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
-import { ROOT, as, publishApp, submit, act, waitStatus, sql, until, uid, SPEC } from './lib.js'
+import { ROOT, WEB, as, publishApp, submit, act, waitStatus, sql, until, uid, SPEC } from './lib.js'
 import { validateSpec, simulate, toBpmn } from '../services/workflow-bridge/compile.js'
 
 const FIELD = (extra = {}) => ({ key: 'so_tien', label: 'Số tiền', type: 'number', required: true, ...extra })
@@ -169,7 +169,12 @@ describe('H: Không gian Con người số — tài liệu và hộp việc', ()
     assert.equal((await as('manager1', q, { s })).data.submission.length, 1)
     assert.equal((await as('accountant1', q, { s })).data.submission.length, 0, 'kế toán không thấy việc của trưởng phòng')
   })
-  test('H-03 [todo] bảng Kanban công việc và lịch', { todo: 'chưa làm: BACKLOG H-01…H-05' }, () => assert.fail('chưa có'))
+  test('H-03 ứng dụng web phát hành có bảng Kanban, lịch, trang cá nhân và nhãn không gian H/P/D/I', async () => {
+    const html = await (await fetch(WEB)).text()
+    const bundle = await (await fetch(`${WEB}${html.match(/src="(\/assets\/index-[^"]+\.js)"/)[1]}`)).text()
+    for (const route of ['/bang', '/lich', '/ca-nhan']) assert.ok(bundle.includes(`path:\`${route}\``) || bundle.includes(`path:"${route}"`), `thiếu trang ${route}`)
+    for (const space of ['space.H', 'space.P', 'space.D', 'space.I']) assert.ok(bundle.includes(space), space)
+  })
 })
 
 describe('I: Không gian Trí tuệ số — AI có kiểm soát', () => {

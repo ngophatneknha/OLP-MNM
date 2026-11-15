@@ -188,7 +188,8 @@ async function publish() {
       <h2 id="ai-title" class="section-title">Mô tả bằng lời, để trợ lý phác thảo</h2>
       <div class="panel mt-3 p-4">
         <label class="sr-only" for="description">Mô tả quy trình</label>
-        <textarea id="description" v-model="description" class="input" rows="3"
+        <textarea
+id="description" v-model="description" class="input" rows="3"
           placeholder="Ví dụ: Nhân viên xin tạm ứng, dưới 5 triệu thì trưởng phòng duyệt, trên 5 triệu phải thêm giám đốc, kế toán chi tiền." />
         <div class="mt-3 flex flex-wrap items-center gap-3">
           <button class="btn-primary" :disabled="drafting || description.trim().length < 10" @click="draft">
@@ -258,8 +259,10 @@ async function publish() {
       <div class="panel mt-3">
         <div v-for="(field, i) in app.spec.fields" :key="i" class="panel-row items-end">
           <div class="min-w-40 flex-[2]"><label class="label" :for="`fl${i}`">Nhãn</label><input :id="`fl${i}`" v-model="field.label" class="input" placeholder="Số tiền (đồng)" /></div>
-          <div class="min-w-36 flex-1"><label class="label" :for="`ft${i}`">Kiểu</label>
-            <select :id="`ft${i}`" v-model="field.type" class="input"><option v-for="(label, type) in TYPE_LABEL" :key="type" :value="type">{{ label }}</option></select></div>
+          <div class="min-w-36 flex-1">
+<label class="label" :for="`ft${i}`">Kiểu</label>
+            <select :id="`ft${i}`" v-model="field.type" class="input"><option v-for="(label, type) in TYPE_LABEL" :key="type" :value="type">{{ label }}</option></select>
+</div>
           <div v-if="field.type === 'select'" class="min-w-40 flex-[2]"><label class="label" :for="`fo${i}`">Các lựa chọn, cách nhau bằng dấu phẩy</label><input :id="`fo${i}`" v-model="field.optionsText" class="input" /></div>
           <label class="flex min-h-10 items-center gap-2 text-sm"><input v-model="field.required" type="checkbox" class="h-4 w-4 accent-pen" /> Bắt buộc</label>
           <button class="btn-icon" :aria-label="`Xóa ô ${field.label || i + 1}`" @click="app.spec.fields.splice(i, 1)"><Trash2 :size="18" aria-hidden="true" /></button>
@@ -276,10 +279,14 @@ async function publish() {
           <div class="min-w-0 flex-1 space-y-3">
             <div class="flex flex-wrap items-end gap-3">
               <div class="min-w-44 flex-[2]"><label class="label" :for="`sn${i}`">Tên bước</label><input :id="`sn${i}`" v-model="step.name" class="input" placeholder="Trưởng phòng duyệt" /></div>
-              <div class="min-w-36 flex-1"><label class="label" :for="`sr${i}`">Ai xử lý</label>
-                <select :id="`sr${i}`" v-model="step.role" class="input"><option v-for="(label, role) in ROLE_LABEL" :key="role" :value="role">{{ label }}</option></select></div>
-              <div class="min-w-36 flex-1"><label class="label" :for="`st${i}`">Họ làm gì</label>
-                <select :id="`st${i}`" v-model="step.type" class="input"><option value="approve">Duyệt hoặc từ chối</option><option value="task">Thực hiện rồi xác nhận</option></select></div>
+              <div class="min-w-36 flex-1">
+<label class="label" :for="`sr${i}`">Ai xử lý</label>
+                <select :id="`sr${i}`" v-model="step.role" class="input"><option v-for="(label, role) in ROLE_LABEL" :key="role" :value="role">{{ label }}</option></select>
+</div>
+              <div class="min-w-36 flex-1">
+<label class="label" :for="`st${i}`">Họ làm gì</label>
+                <select :id="`st${i}`" v-model="step.type" class="input"><option value="approve">Duyệt hoặc từ chối</option><option value="task">Thực hiện rồi xác nhận</option></select>
+</div>
             </div>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="h-4 w-4 accent-pen" :checked="!!step.when" @change="toggleCondition(step)" /> Chỉ cần bước này trong một số trường hợp</label>
             <div v-if="step.when" class="flex flex-wrap items-center gap-2 text-sm">

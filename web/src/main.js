@@ -19,6 +19,9 @@ import Stats from './pages/Stats.vue'
 import Assistant from './pages/Assistant.vue'
 import Builder from './pages/Builder.vue'
 import Processes from './pages/Processes.vue'
+import Board from './pages/Board.vue'
+import Calendar from './pages/Calendar.vue'
+import Profile from './pages/Profile.vue'
 
 // Đăng nhập trước khi dựng giao diện: mọi màn hình đều cần token.
 // Router tạo sau khi đăng nhập, để nó không giữ lại mã xác thực mà Keycloak vừa gỡ khỏi thanh địa chỉ.
@@ -34,6 +37,9 @@ login().then(() => {
       { path: '/tro-ly', component: Assistant },
       { path: '/soan', component: Builder },
       { path: '/quy-trinh', component: Processes },
+      { path: '/bang', component: Board },
+      { path: '/lich', component: Calendar },
+      { path: '/ca-nhan', component: Profile },
       { path: '/:rest(.*)', redirect: '/' },
     ],
   })

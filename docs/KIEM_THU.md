@@ -48,7 +48,7 @@ node --test --test-reporter=spec tests/*.test.js
 |---|---|---|
 | [P] Quy trình số | P-01…08 | Bản mô tả sai không bao giờ được xuất bản; chống tiêm mã SQL/XML/JUEL qua mã và nhãn; thoát ký tự đặc biệt trong BPMN; mọi quy trình mẫu hợp lệ; chỉ trưởng phòng được tạo; phiên bản bất biến; đề xuất thay đổi có mô phỏng, người đề xuất không tự chấp nhận, hồ sơ cũ giữ phiên bản cũ |
 | [D] Dữ liệu số | D-01…05 | View BI khớp dữ liệu gốc bằng SQL độc lập; không lộ qua API; phạm vi nhìn của từng vai trò; dấu thời gian xử lý đúng; chuỗi thời gian đơn điệu |
-| [H] Con người số | H-01…02 | Tệp theo quyền hồ sơ; hộp việc theo vai trò |
+| [H] Con người số | H-01…03 | Tệp theo quyền hồ sơ; hộp việc theo vai trò; bản web phát hành có Kanban, lịch, trang cá nhân, nhãn H/P/D/I |
 | [I] Trí tuệ số | I-01…06 | Chỉ trưởng phòng/giám đốc dùng trợ lý soạn; AI thật sinh bản mô tả hợp lệ, đúng vai trò và điều kiện; mô tả tiêm lệnh không lọt vai trò lạ; không giả được danh tính AI; nâng nấc tự chủ cần bằng chứng thật (≥ 10, ≥ 90%, dữ liệu mẫu không tính); AI lỗi không chặn luồng người |
 
 ## Điều khoản của Thể lệ và Đề thi ngoài bảng điểm (LUAT)
@@ -84,7 +84,6 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 
 | Mã | Thiếu | Ghi chú |
 |---|---|---|
-| H-03 | Bảng Kanban và lịch [H] | Có trong BACKLOG |
 | D-06 | Lakehouse, NGSI-LD, WebGIS, phả hệ dữ liệu [D] | Ngoài phạm vi hiện tại |
 | I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
 | Z-01 | Két bí mật (Vault) | Bí mật hiện nằm trong `.env` |
