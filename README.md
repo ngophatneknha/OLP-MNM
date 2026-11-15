@@ -35,6 +35,7 @@ Không muốn dựng từ mã nguồn: tải `.tar.gz` ở [bản phát hành](h
 | Tài khoản | Vai trò | Ghi chú |
 |---|---|---|
 | `staff1`, `staff2` | Nhân viên | gửi hồ sơ, góp ý quy trình |
+| `staffb1`, `managerb1`, `directorb1` | Tổ chức B | cùng vai trò, thuộc tổ chức khác, để thử cách ly dữ liệu |
 | `manager1` | Trưởng phòng | duyệt, soạn quy trình, đề xuất thay đổi; bắt buộc OTP |
 | `director1` | Giám đốc | chấp nhận đề xuất, nâng nấc trợ lý, kho lạnh, cảm biến; bắt buộc OTP |
 | `accountant1` | Kế toán | các bước chi tiền, chứng từ |
@@ -76,7 +77,7 @@ Doanh nghiệp nhỏ thất bại khi chuyển đổi số vì phần mềm có 
 
 ![Trang Số liệu](docs/images/so-lieu.jpg)
 
-Ngoài ra: **kho lạnh bất biến** (hồ sơ đã kết thúc xuất ra JSONL trong kho S3, ghi vào sổ cái băm nối chuỗi mà cơ sở dữ liệu không cho sửa; `/archive/verify` phát hiện giả mạo), **phả hệ dữ liệu** tự lấy từ danh mục PostgreSQL, **nạp hàng loạt** CSV/JSON và **cảm biến IT/OT** (vượt ngưỡng thì tự mở hồ sơ sửa chữa đi qua quy trình duyệt của người). Tệp đính kèm lưu trong kho S3 có xác thực SigV4, quét mã độc trước khi nhận.
+Ngoài ra: **nhiều tổ chức dùng chung một hệ thống** mà không thấy dữ liệu của nhau (cách ly bằng `org_id` trong token, Hasura và CSDL), **kho lạnh bất biến** (hồ sơ đã kết thúc xuất ra JSONL trong kho S3, ghi vào sổ cái băm nối chuỗi mà cơ sở dữ liệu không cho sửa; `/archive/verify` phát hiện giả mạo), **phả hệ dữ liệu** tự lấy từ danh mục PostgreSQL, **nạp hàng loạt** CSV/JSON và **cảm biến IT/OT** (vượt ngưỡng thì tự mở hồ sơ sửa chữa đi qua quy trình duyệt của người). Tệp đính kèm lưu trong kho S3 có xác thực SigV4, quét mã độc trước khi nhận.
 
 ## Kiến trúc
 
@@ -156,7 +157,7 @@ node --test --test-reporter=spec tests/*.test.js           # đối chiếu đ�
 (cd web && npm ci) && node --test services/workflow-bridge/*.test.js web/src/*.test.js   # đơn vị, không cần hệ thống chạy
 ```
 
-Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kho lạnh (`cold`), cảm biến (`iot`), vận hành và khôi phục (`ops`, `recovery`, `restore`), tìm kiếm (`search`), tiêu chí PoF và điều khoản ngoài bảng điểm (`pof`, `luat`). Bảng đối chiếu từng ca và kết quả: [docs/KIEM_THU.md](docs/KIEM_THU.md).
+Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kho lạnh (`cold`), cảm biến (`iot`), đa tổ chức (`tenant`), vận hành và khôi phục (`ops`, `recovery`, `restore`), tìm kiếm (`search`), tiêu chí PoF và điều khoản ngoài bảng điểm (`pof`, `luat`). Bảng đối chiếu từng ca và kết quả: [docs/KIEM_THU.md](docs/KIEM_THU.md).
 
 ## Còn thiếu gì (nói thẳng)
 
@@ -167,7 +168,7 @@ Các mục dưới đây khai báo là `todo` trong báo cáo kiểm thử, khô
 - Chữ ký phê duyệt là xác nhận trong nhật ký bất biến, **chưa phải chữ ký số PKI có chứng thư**.
 - Thời gian thực dùng SSE (chưa WebSocket); thiết bị gọi HTTP (chưa MQTT/OPC UA).
 - Chưa có sao lưu tự động theo lịch (script có); két bí mật mới có một khóa mở.
-- Một hệ thống phục vụ một tổ chức (chưa đa tổ chức).
+- Đa tổ chức đã cách ly ở CSDL, nhưng mã ứng dụng vẫn duy nhất toàn hệ thống, chưa có màn hình quản trị tổ chức, các view báo cáo `bi.*` chưa tách theo tổ chức.
 
 ## Đóng góp
 

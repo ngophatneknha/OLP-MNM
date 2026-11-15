@@ -109,6 +109,26 @@ Giới hạn nói thẳng: kho lạnh là tệp JSONL, chưa phải bảng Parqu
 
 Giới hạn nói thẳng: thiết bị gọi HTTP (chưa có MQTT/OPC UA); ngưỡng một chiều; token thiết bị gửi qua HTTP thường nên môi trường thật phải đặt sau TLS (profile `tls`); hai số đo vượt ngưỡng đến cùng lúc có thể mở hai hồ sơ (chưa khóa theo cảm biến).
 
+## Đa tổ chức (phiên bản 1.8.4)
+
+Hai tổ chức dùng chung một hệ thống: tổ chức mặc định (`staff1`, `manager1`, `director1`...) và tổ chức B (`staffb1`, `managerb1`, `directorb1`, `org_id = orgb`). Bộ kiểm thử: `tests/tenant.test.js`.
+
+| Mã | Kiểm tra | Cách thực hiện |
+|---|---|---|
+| ORG-01 | `org_id` đi theo token (claim của Keycloak); tài khoản cũ không có claim là tổ chức mặc định | giải mã token |
+| ORG-02 | Mỗi tổ chức chỉ thấy quy trình của mình, kể cả trưởng phòng và giám đốc; `org_id` của quy trình do token đặt, không do người gửi chọn | GraphQL qua cổng API |
+| ORG-03 | Hồ sơ cách ly; người của B không gửi được vào quy trình của A | GraphQL, đối chiếu SQL |
+| ORG-04 | Không duyệt được hồ sơ của tổ chức khác; duyệt trong tổ chức mình vẫn chạy trọn qua Flowable | luồng thật |
+| ORG-05 | Phiên bản, đề xuất, góp ý, nấc AI và nhật ký cũng cách ly | GraphQL |
+| ORG-06 | Mỗi người chỉ đọc được dòng tổ chức của mình | bảng `org` |
+| ORG-07 | Tự thêm tiêu đề `x-hasura-org-id` không đổi được tổ chức; sửa `org_id` trong token thì chữ ký sai, bị 401 | giả mạo |
+| ORG-08 | Không đính tệp vào hồ sơ của tổ chức khác | `POST /files` |
+| ORG-09 | Kho lạnh: mỗi tổ chức một chuỗi sổ cái riêng, tệp dưới thư mục tổ chức, liệt kê và kiểm chứng không lẫn | `/archive*` |
+| ORG-10 | Cảm biến: ứng dụng sửa chữa phải cùng tổ chức; hồ sơ tự mở mang tổ chức của cảm biến | `/sensors`, `/telemetry` |
+| ORG-11 | Nạp hàng loạt đi bằng quyền người nạp nên không nạp chéo tổ chức | `POST /ingest` |
+
+Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn hệ thống, nên tổ chức khác dùng trùng mã sẽ bị báo trùng (lộ việc mã đó đã tồn tại); chỉ lập tổ chức mới bằng SQL và quản trị Keycloak (chưa có màn hình quản trị tổ chức); chỉ mục tìm kiếm Meilisearch dùng chung nhưng mọi kết quả đều được kiểm quyền qua Hasura trước khi trả về; các view báo cáo `bi.*` chưa tách theo tổ chức; tài khoản mẫu của tổ chức B không bắt OTP trên API (cùng cách `dxlab-cli` của các tài khoản khác).
+
 ## Tìm kiếm và hỏi đáp (phiên bản 1.5.0)
 
 | Mã ca | Kiểm cái gì |

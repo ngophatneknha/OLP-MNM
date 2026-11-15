@@ -65,7 +65,7 @@ services:
       BRIDGE_SECRET: ${BRIDGE_SECRET}
       # Xác thực JWT bằng khóa công khai (JWKS) của Keycloak; role lấy từ realm role, user id = sub.
       # Mọi người dùng phải có role `staff` (role mặc định); client gửi header x-hasura-role để dùng role khác.
-      HASURA_GRAPHQL_JWT_SECRET: '{"jwk_url":"http://keycloak:8080/realms/dxlab/protocol/openid-connect/certs","claims_map":{"x-hasura-allowed-roles":{"path":"$$.realm_access.roles"},"x-hasura-default-role":"staff","x-hasura-user-id":{"path":"$$.sub"},"x-hasura-user-name":{"path":"$$.name","default":""}}}'
+      HASURA_GRAPHQL_JWT_SECRET: '{"jwk_url":"http://keycloak:8080/realms/dxlab/protocol/openid-connect/certs","claims_map":{"x-hasura-allowed-roles":{"path":"$$.realm_access.roles"},"x-hasura-default-role":"staff","x-hasura-user-id":{"path":"$$.sub"},"x-hasura-user-name":{"path":"$$.name","default":""},"x-hasura-org-id":{"path":"$$.org_id","default":"default"}}}'
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/healthz"]
       interval: 5s

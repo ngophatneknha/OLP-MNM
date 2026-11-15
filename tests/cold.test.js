@@ -42,7 +42,7 @@ describe('COLD: kho dữ liệu lạnh (hồ sơ đã kết thúc xuống kho S3
   test('COLD-03 chống sửa: sổ cái không sửa/xóa được; tệp bị sửa thì kiểm chứng báo lỗi, trả lại thì hết lỗi', async () => {
     assert.throws(() => sql('update cold_archive set rows = rows + 1'), /chỉ được thêm|Command failed/)
     assert.throws(() => sql('delete from cold_item'), /chỉ được thêm|Command failed/)
-    const key = sql('select object_key from cold_archive order by seq desc limit 1')
+    const key = sql("select object_key from cold_archive where org_id = 'default' order by seq desc limit 1")
     // Chạy trong container cầu nối (có khóa S3): lưu bản gốc, ghi đè bằng nội dung khác, kiểm, rồi trả lại.
     const script = `
       import { s3fetch } from '/app/s3.js'

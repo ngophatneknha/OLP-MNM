@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { entryHash, rolesOf } from './cold.js'
+import { entryHash, rolesOf, orgOf } from './cold.js'
 
 test('mã băm dòng sổ phụ thuộc mọi thành phần (đổi một thứ là đổi mã)', () => {
   const zero = '0'.repeat(64)
@@ -19,4 +19,12 @@ test('đọc vai trò từ token, token hỏng thì không có vai trò nào', (
   assert.deepEqual(rolesOf({ headers: { authorization: `Bearer ${token}` } }), ['director'])
   assert.deepEqual(rolesOf({ headers: { authorization: 'Bearer rac' } }), [])
   assert.deepEqual(rolesOf({ headers: {} }), [])
+})
+
+test('tổ chức lấy từ token: thiếu claim là mặc định, mã lạ bị từ chối', () => {
+  const req = (claims) => ({ headers: { authorization: `Bearer x.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.y` } })
+  assert.equal(orgOf(req({})), 'default')
+  assert.equal(orgOf(req({ org_id: 'orgb' })), 'orgb')
+  assert.throws(() => orgOf(req({ org_id: "x'; drop table app;--" })), /không hợp lệ/)
+  assert.throws(() => orgOf(req({ org_id: 5 })), /không hợp lệ/)
 })

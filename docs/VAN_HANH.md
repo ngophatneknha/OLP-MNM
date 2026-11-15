@@ -92,3 +92,22 @@ Prometheus thu số đo của cổng API (APISIX) mỗi 15 giây, giao diện tr
 Tài khoản có vai trò **Trưởng phòng** hoặc **Giám đốc** phải nhập mã OTP (TOTP, ứng dụng như FreeOTP hay Google Authenticator) sau mật khẩu khi đăng nhập qua trình duyệt; lần đầu họ được hướng dẫn quét mã QR để thiết lập. Nhân viên và kế toán chỉ cần mật khẩu. Luồng khai báo trong `infra/keycloak/realm/dxlab-realm.json` (luồng `browser-mfa`), kiểm thử bằng ca T1-SSO-10.
 
 Lưu ý: client dòng lệnh `dxlab-cli` dùng cấp quyền bằng mật khẩu chỉ để kiểm thử, không đi qua luồng trình duyệt nên không bị MFA chặn; không dùng nó ngoài môi trường phát triển.
+
+## Nhiều tổ chức
+
+Mỗi người dùng thuộc đúng một tổ chức, ghi bằng thuộc tính `org_id` của tài khoản Keycloak (đi vào token thành claim `org_id`; thiếu thì là `default`). Hasura thêm điều kiện `org_id` vào mọi quyền đọc và ghi, nên cách ly nằm ở CSDL chứ không ở giao diện.
+
+Lập tổ chức mới (chưa có màn hình quản trị):
+
+```bash
+docker compose exec -T postgres psql -U dxlab -d dxlab -c "INSERT INTO org (id, name) VALUES ('congtyc', 'Công ty C')"
+```
+
+Rồi trong Keycloak (realm `dxlab`) tạo người dùng và đặt thuộc tính `org_id = congtyc`. Giám đốc của tổ chức đó tự có kho lạnh và cảm biến riêng.
+
+Nâng cấp hệ thống đang chạy (volume cũ): áp tệp SQL, khởi động lại Hasura để nhận cấu hình token mới, và thêm vào Keycloak thuộc tính người dùng `org_id` cùng một "mapper" thuộc tính vào token cho hai client `dxlab-app` và `dxlab-cli` (hoặc nhập lại realm trên Keycloak trống: `dxlab-realm.json` đã khai báo sẵn). Không có claim thì mọi người vẫn ở tổ chức mặc định nên hệ thống cũ chạy như trước.
+
+```bash
+docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/05-org.sql
+docker compose up -d hasura hasura-init workflow-bridge
+```

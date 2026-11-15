@@ -10,7 +10,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { s3fetch } from './s3.js'
 import { HttpError } from './files.js'
-import { sql } from './db.js'
+import { sql, lit } from './db.js'
 
 const { ARCHIVE_AFTER_DAYS = '90' } = process.env
 const BUCKET = 'dxlab-cold'
@@ -25,6 +25,13 @@ export function claimsOf(req) {
   try { return JSON.parse(Buffer.from(req.headers.authorization.split('.')[1], 'base64url').toString()) } catch { return {} }
 }
 export const rolesOf = (req) => claimsOf(req).realm_access?.roles ?? []
+const ORG = /^[a-z][a-z0-9_-]{1,30}$/
+/** Tổ chức của người gọi, lấy từ token (cùng nguồn với x-hasura-org-id); thiếu claim thì là tổ chức mặc định. */
+export function orgOf(req) {
+  const org = claimsOf(req).org_id ?? 'default'
+  if (typeof org !== 'string' || !ORG.test(org)) throw new HttpError(403, 'Token có mã tổ chức không hợp lệ')
+  return org
+}
 const requireDirector = (req) => { if (!rolesOf(req).includes('director')) throw new HttpError(403, 'Chỉ giám đốc xem và vận hành kho lạnh') }
 
 let busy = false
@@ -38,36 +45,37 @@ async function ensureBucket() {
 
 const idList = (ids) => ids.map((i) => `'${i}'`).join(',')
 
-/** Xuất các hồ sơ đã kết thúc quá `days` ngày chưa có trong kho lạnh. Trả về { archived, id? }. */
-export async function archiveFinished(days = Number(ARCHIVE_AFTER_DAYS)) {
+/** Xuất các hồ sơ của tổ chức `org` đã kết thúc quá `days` ngày chưa có trong kho lạnh. Mỗi tổ chức một chuỗi sổ cái riêng. Trả về { archived, id? }. */
+export async function archiveFinished(days = Number(ARCHIVE_AFTER_DAYS), org = 'default') {
   if (!Number.isInteger(days) || days < 0) throw new HttpError(400, 'Số ngày không hợp lệ')
+  if (!ORG.test(org)) throw new HttpError(400, 'Mã tổ chức không hợp lệ')
   if (busy) throw new HttpError(409, 'Đang có một lần xuất khác chạy')
   busy = true
   try {
-    const ids = (await sql(`SELECT s.id FROM submission s WHERE s.status IN ('approved','rejected') AND s.finished_at <= now() - interval '${days} days'
+    const ids = (await sql(`SELECT s.id FROM submission s WHERE s.org_id = ${lit(org)} AND s.status IN ('approved','rejected') AND s.finished_at <= now() - interval '${days} days'
       AND NOT EXISTS (SELECT 1 FROM cold_item c WHERE c.submission_id = s.id) ORDER BY s.finished_at, s.id LIMIT ${BATCH}`)).map((r) => r[0])
     if (!ids.length) return { archived: 0 }
     if (!ids.every((id) => UUID.test(id))) throw new Error('Mã hồ sơ lạ')
     const lines = (await sql(`SELECT row_to_json(t)::text FROM (SELECT s.*, (SELECT coalesce(json_agg(e ORDER BY e.created_at, e.id), '[]'::json) FROM submission_event e WHERE e.submission_id = s.id) AS events
       FROM submission s WHERE s.id = ANY(ARRAY[${idList(ids)}]::uuid[]) ORDER BY s.finished_at, s.id) t`)).map((r) => r[0])
     const body = Buffer.from(`${lines.join(String.fromCharCode(10))}${String.fromCharCode(10)}`)
-    const key = `${new Date().toISOString().slice(0, 7).replace('-', '/')}/${randomUUID()}.jsonl`
+    const key = `${org}/${new Date().toISOString().slice(0, 7).replace('-', '/')}/${randomUUID()}.jsonl`
     await ensureBucket()
     const put = await s3fetch(`/${BUCKET}/${key}`, { method: 'PUT', body })
     if (!put.ok) throw new HttpError(502, 'Chưa ghi được tệp vào kho lạnh')
-    const prev = (await sql('SELECT entry_hash FROM cold_archive ORDER BY seq DESC LIMIT 1'))[0]?.[0] ?? GENESIS
+    const prev = (await sql(`SELECT entry_hash FROM cold_archive WHERE org_id = ${lit(org)} ORDER BY seq DESC LIMIT 1`))[0]?.[0] ?? GENESIS
     const objectSha = sha(body)
     const id = randomUUID()
     // Một giao dịch: sổ cái và danh sách hồ sơ đã xuất cùng thành công hoặc cùng không có gì.
-    await sql(`INSERT INTO cold_archive (id, object_key, rows, object_sha256, prev_hash, entry_hash) VALUES ('${id}', '${key}', ${ids.length}, '${objectSha}', '${prev}', '${entryHash(prev, objectSha, ids.length, key)}');
+    await sql(`INSERT INTO cold_archive (id, org_id, object_key, rows, object_sha256, prev_hash, entry_hash) VALUES ('${id}', ${lit(org)}, '${key}', ${ids.length}, '${objectSha}', '${prev}', '${entryHash(prev, objectSha, ids.length, key)}');
       INSERT INTO cold_item (submission_id, archive_id) SELECT unnest(ARRAY[${idList(ids)}]::uuid[]), '${id}'`)
     return { archived: ids.length, id }
   } finally { busy = false }
 }
 
-/** Kiểm chứng toàn bộ sổ cái: chuỗi băm liền mạch và mọi tệp còn nguyên. */
-export async function verifyChain() {
-  const rows = await sql('SELECT id, object_key, rows, object_sha256, prev_hash, entry_hash FROM cold_archive ORDER BY seq')
+/** Kiểm chứng sổ cái của một tổ chức: chuỗi băm liền mạch và mọi tệp còn nguyên. */
+export async function verifyChain(org = 'default') {
+  const rows = await sql(`SELECT id, object_key, rows, object_sha256, prev_hash, entry_hash FROM cold_archive WHERE org_id = ${lit(org)} ORDER BY seq`)
   const problems = []
   let prev = GENESIS
   for (const [id, key, n, objectSha, prevHash, hash] of rows) {
@@ -79,6 +87,13 @@ export async function verifyChain() {
     prev = hash
   }
   return { ok: problems.length === 0, archives: rows.length, problems }
+}
+
+/** Xuất kho lạnh cho mọi tổ chức (việc chạy hằng ngày). Lỗi ở một tổ chức không chặn các tổ chức còn lại. */
+export async function archiveAll() {
+  for (const [org] of await sql('SELECT id FROM org ORDER BY id')) {
+    await archiveFinished(undefined, org).catch((err) => console.error(`Xuất kho lạnh (${org}):`, err.message))
+  }
 }
 
 /** Đồ thị phả hệ: view báo cáo đọc từ bảng nào (lấy từ danh mục PostgreSQL) cộng các luồng do mã của dự án tạo ra. */
@@ -102,10 +117,11 @@ export async function handleCold(req, res) {
     const url = new URL(req.url, 'http://x')
     const path = url.pathname
     requireDirector(req)
-    if (req.method === 'POST' && path === '/archive') return json(res, 200, await archiveFinished(url.searchParams.has('days') ? Number(url.searchParams.get('days')) : undefined))
-    if (req.method === 'GET' && path === '/archive/verify') return json(res, 200, await verifyChain())
+    const org = orgOf(req)
+    if (req.method === 'POST' && path === '/archive') return json(res, 200, await archiveFinished(url.searchParams.has('days') ? Number(url.searchParams.get('days')) : undefined, org))
+    if (req.method === 'GET' && path === '/archive/verify') return json(res, 200, await verifyChain(org))
     if (req.method === 'GET' && path === '/archive') {
-      return json(res, 200, (await sql('SELECT id, object_key, rows, object_sha256, entry_hash, created_at FROM cold_archive ORDER BY seq DESC LIMIT 200'))
+      return json(res, 200, (await sql(`SELECT id, object_key, rows, object_sha256, entry_hash, created_at FROM cold_archive WHERE org_id = ${lit(org)} ORDER BY seq DESC LIMIT 200`))
         .map(([id, key, rows, objectSha, hash, at]) => ({ id, object_key: key, rows: Number(rows), object_sha256: objectSha, entry_hash: hash, created_at: at })))
     }
     if (req.method === 'GET' && path === '/lineage') return json(res, 200, await lineage())

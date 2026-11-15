@@ -9,6 +9,20 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-11-15
+
+### Added
+- **Đa tổ chức (multi-tenancy)**: nhiều tổ chức dùng chung một hệ thống, cách ly bằng `org_id` ở CSDL và Hasura. Bảng `org`, cột `org_id` ở `app`, `submission`, `sensor`, `cold_archive`; hồ sơ luôn mang `org_id` của quy trình nhận nó (trigger). `infra/postgres/init/05-org.sql` chạy lại được trên CSDL đang dùng.
+- Token mang claim `org_id` (Keycloak: thuộc tính người dùng cùng mapper), Hasura đọc thành `x-hasura-org-id` (mặc định `default`). Mọi quyền đọc, ghi của 4 vai trò đều thêm điều kiện tổ chức; thêm quan hệ `app` cho `app_version`, `app_change`, `app_issue`, `step_autonomy`.
+- Kho lạnh mỗi tổ chức một chuỗi sổ cái riêng và thư mục riêng trong kho S3; cảm biến và ứng dụng sửa chữa gắn với tổ chức của giám đốc đăng ký; việc xuất kho hằng ngày chạy cho từng tổ chức.
+- Tổ chức B để thử cách ly: `staffb1`, `managerb1`, `directorb1`. Giao diện hiện tên tổ chức cạnh vai trò.
+- Bộ kiểm thử `tests/tenant.test.js` (ORG-01..11) và kiểm thử đơn vị cho `orgOf`.
+
+### Changed
+- `GET /archive`, `/archive/verify`, `POST /archive`, `GET /sensors` chỉ trả dữ liệu của tổ chức người gọi.
+- Realm Keycloak khai báo thuộc tính `org_id` trong user profile (Keycloak 26 bỏ thuộc tính chưa khai báo).
+- `tests/cold.test.js` COLD-03 chọn tệp của tổ chức mặc định (có thêm tổ chức B).
+
 ## [1.8.3] - 2026-11-15
 
 ### Changed

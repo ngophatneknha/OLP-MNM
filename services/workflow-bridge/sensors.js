@@ -8,7 +8,7 @@
 // shortcut: ngưỡng một chiều (trên hoặc dưới), một hồ sơ sửa chữa mở tại một thời điểm cho mỗi cảm biến; chưa có giao thức MQTT/OPC UA, thiết bị gọi HTTP.
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { HttpError } from './files.js'
-import { claimsOf, rolesOf } from './cold.js'
+import { claimsOf, rolesOf, orgOf } from './cold.js'
 import { notify } from './events.js'
 import { sql, lit } from './db.js'
 
@@ -40,6 +40,7 @@ async function readJson(req, max = 256 * 1024) {
 async function register(req) {
   const claims = claimsOf(req)
   if (!rolesOf(req).includes('director')) throw new HttpError(403, 'Chỉ giám đốc đăng ký cảm biến')
+  const org = orgOf(req)
   const b = await readJson(req)
   const threshold = Number(b.threshold)
   if (!KEY.test(b.key ?? '')) throw new HttpError(400, 'Mã cảm biến: chữ thường không dấu, số, gạch dưới, 2 đến 31 ký tự')
@@ -47,22 +48,22 @@ async function register(req) {
   if (!Number.isFinite(threshold)) throw new HttpError(400, 'Ngưỡng phải là số')
   if (!['above', 'below'].includes(b.direction)) throw new HttpError(400, 'direction phải là above hoặc below')
   if (typeof b.repair_app !== 'string' || !KEY.test(b.repair_app)) throw new HttpError(400, 'Thiếu mã ứng dụng sửa chữa')
-  const app = (await sql(`SELECT status, spec->'fields' FROM app WHERE key = ${lit(b.repair_app)}`))[0]
-  if (!app || app[0] !== 'published') throw new HttpError(400, 'Ứng dụng sửa chữa chưa xuất bản')
+  const app = (await sql(`SELECT status, spec->'fields' FROM app WHERE key = ${lit(b.repair_app)} AND org_id = ${lit(org)}`))[0]
+  if (!app || app[0] !== 'published') throw new HttpError(400, 'Ứng dụng sửa chữa chưa xuất bản (hoặc không thuộc tổ chức của bạn)')
   const have = new Set(JSON.parse(app[1]).map((f) => f.key))
   const missing = REQUIRED_FIELDS.filter((k) => !have.has(k))
   if (missing.length) throw new HttpError(400, `Ứng dụng sửa chữa thiếu trường: ${missing.join(', ')}`)
   if ((await sql(`SELECT 1 FROM sensor WHERE key = ${lit(b.key)}`)).length) throw new HttpError(409, 'Mã cảm biến đã tồn tại')
   const token = randomBytes(24).toString('base64url')
-  await sql(`INSERT INTO sensor (key, name, unit, threshold, direction, repair_app, owner_id, owner_name, token_hash)
-    VALUES (${lit(b.key)}, ${lit(b.name.trim())}, ${lit(String(b.unit ?? '').slice(0, 20))}, ${threshold}, ${lit(b.direction)}, ${lit(b.repair_app)}, ${lit(claims.sub ?? '')}, ${lit(claims.name ?? claims.preferred_username ?? '')}, '${sha(token)}')`)
+  await sql(`INSERT INTO sensor (key, org_id, name, unit, threshold, direction, repair_app, owner_id, owner_name, token_hash)
+    VALUES (${lit(b.key)}, ${lit(org)}, ${lit(b.name.trim())}, ${lit(String(b.unit ?? '').slice(0, 20))}, ${threshold}, ${lit(b.direction)}, ${lit(b.repair_app)}, ${lit(claims.sub ?? '')}, ${lit(claims.name ?? claims.preferred_username ?? '')}, '${sha(token)}')`)
   return { key: b.key, token, note: 'Token chỉ hiện một lần: cất vào thiết bị' }
 }
 
-async function list() {
+async function list(org) {
   return (await sql(`SELECT s.key, s.name, s.unit, s.threshold, s.direction, s.last_value, s.last_at, s.open_submission_id,
       (s.last_value IS NOT NULL AND CASE s.direction WHEN 'above' THEN s.last_value > s.threshold ELSE s.last_value < s.threshold END) AS alarm
-    FROM sensor s ORDER BY s.key`))
+    FROM sensor s WHERE s.org_id = ${lit(org)} ORDER BY s.key`))
     .map(([key, name, unit, threshold, direction, last, at, open, alarm]) => ({
       key, name, unit, threshold: Number(threshold), direction, last_value: last === null ? null : Number(last), last_at: at, open_submission_id: open, alarm: alarm === 't' || alarm === true,
     }))
@@ -128,7 +129,7 @@ export async function handleSensors(req, res) {
     if (req.method === 'POST' && path === '/sensors') return json(res, 201, await register(req))
     if (req.method === 'GET' && path === '/sensors') {
       if (!rolesOf(req).some((r) => ['director', 'manager'].includes(r))) throw new HttpError(403, 'Chỉ trưởng phòng và giám đốc xem cảm biến')
-      return json(res, 200, await list())
+      return json(res, 200, await list(orgOf(req)))
     }
     const m = path.match(/^\/telemetry\/([^/]+)$/)
     if (req.method === 'POST' && m) return json(res, 200, await telemetry(req, m[1]))
