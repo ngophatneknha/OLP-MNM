@@ -80,7 +80,11 @@ for (const { key } of library) {
     }
     const decide = (id, status) => gql('director1', 'mutation($i: bigint!, $s: String!) { update_app_change_by_pk(pk_columns: {id: $i}, _set: {status: $s}) { id } }', { i: id, s: status })
     await decide(await propose('Thêm ô ghi chú để người gửi nói rõ khoản chi, trưởng phòng đỡ phải hỏi lại', (sp) => { sp.fields.push({ key: 'ghi_chu', label: 'Ghi chú thêm', type: 'text', required: false }) }), 'merged')
-    await until('phiên bản 2 của Xin tạm ứng', async () => (await gql('manager1', 'query { app_version(where: {app_key: {_eq: "tam_ung"}, version: {_eq: 2}}) { version } }')).app_version.length)
+    // Chấp nhận đề xuất đặt quy trình về "pending" cho tới khi bộ sinh triển khai xong bản mới; gửi hồ sơ trong lúc đó sẽ lỗi.
+    await until('phiên bản 2 của Xin tạm ứng được triển khai', async () => {
+      const app = (await gql('manager1', 'query { app_by_pk(key: "tam_ung") { status versions(where: {version: {_eq: 2}}) { version } } }')).app_by_pk
+      return app.status === 'published' && app.versions.length > 0
+    })
     await decide(await propose('Bỏ bước kế toán chi tiền cho khoản nhỏ', (sp) => { sp.steps.pop() }), 'rejected')
     console.log('Đã tạo vòng cải tiến mẫu cho tam_ung (phiên bản 2, một đề xuất bị từ chối).')
   }
