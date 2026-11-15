@@ -9,6 +9,11 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-11-15
+
+### Fixed
+- Ca PoF-1.3 không còn bị kẹt trong CI khi lần chạy trước trên `main` đang đỏ: trong CI chỉ đòi từng có lần chạy xanh gần đây, chạy cục bộ vẫn đòi lần gần nhất phải xanh.
+
 ## [1.6.1] - 2026-11-15
 
 ### Fixed

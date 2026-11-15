@@ -56,8 +56,8 @@ describe('PoF-1: Hệ thống quản lý mã nguồn trên Internet (5 điểm)'
     assert.equal(j.default_branch, 'main')
     const runs = (await (await gh('/actions/runs?per_page=10&branch=main&status=completed')).json()).workflow_runs
     assert.ok(runs.length >= 1)
-    // Lần chạy của pull request: main đang đỏ chính là lý do cần sửa, nên chỉ đòi từng có CI xanh trên main (khỏi vòng luẩn quẩn).
-    const ok = process.env.GITHUB_HEAD_REF ? runs.some((r) => r.conclusion === 'success') : runs[0].conclusion === 'success'
+    // Trong chính CI, lần chạy trước trên main có thể đang đỏ (chính lỗi đang được sửa), nên chỉ đòi từng có CI xanh gần đây (khỏi vòng luẩn quẩn); chạy cục bộ thì đòi lần gần nhất phải xanh.
+    const ok = process.env.GITHUB_ACTIONS ? runs.some((r) => r.conclusion === 'success') : runs[0].conclusion === 'success'
     assert.ok(ok, `CI gần nhất trên main: ${runs[0].conclusion}`)
   })
 })
