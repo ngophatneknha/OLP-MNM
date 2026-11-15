@@ -8,11 +8,12 @@
 // nên người không được xem hồ sơ thì không bao giờ thấy nội dung của nó, cả trong kết quả lẫn trong ngữ cảnh gửi cho AI.
 // shortcut: chỉ mục toàn văn (BM25), chưa có véc-tơ ngữ nghĩa, OCR hay PDF; thêm khi có mô hình nhúng và OCR.
 
+import { s3fetch } from './s3.js'
 import { createHash } from 'node:crypto'
 import { aiConfigured, complete } from './ai.js'
 import { HttpError, asUser } from './files.js'
 
-const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET, S3_URL = 'http://seaweedfs:8333' } = process.env
+const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET } = process.env
 const INDEX = 'docs'
 const MAX_TEXT = 100_000
 const TEXTY = /\.(txt|md|csv|json|log|tsv|xml|yml|yaml)$/i
@@ -67,7 +68,7 @@ const fails = new Map() // id tệp -> số lần đọc lỗi; quá 3 lần th�
 async function fileText(att) {
   if (!(att.content_type?.startsWith('text/') || TEXTY.test(att.name)) || att.size > 1_000_000) return null
   try {
-    const res = await fetch(`${S3_URL}/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(10_000) })
+    const res = await s3fetch(`/dxlab/${att.object_key}`, { signal: AbortSignal.timeout(10_000) })
     return res.ok ? (await res.text()).slice(0, MAX_TEXT) : null
   } catch (err) {
     console.error(`Không đọc được tệp ${att.id} để lập chỉ mục:`, err.cause?.code ?? err.message)

@@ -10,8 +10,9 @@
 
 import { randomUUID } from 'node:crypto'
 import { scan } from './scan.js'
+import { s3fetch } from './s3.js'
 
-const { HASURA_URL, HASURA_ADMIN_SECRET, S3_URL = 'http://seaweedfs:8333' } = process.env
+const { HASURA_URL, HASURA_ADMIN_SECRET } = process.env
 const BUCKET = 'dxlab'
 export const MAX_BYTES = 10 * 1024 * 1024
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -42,7 +43,7 @@ export async function asUser(req, query, variables) {
 let bucketReady = false
 async function ensureBucket() {
   if (bucketReady) return
-  const res = await fetch(`${S3_URL}/${BUCKET}`, { method: 'PUT' })
+  const res = await s3fetch(`/${BUCKET}`, { method: 'PUT' })
   if (!res.ok && res.status !== 409) throw new HttpError(502, 'Kho lưu trữ chưa sẵn sàng')
   bucketReady = true
 }
@@ -80,7 +81,7 @@ async function upload(req, res) {
     { o: { submission_id: submissionId, name, size: body.length, content_type: req.headers['content-type'] ?? null, object_key: key } })
   try {
     await ensureBucket()
-    const put = await fetch(`${S3_URL}/${BUCKET}/${key}`, { method: 'PUT', body })
+    const put = await s3fetch(`/${BUCKET}/${key}`, { method: 'PUT', body })
     if (!put.ok) throw new Error(`S3 ${put.status}`)
   } catch (err) {
     // Không để lại dòng dữ liệu trỏ vào tệp không tồn tại.
@@ -99,7 +100,7 @@ async function download(req, res, id) {
   const { attachment_by_pk: file } = await asUser(req,
     'query($id: uuid!) { attachment_by_pk(id: $id) { name object_key } }', { id })
   if (!file) throw new HttpError(404, 'Không tìm thấy tệp, hoặc bạn không có quyền xem')
-  const object = await fetch(`${S3_URL}/${BUCKET}/${file.object_key}`)
+  const object = await s3fetch(`/${BUCKET}/${file.object_key}`)
   if (!object.ok) throw new HttpError(502, 'Chưa đọc được tệp từ kho lưu trữ')
   res.writeHead(200, {
     // Luôn tải về, không cho trình duyệt tự mở: tệp do người dùng tải lên không được chạy trong trang.

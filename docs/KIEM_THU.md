@@ -38,7 +38,7 @@ node --test --test-reporter=spec tests/*.test.js
 | Cổng API | T1-GW-01…12 | Không token, token rác, `alg=none`, sửa nội dung, nhầm thuật toán HS256: đều 401; không nâng vai trò, không mạo danh quản trị; CORS; chỉ các đường dẫn khai báo đi qua; thân quá lớn; truy vấn lồng sâu; giới hạn tần suất 429 rồi khôi phục |
 | Headless | T1-HL-01…04 | Chỉ ba cổng công bố ra ngoài; dịch vụ lõi không tới được; console Hasura tắt; Keycloak chế độ production |
 | Dữ liệu có cấu trúc | T1-DB-01…07 | Phân quyền theo dòng; không gửi hồ sơ thay người khác; rào chắn dữ liệu (thiếu, sai kiểu, trường lạ, null); chống injection; không sửa/xóa qua API; **nhật ký bất biến ở tầng CSDL**; phiên bản quy trình và danh tính người làm được ghi lại |
-| Dữ liệu phi cấu trúc | T1-OBJ-01…08 | Tải lên/tải về đúng từng byte (SHA-256); người ngoài không tải được; giới hạn 10 MB; làm sạch tên tệp; HTML luôn là tệp đính kèm; S3 không mở ngoài; không dòng mồ côi; **tệp EICAR bị ClamAV từ chối** |
+| Dữ liệu phi cấu trúc | T1-OBJ-01…09 | Tải lên/tải về đúng từng byte (SHA-256); người ngoài không tải được; giới hạn 10 MB; làm sạch tên tệp; HTML luôn là tệp đính kèm; S3 không mở ngoài; không dòng mồ côi; **tệp EICAR bị ClamAV từ chối**; **S3 bắt buộc chữ ký SigV4 (không ký/ký sai → 403)** |
 | Luồng công việc | T1-WF-01…09 | BPMN thật trong Flowable; nhánh thấp và nhánh cao; từ chối cần lý do; chặn sai người, sai thứ tự, duyệt lặp, tự duyệt; 20 hồ sơ nộp đồng thời không mất cái nào |
 | Máy chủ web (Tầng 2) | T1-WEB-01…03 | Không lộ bí mật qua `config.json`; tiêu đề bảo mật; không lộ tệp cấu hình |
 

@@ -9,6 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.7.8] - 2026-11-15
+
+### Security
+- Kho đối tượng S3 (SeaweedFS) nay **bắt buộc xác thực AWS Signature V4**: yêu cầu không ký hoặc ký sai bị `403`. Khóa truy cập đặt trong `.env` (`S3_ACCESS_KEY`, `S3_SECRET_KEY`), chỉ cầu nối có khóa. Bộ ký `services/workflow-bridge/s3.js` dùng thư viện chuẩn của Node, kiểm chứng bằng ví dụ chính thức của AWS. Đóng DA-05 (#94).
+- Ca kiểm thử mới T1-OBJ-09: không ký, ký sai bị 403; ký đúng đọc/ghi được.
+
 ## [1.7.7] - 2026-11-15
 
 ### Changed

@@ -42,7 +42,7 @@ Lần khởi động đầu mất 1-2 phút; ClamAV cần thêm vài phút để
 
 ## Cấu hình
 
-Mọi cấu hình nằm trong `.env` (mẫu `.env.example`), không phải sửa mã. Gồm mật khẩu cơ sở dữ liệu, quản trị Keycloak, khóa nội bộ giữa Hasura và cầu nối, địa chỉ công khai (`KEYCLOAK_PUBLIC_URL`, `API_PUBLIC_URL`, `APP_ORIGIN`), và trợ lý AI (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`). **Đổi mọi giá trị `change-me` trước khi đưa lên Internet.** Khóa AI chỉ nằm trong `.env`, tệp này không được commit.
+Mọi cấu hình nằm trong `.env` (mẫu `.env.example`), không phải sửa mã. Gồm mật khẩu cơ sở dữ liệu, quản trị Keycloak, khóa nội bộ giữa Hasura và cầu nối, địa chỉ công khai (`KEYCLOAK_PUBLIC_URL`, `API_PUBLIC_URL`, `APP_ORIGIN`), khóa kho tệp S3 (`S3_ACCESS_KEY`, `S3_SECRET_KEY`) và trợ lý AI (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`). **Đổi mọi giá trị `change-me` trước khi đưa lên Internet.** Khóa AI chỉ nằm trong `.env`, tệp này không được commit.
 
 Sau khi sửa `.env`: `docker compose up -d` (dịch vụ nào đổi cấu hình sẽ được tạo lại). Sửa tệp trong `infra/apisix/` cần `docker compose restart apisix`.
 
