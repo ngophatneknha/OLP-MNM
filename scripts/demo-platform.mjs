@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 // SPDX-License-Identifier: Apache-2.0
 //
-// Trình diễn nền tảng Tầng 1 trong khoảng 2 phút, từng bước in ra màn hình (không cần mở giao diện web):
+// Trình diễn nền tảng Tầng 1 trong khoảng 3 phút, từng bước in ra màn hình (không cần mở giao diện web):
 //   1. Cảm biến OT gửi số đo vượt ngưỡng -> hệ thống tự mở hồ sơ sửa chữa trong quy trình duyệt (nguyên lý ii)
 //   2. Kho lạnh: xuất hồ sơ đã kết thúc ra kho S3, kiểm chứng sổ cái băm nối chuỗi (nguyên lý i)
 //   3. Phả hệ dữ liệu lấy từ danh mục PostgreSQL (nguyên lý iii)
 //   4. Đa tổ chức: tổ chức B không thấy gì của tổ chức mặc định
 //   5. Cổng API: không token bị chặn tại biên (nguyên lý iv)
+//   6. Chữ ký số: duyệt hồ sơ sửa chữa, chữ ký X.509 của người duyệt kiểm chứng được với CA của tổ chức
+//   7. Không gian dữ liệu: cảm biến đọc theo chuẩn NGSI-LD kèm vị trí
 // Chạy trên hệ thống đang chạy và đã nạp dữ liệu mẫu:  node scripts/demo-platform.mjs   (Node.js 22, không cần cài gói)
 // Dùng các tài khoản mẫu qua client dòng lệnh dxlab-cli (chỉ cho môi trường phát triển, xem docs/VAN_HANH.md).
 import { readFileSync } from 'node:fs'
@@ -51,7 +53,7 @@ for (let i = 0; i < 60; i += 1) {
 }
 ok(`Quy trình "${lib.name}" đã xuất bản`)
 const key = `lanh_${Date.now().toString(36)}`
-const reg = await call('director1', '/sensors', { method: 'POST', body: JSON.stringify({ key, name: 'Tủ lạnh kho 1', unit: '°C', threshold: 8, direction: 'above', repair_app: lib.key }) })
+const reg = await call('director1', '/sensors', { method: 'POST', body: JSON.stringify({ key, name: 'Tủ lạnh kho 1', unit: '°C', threshold: 8, direction: 'above', repair_app: lib.key, lat: 10.8231, lon: 106.6297 }) })
 const { token } = await reg.json()
 ok(`Giám đốc đăng ký cảm biến ${key}; token thiết bị chỉ hiện một lần`)
 const send = (value) => fetch(`${GW}/telemetry/${key}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-sensor-token': token }, body: JSON.stringify({ value }) }).then((r) => r.json())
@@ -95,4 +97,27 @@ ok(`Không token: HTTP ${anon.status}`)
 const forged = await fetch(`${GW}/v1/graphql`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer a.b.c' }, body: JSON.stringify({ query: '{ app { key } }' }) })
 ok(`Token giả: HTTP ${forged.status}`)
 if (anon.status !== 401 || forged.status !== 401) fail('Cổng API không chặn đúng')
-console.log(process.exitCode ? '\nCó bước thất bại.' : '\nXong: nền tảng chạy đúng cả năm bước.')
+// 6. Chữ ký số
+step(6, 'Chữ ký số: duyệt hồ sơ sửa chữa, chữ ký kiểm chứng được')
+const wantStatus = async (user, id, cond) => { for (let i = 0; i < 60; i += 1) { const s = (await gql(user, 'query($i: uuid!) { submission_by_pk(id: $i) { status current_step } }', { i: id })).submission_by_pk; if (cond(s)) return s; await wait(1000) } throw new Error('Quá hạn chờ hồ sơ') }
+await wantStatus('manager1', alarm.request, (s) => s.current_step === 'truong_phong')
+await gql('manager1', 'mutation($o: submission_event_insert_input!) { insert_submission_event_one(object: $o) { id } }', { o: { submission_id: alarm.request, step_key: 'truong_phong', action: 'approve', note: 'Đã kiểm tra tủ lạnh' } })
+let signed = []
+for (let i = 0; i < 60 && !signed.length; i += 1) {
+  signed = (await (await call('manager1', `/signatures/verify?submission=${alarm.request}`)).json()).filter((e) => e.signed)
+  if (!signed.length) await wait(1000)
+}
+if (signed.length && signed.every((e) => e.valid)) ok(`Hành động duyệt của ${signed[0].actor} có chữ ký X.509 (dấu vân tay ${signed[0].fingerprint.slice(0, 16)}…), kiểm chứng hợp lệ với CA của tổ chức`)
+else fail('Không có chữ ký hợp lệ cho hành động duyệt')
+const ca = await (await call('manager1', '/pki/ca')).text()
+ok(`Chứng thư CA của tổ chức tải được (${ca.slice(0, 27)}…)`)
+
+// 7. NGSI-LD
+step(7, 'Không gian dữ liệu: cảm biến theo chuẩn NGSI-LD kèm vị trí')
+const entities = await (await call('manager1', '/ngsi-ld/v1/entities?type=Device')).json()
+const mine = entities.find((e) => e.id.endsWith(`:${key}`))
+if (mine?.location) ok(`${mine.id}: giá trị ${mine.value.value} ${mine.value.unitCode}, vị trí [${mine.location.value.coordinates.join(', ')}], vượt ngưỡng: ${mine.alarm.value}`)
+else fail('Không thấy thực thể NGSI-LD của cảm biến vừa đăng ký')
+ok('Bản đồ cảm biến trên web (mục "Bản đồ cảm biến") dùng chính điểm cuối này')
+
+console.log(process.exitCode ? '\nCó bước thất bại.' : '\nXong: nền tảng chạy đúng cả bảy bước.')

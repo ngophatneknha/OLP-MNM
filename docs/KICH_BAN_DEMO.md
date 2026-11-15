@@ -47,12 +47,14 @@ Nếu thiếu giờ, bỏ cảnh 3 (đổi quy trình) và đọc lướt cảnh
 ## Từng cảnh
 
 ### Cảnh 0 (6:00): demo nền tảng trên dòng lệnh
-Chạy `node scripts/demo-platform.mjs` và đọc to từng bước khi nó hiện ra (khoảng 2 phút):
+Chạy `node scripts/demo-platform.mjs` và đọc to từng bước khi nó hiện ra (khoảng 3 phút):
 1. **Cảm biến (nguyên lý ii):** số đo 5 °C chỉ được ghi; số đo 12 °C vượt ngưỡng 8 nên hệ thống **tự mở một hồ sơ sửa chữa** đi qua quy trình duyệt của người. Gửi không có token thiết bị bị chặn 401.
 2. **Kho lạnh (nguyên lý i):** hồ sơ đã kết thúc được xuất ra kho S3, rồi **kiểm chứng sổ cái**: chuỗi băm liền mạch, mọi tệp còn nguyên. Nói: sổ cái không sửa xóa được ngay ở cơ sở dữ liệu.
 3. **Phả hệ (nguyên lý iii):** báo cáo nào đọc từ bảng nào, lấy tự động từ danh mục PostgreSQL.
 4. **Đa tổ chức:** tổ chức B không thấy quy trình, hồ sơ hay kho lạnh của tổ chức mặc định.
 5. **Zero-Trust (nguyên lý iv):** không token và token giả đều bị cổng API chặn 401 trước khi tới dữ liệu.
+6. **Chữ ký số:** trưởng phòng duyệt hồ sơ sửa chữa; hành động có chữ ký X.509 do CA của tổ chức cấp, kiểm chứng hợp lệ. Nói thẳng: PKI phần mềm, chưa HSM và chưa có giá trị pháp lý theo luật.
+7. **Không gian dữ liệu:** chính cảm biến đó đọc được theo chuẩn NGSI-LD kèm vị trí; web có mục "Bản đồ cảm biến" dùng cùng điểm cuối.
 
 Nếu được hỏi về tự phục hồi: `docker compose kill hasura` rồi chỉ cho thấy dịch vụ tự khởi động lại (có kiểm thử OPS và `tests/recovery.test.js`).
 
