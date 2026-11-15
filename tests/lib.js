@@ -5,11 +5,14 @@
 // Không phụ thuộc thư viện ngoài: node:test + fetch.
 
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+// Tarball phát hành không có thư mục .git: các ca kiểm lịch sử commit và thẻ tự bỏ qua, kèm lý do.
+export const NO_GIT = existsSync(resolve(ROOT, '.git')) ? false : 'cần kho git (bản giải nén từ tarball không có lịch sử)'
 export const KC = process.env.KC_URL ?? 'http://localhost:8081'
 export const GW = process.env.GW_URL ?? 'http://localhost:9080'
 export const WEB = process.env.WEB_URL ?? 'http://localhost:3000'

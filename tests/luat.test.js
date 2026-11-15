@@ -9,7 +9,7 @@ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT, run } from './lib.js'
+import { NO_GIT, ROOT, run } from './lib.js'
 
 const REPO = process.env.REPO ?? 'ngophatneknha/OLP-MNM'
 const OWNER = REPO.split('/')[0].toLowerCase()
@@ -27,10 +27,10 @@ describe('LUAT: Thể lệ và Đề thi — điều khoản ngoài bảng đi�
     assert.equal(j.license?.spdx_id, 'Apache-2.0', 'GitHub phải nhận ra giấy phép (hiện ở thanh bên của kho)')
     assert.ok(j.description && j.description.length > 20, 'kho cần có mô tả')
   })
-  test('LUAT-02 không tài liệu của BTC (PDF) nằm trong kho', () => {
+  test('LUAT-02 không tài liệu của BTC (PDF) nằm trong kho', { skip: NO_GIT }, () => {
     assert.deepEqual(run('git', ['ls-files']).split('\n').filter((f) => /\.pdf$/i.test(f)), [])
   })
-  test('LUAT-03 lịch sử commit chỉ có tác giả là thành viên đội: không công cụ/AI/bot đứng tên hay đồng tác giả', () => {
+  test('LUAT-03 lịch sử commit chỉ có tác giả là thành viên đội: không công cụ/AI/bot đứng tên hay đồng tác giả', { skip: NO_GIT }, () => {
     const bad = history().filter((c) => /claude|anthropic|co-authored-by|generated with|\[bot\]|noreply@anthropic/i.test(c))
     assert.equal(bad.length, 0, `${bad.length} commit có dấu vết đồng tác giả`)
   })
@@ -41,7 +41,7 @@ describe('LUAT: Thể lệ và Đề thi — điều khoản ngoài bảng đi�
       assert.ok(!/claude|anthropic|copilot|\[bot\]|bot$/i.test(c.login) && c.type !== 'Bot', `tài khoản công cụ trong danh sách: ${c.login}`)
     }
   })
-  test('LUAT-05 không bí mật thật trong toàn bộ lịch sử: khóa API, mật khẩu, token, khóa riêng', () => {
+  test('LUAT-05 không bí mật thật trong toàn bộ lịch sử: khóa API, mật khẩu, token, khóa riêng', { skip: NO_GIT }, () => {
     const log = run('git', ['log', '--all', '-p', '--no-color'])
     const shapes = [
       [/-----BEGIN (RSA |EC |OPENSSH |)PRIVATE KEY-----/, 'khóa riêng'],
