@@ -30,10 +30,10 @@ jobs:
         with:
           node-version: 22
       - run: pip install reuse
-      - name: Kiểm thử đơn vị
-        run: node --test services/workflow-bridge/*.test.js web/src/*.test.js
       - run: npm ci --no-audit --no-fund && npm run lint && npm run build
         working-directory: web
+      - name: Kiểm thử đơn vị (web cần vue đã cài ở bước trên)
+        run: node --test services/workflow-bridge/*.test.js web/src/*.test.js
       - name: Dựng hệ thống từ đầu
         run: |
           cp .env.example .env
