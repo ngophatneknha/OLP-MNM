@@ -11,6 +11,8 @@ import { ArrowLeft, Download, Paperclip } from 'lucide-vue-next'
 import { auth, gql, formatValue, formatTime, whereIs, waitsOnMe, stepOf, suggestion, ROLE_LABEL, SUBMISSION_FIELDS, uploadFile, downloadFile, formatSize, toast } from '../lib.js'
 import SignatureRow from '../components/SignatureRow.vue'
 import DecisionBar from '../components/DecisionBar.vue'
+import ProcessFlow from '../components/ProcessFlow.vue'
+import { t } from '../i18n.js'
 
 const route = useRoute()
 const submission = ref(undefined) // undefined: đang tải; null: không tìm thấy hoặc không có quyền xem
@@ -90,6 +92,11 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
         <li v-if="!submission.attachments.length" class="panel-row text-pencil">Chưa có tệp nào.</li>
       </ul>
       <label v-if="canAttach()" class="btn-quiet mt-3 cursor-pointer"><Paperclip :size="16" aria-hidden="true" /> Thêm tệp<input type="file" multiple class="sr-only" @change="attach" /></label>
+    </section>
+
+    <section class="mt-8" aria-labelledby="flow-title">
+      <h2 id="flow-title" class="section-title">{{ t('flow.label') }}</h2>
+      <div class="mt-3"><ProcessFlow :spec="submission.version.spec" :submission="submission" /></div>
     </section>
 
     <section class="mt-8" aria-labelledby="sign-title">

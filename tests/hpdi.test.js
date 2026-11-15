@@ -12,6 +12,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT, WEB, as, publishApp, submit, act, waitStatus, sql, until, uid, SPEC } from './lib.js'
 import { validateSpec, simulate, toBpmn } from '../services/workflow-bridge/compile.js'
+import { computeMaturity } from '../web/src/maturity.js'
 
 const FIELD = (extra = {}) => ({ key: 'so_tien', label: 'Số tiền', type: 'number', required: true, ...extra })
 const STEP = (extra = {}) => ({ key: 'tp', name: 'Trưởng phòng duyệt', role: 'manager', ...extra })
@@ -146,6 +147,17 @@ describe('D: Không gian Dữ liệu số — số liệu thực chứng', () =>
     await waitStatus('staff1', s, { status: 'rejected' })
     assert.equal(sql(`select finished_at is not null and finished_at >= created_at from submission where id = '${s}'`), 't')
   })
+  test('D-07 mức trưởng thành H-P-D-I tính được từ dữ liệu thật: truy vấn đúng cấu trúc, điểm trong khoảng 0 đến 100', async () => {
+    const subs = (await as('director1', `{ submission(order_by: {created_at: desc}, limit: 500) { id status created_at app { key name } version { spec } app_version data
+      events { step_key action created_at } opinions { step_key } } }`)).data.submission
+    const extra = (await as('director1', `{ apps: app(where: {status: {_eq: "published"}}) { key spec versions { version } changes { status } }
+      autonomy: step_autonomy { app_key step_key level } }`)).data
+    const r = computeMaturity({ submissions: subs, apps: extra.apps, autonomy: extra.autonomy })
+    assert.equal(r.enough, true, 'cần ít nhất 5 hồ sơ (các ca trước đã tạo đủ)')
+    for (const k of ['H', 'P', 'D', 'I']) assert.ok(r.spaces[k].score >= 0 && r.spaces[k].score <= 100, `điểm ${k} ngoài khoảng`)
+    assert.ok(r.overall >= 0 && r.overall <= 100)
+  })
+
   test('D-05 đóng băng dữ liệu theo chuỗi thời gian: mỗi sự kiện có dấu thời gian đơn điệu, không có sự kiện từ tương lai', async () => {
     assert.equal(sql("select count(*) from submission_event where created_at > now() + interval '1 minute'"), '0')
     assert.equal(sql('select count(*) from (select created_at, lag(created_at) over (partition by submission_id order by id) p from submission_event) t where created_at < p'), '0')

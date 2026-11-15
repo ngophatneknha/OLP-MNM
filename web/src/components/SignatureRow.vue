@@ -9,6 +9,7 @@ bước không áp dụng cho hồ sơ này thì ghi rõ. Không truyền `submi
 <script setup>
 import { computed } from 'vue'
 import { Clock, MinusCircle } from 'lucide-vue-next'
+import { stepStates } from '../flow.js'
 import { ROLE_LABEL, conditionText, formatTime } from '../lib.js'
 
 const props = defineProps({
@@ -16,31 +17,12 @@ const props = defineProps({
   submission: { type: Object, default: null },
 })
 
-// Cùng phép so sánh mà bộ biên dịch đưa vào BPMN, để ô ký khớp với đường đi thật.
-function applies(step, data) {
-  if (!step.when) return true
-  const a = data[step.when.field], b = step.when.value
-  return { '>': a > b, '>=': a >= b, '<': a < b, '<=': a <= b, '==': a === b, '!=': a !== b }[step.when.op]
-}
-
-const boxes = computed(() => (props.spec.steps ?? []).map((step) => {
-  const sub = props.submission
-  const event = sub?.events?.findLast((e) => e.step_key === step.key)
-  let state = 'preview'
-  if (sub) {
-    state = !applies(step, sub.data) ? 'skipped'
-      : event?.action === 'reject' ? 'refused'
-      : event ? 'signed'
-      : step.key === sub.current_step ? 'waiting'
-      : 'upcoming'
-  }
-  return {
-    ...step, state, event,
-    condition: conditionText(props.spec, step),
-    // Dấu vừa đóng trong vài giây gần đây thì có hiệu ứng "ấn dấu": phản hồi cho hành động người dùng vừa làm.
-    fresh: event && Date.now() - Date.parse(event.created_at) < 8000,
-  }
-}))
+const boxes = computed(() => stepStates(props.spec, props.submission).map((box) => ({
+  ...box,
+  condition: conditionText(props.spec, box),
+  // Dấu vừa đóng trong vài giây gần đây thì có hiệu ứng "ấn dấu": phản hồi cho hành động người dùng vừa làm.
+  fresh: box.event && Date.now() - Date.parse(box.event.created_at) < 8000,
+})))
 </script>
 
 <template>

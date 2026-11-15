@@ -9,6 +9,7 @@ và chạy thử trên hồ sơ cũ, người khác duyệt mới phát hành), 
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { auth, gql, diffSpec, formatTime } from '../lib.js'
 import SignatureRow from '../components/SignatureRow.vue'
+import ProcessFlow from '../components/ProcessFlow.vue'
 
 const apps = ref(null)
 const selectedKey = ref('')
@@ -87,6 +88,7 @@ const hours = (h) => Math.abs(h) >= 24 ? `${(Math.abs(h) / 24).toFixed(1)} ngày
         <h2 class="font-semibold">{{ app.name }}</h2>
         <span class="pill pill-wait">Phiên bản {{ app.versions[0]?.version ?? 1 }}</span>
       </div>
+      <div class="mt-3"><ProcessFlow :spec="app.spec" /></div>
       <div class="mt-3"><SignatureRow :spec="app.spec" /></div>
     </section>
 
