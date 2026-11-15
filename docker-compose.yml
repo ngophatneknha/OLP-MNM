@@ -122,6 +122,8 @@ services:
       FLOWABLE_PASSWORD: ${FLOWABLE_PASSWORD}
       HASURA_URL: http://hasura:8080
       S3_URL: http://seaweedfs:8333
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
       CLAMAV_HOST: clamav
       # Tìm kiếm và hỏi đáp (tùy chọn): chỉ hoạt động khi bật profile search ở docker-compose.optional.yml.
       MEILI_URL: http://meilisearch:7700
@@ -142,11 +144,14 @@ services:
       start_period: 20s
 
   # Lưu trữ đối tượng chuẩn S3 (thay MinIO: image cộng đồng không còn trên Docker Hub).
-  # shortcut: S3 chưa bật xác thực và chưa mở cổng ra ngoài; cấu hình khóa truy cập khi làm DA-05.
+  # Xác thực AWS SigV4 bắt buộc: khóa quản trị lấy từ .env (S3_ACCESS_KEY/S3_SECRET_KEY); cổng S3 không mở ra ngoài.
   seaweedfs:
     image: chrislusf/seaweedfs:4.53
     restart: unless-stopped
     command: server -dir=/data -s3
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
     volumes:
       - s3data:/data
     healthcheck:
