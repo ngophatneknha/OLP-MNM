@@ -64,6 +64,7 @@ node --test --test-reporter=spec tests/*.test.js
 | LUAT-08 | Mọi bản phát hành có ghi chú và tệp, bản mới nhất là "latest" |
 | LUAT-09, 10 | Tầng 1 không giao diện; dựng bằng đúng một lệnh |
 | LUAT-11 | Có mẫu thư nộp bài đúng quy cách (`docs/NOP_BAI.md`) |
+| LUAT-12 | Tài liệu người dùng, kỹ thuật, kịch bản demo, slide có đủ, README dẫn tới, liên kết không gãy |
 
 Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải nén ở thư mục tạm, 73 đạt, 0 lỗi; quét bí mật trên toàn bộ lịch sử không thấy gì. Điều khoản về con người (số thành viên, giảng viên, đăng ký qua trường, hạn nộp) không kiểm bằng máy: xem `docs/NOP_BAI.md`.
 

@@ -147,11 +147,12 @@ Mật khẩu dùng chung cho các tài khoản mẫu nằm trong [`infra/keycloa
 
 ### Thử trong 3 phút
 
-1. Đăng nhập `manager1`, vào **Tạo ứng dụng**, chọn một quy trình trong kho mẫu hoặc gõ mô tả rồi bấm **Xuất bản**.
-2. Đăng nhập `staff1`, vào **Ứng dụng**, điền form và gửi.
-3. Đăng nhập lại `manager1`, vào **Việc của tôi** để duyệt.
-4. Vẫn là `manager1`: mở lại quy trình vừa tạo, đổi một điều kiện và **Gửi đề xuất thay đổi**.
-5. Đăng nhập `director1`, vào **Quy trình** để xem phần khác biệt, kết quả chạy thử, rồi chấp nhận.
+1. Đăng nhập `staff1`, vào **Gửi hồ sơ**, chọn một loại hồ sơ, điền và gửi.
+2. Đăng nhập `manager1` (lần đầu phải thiết lập OTP bằng ứng dụng trên điện thoại), mở **Bàn làm việc** và duyệt hồ sơ; xem thêm **Bảng công việc** và **Lịch**.
+3. Vẫn là `manager1`: vào **Soạn quy trình** để lấy một quy trình trong kho mẫu hoặc gõ mô tả bằng lời rồi **Xuất bản**; mở một quy trình, đổi một điều kiện và **Gửi đề xuất thay đổi**.
+4. Đăng nhập `director1` (cũng cần OTP), vào **Quy trình** để xem phần khác biệt, kết quả chạy thử trên hồ sơ cũ, rồi chấp nhận; vào **Số liệu** và **Trợ lý AI**.
+
+Hướng dẫn đầy đủ từng màn hình: [docs/HUONG_DAN.md](docs/HUONG_DAN.md). Kịch bản trình diễn 15 phút: [docs/KICH_BAN_DEMO.md](docs/KICH_BAN_DEMO.md), kèm [slide thuyết trình](docs/slides/index.html) (mở bằng trình duyệt).
 
 ### Các địa chỉ
 
@@ -224,14 +225,15 @@ docs/                       kiến trúc và kế hoạch
 
 ## Hiện trạng và hướng phát triển
 
-Đã chạy được, có kiểm thử: nền tảng lõi, bộ sinh ứng dụng, trợ lý AI phác thảo, quản lý phiên bản và đề xuất thay đổi quy trình, tệp đính kèm qua kho S3, trang Tài liệu, trang Số liệu (thời gian xử lý, điểm nghẽn), trợ lý AI thử việc bốn nấc, ứng dụng web.
+**Đã chạy được, có kiểm thử trên hệ thống thật:** nền tảng lõi Tầng 1 (SSO có MFA, cổng API, dữ liệu cấu trúc và phi cấu trúc, luồng BPMN), bộ sinh ứng dụng từ mô tả, trợ lý AI phác thảo, phiên bản và đề xuất thay đổi quy trình, tệp đính kèm có quét mã độc, bảng công việc, lịch, thông báo, số liệu điều hành, hỏi đáp tài liệu có dẫn nguồn và kiểm quyền, trợ lý AI thử việc bốn nấc, sao lưu và khôi phục, TLS và giám sát tùy chọn, giao diện vi/en.
 
-Còn lại, theo thứ tự:
+**Chưa làm, nói thẳng** (khai báo là `todo` trong báo cáo kiểm thử): tìm kiếm véc-tơ ngữ nghĩa và đọc PDF/OCR; kho dữ liệu lạnh, NGSI-LD, WebGIS; két bí mật; WAF; ẩn thông tin định danh; sao lưu tự động theo lịch; dịch nốt các trang cũ sang tiếng Anh; wiki và điểm trưởng thành H-P-D-I.
 
-- Xác thực hai yếu tố cho trưởng phòng và giám đốc; quét mã độc tệp tải lên; TLS khi triển khai trên Internet.
-- Bảng công việc dạng cột (Kanban) cho không gian [H].
+### Muốn đóng góp?
 
-Danh sách đầu việc và tiến độ: [docs/BACKLOG.md](docs/BACKLOG.md). Lịch sử thay đổi: [CHANGELOG.md](CHANGELOG.md).
+Các việc nhỏ, rõ ràng, phù hợp người mới được gắn nhãn [`good first issue`](https://github.com/ngophatneknha/OLP-MNM/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22): đóng góp một quy trình mẫu vào `library/`, dịch một trang sang tiếng Anh, thêm quy tắc cảnh báo cho Prometheus, viết thêm ca kiểm thử. Cách làm từng bước: [CONTRIBUTING.md](CONTRIBUTING.md). Mọi đóng góp đều phải qua pull request và CI.
+
+Danh sách đầu việc và tiến độ: [docs/BACKLOG.md](docs/BACKLOG.md). Lịch sử thay đổi: [CHANGELOG.md](CHANGELOG.md). Tài liệu: [người dùng](docs/HUONG_DAN.md), [kỹ thuật và vận hành](docs/KY_THUAT.md), [kiến trúc](docs/architecture.md).
 
 ## Đóng góp
 
