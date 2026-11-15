@@ -51,6 +51,22 @@ node --test --test-reporter=spec tests/*.test.js
 | [H] Con người số | H-01…02 | Tệp theo quyền hồ sơ; hộp việc theo vai trò |
 | [I] Trí tuệ số | I-01…06 | Chỉ trưởng phòng/giám đốc dùng trợ lý soạn; AI thật sinh bản mô tả hợp lệ, đúng vai trò và điều kiện; mô tả tiêm lệnh không lọt vai trò lạ; không giả được danh tính AI; nâng nấc tự chủ cần bằng chứng thật (≥ 10, ≥ 90%, dữ liệu mẫu không tính); AI lỗi không chặn luồng người |
 
+## Điều khoản của Thể lệ và Đề thi ngoài bảng điểm (LUAT)
+
+| Mã ca | Kiểm cái gì |
+|---|---|
+| LUAT-01 | Kho công khai, GitHub nhận ra giấy phép Apache-2.0, có mô tả |
+| LUAT-02 | Không tệp PDF của BTC trong kho |
+| LUAT-03, 04 | Lịch sử commit và danh sách người đóng góp không có công cụ, AI hay bot |
+| LUAT-05 | Không khóa riêng, token, khóa API trong toàn bộ lịch sử (kể cả khóa AI trong `.env`) |
+| LUAT-06 | Mật khẩu mẫu chỉ là giá trị giữ chỗ, README cảnh báo |
+| LUAT-07 | Image trên GitHub Packages công khai |
+| LUAT-08 | Mọi bản phát hành có ghi chú và tệp, bản mới nhất là "latest" |
+| LUAT-09, 10 | Tầng 1 không giao diện; dựng bằng đúng một lệnh |
+| LUAT-11 | Có mẫu thư nộp bài đúng quy cách (`docs/NOP_BAI.md`) |
+
+Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải nén ở thư mục tạm, 73 đạt, 0 lỗi; quét bí mật trên toàn bộ lịch sử không thấy gì. Điều khoản về con người (số thành viên, giảng viên, đăng ký qua trường, hạn nộp) không kiểm bằng máy: xem `docs/NOP_BAI.md`.
+
 ## Lỗi bộ kiểm thử tìm ra và đã sửa (phiên bản 1.1.0)
 
 | # | Phát hiện | Cách sửa |

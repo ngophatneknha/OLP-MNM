@@ -9,6 +9,17 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-15
+
+Bản rà soát đúng luật: kiểm các điều khoản của Thể lệ và Đề thi ngoài bảng điểm PoF, và chuẩn bị hồ sơ nộp bài.
+
+### Added
+- `tests/luat.test.js` (LUAT-01 đến LUAT-11): kho công khai và nhận diện giấy phép, không tài liệu của BTC trong kho, lịch sử commit và danh sách người đóng góp không có công cụ/bot, không bí mật trong toàn bộ lịch sử, image container công khai, bản phát hành có ghi chú, Tầng 1 không giao diện, dựng bằng một lệnh, hồ sơ nộp bài.
+- `docs/NOP_BAI.md`: câu hỏi hạn nộp gửi BTC, danh sách điều kiện đội, mẫu thư nộp bài đúng quy cách, danh sách kiểm tra trước khi gửi.
+
+### Changed
+- `docs/KIEM_THU.md` bổ sung nhóm LUAT, kết quả cài sạch từ bản phát hành và quét bí mật.
+
 ## [1.2.0] - 2026-11-15
 
 ### Added
