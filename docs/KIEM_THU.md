@@ -82,6 +82,20 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | DEMO | Sau `seed.js`, điểm H-P-D-I tính riêng trên các quy trình mẫu hợp lý, `tam_ung` có phiên bản 2 (`tests/demo.check.js`) |
 | OPS-RESTORE | Sao lưu, xóa bảng và thêm hồ sơ mới, khôi phục: hồ sơ trở về đúng lúc sao lưu, tệp đính kèm giống từng byte (chạy bằng `RESTORE_TEST=1`) |
 
+## Kho lạnh, phả hệ và nạp hàng loạt (phiên bản 1.8.1)
+
+| Mã | Kiểm tra | Cách thực hiện |
+|---|---|---|
+| COLD-01 | Hồ sơ đã kết thúc được xuất ra tệp JSONL (kèm nhật ký) trong bucket `dxlab-cold`, ghi vào sổ cái; chạy lại không xuất trùng | Chạy hồ sơ tới `approved`, giám đốc gọi `POST /archive?days=0` |
+| COLD-02 | Sổ cái nối chuỗi mã băm liền mạch và mọi tệp khớp mã băm | `GET /archive/verify` |
+| COLD-03 | Sổ cái không sửa/xóa được kể cả bằng SQL của chủ sở hữu; sửa một tệp thì kiểm chứng báo lỗi, trả lại thì hết lỗi | Trigger `forbid_change`; ghi đè tệp thật trong S3 rồi kiểm |
+| COLD-04 | Chỉ giám đốc vận hành kho lạnh | Nhân viên, trưởng phòng bị 403; không token bị 401 |
+| LIN-01 | Phả hệ lấy tự động từ danh mục PostgreSQL: view báo cáo của ứng dụng vừa xuất bản truy ngược về bảng nguồn | `GET /lineage` |
+| ING-01 | Nạp CSV nhiều dòng: dòng đúng được nhận, dòng sai bị từ chối kèm số dòng, rào chắn của CSDL vẫn nguyên | `POST /ingest?app=<mã>` bằng token nhân viên |
+| ING-02 | Nạp JSON; ứng dụng lạ 404; quá 500 dòng 413; không token 401 | như trên |
+
+Giới hạn nói thẳng: kho lạnh là tệp JSONL, chưa phải bảng Parquet/Iceberg; bản sao trong cơ sở dữ liệu nóng được giữ nguyên (chưa xóa sau khi xuất); sổ cái chống sửa ở tầng CSDL và băm chuỗi, nhưng chưa có neo bên ngoài (ví dụ ký thời gian) để chống người nắm cả CSDL lẫn kho S3 viết lại toàn bộ chuỗi.
+
 ## Tìm kiếm và hỏi đáp (phiên bản 1.5.0)
 
 | Mã ca | Kiểm cái gì |
@@ -109,7 +123,7 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 
 | Mã | Thiếu | Ghi chú |
 |---|---|---|
-| D-06 | Lakehouse, NGSI-LD, WebGIS, phả hệ dữ liệu [D] | Ngoài phạm vi hiện tại |
+| D-06 | Lakehouse định dạng Parquet/Iceberg, NGSI-LD, WebGIS [D] | Ngoài phạm vi hiện tại; kho lạnh JSONL, phả hệ và nạp hàng loạt đã có (COLD, LIN, ING) |
 | I-07 | Tìm kiếm toàn văn/vector, OCR, RAG [I] | Chưa làm |
 | Z-05b | Sao lưu tự động theo lịch | Script và khôi phục đã có (OPS-RESTORE), chưa có lịch |
 
@@ -132,9 +146,9 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | Nguyên lý (iv): Zero-Trust, MFA, kiểm dịch mã độc tại biên | Đạt | T1-SSO-10, T1-OBJ-08, Z-01, Z-02, Z-04 |
 | Nguyên lý (iv): cấu hình hạ tầng bằng mã, tự phục hồi tức thì | Đạt | `docker-compose.yml`, OPS-06, OPS-07 |
 | Lớp 1 tham chiếu: truyền phát trạng thái thời gian thực | Đạt bằng SSE (không dùng WebSocket) | Z-03 |
-| Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh/lakehouse | **Chưa** | D-06 |
+| Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh | Đạt ở mức tệp JSONL bất biến trong S3 (chưa phải bảng lakehouse Parquet/Iceberg) | COLD-01 đến COLD-04 |
 | Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | **Chưa** | D-06 |
-| Nguyên lý (iii): phả hệ dữ liệu | **Chưa** | D-06 |
+| Nguyên lý (iii): phả hệ dữ liệu | Đạt: lấy tự động từ danh mục PostgreSQL, thêm luồng xuống kho lạnh và số liệu | LIN-01 |
 | Chứng thư số (PKI) cho chữ ký phê duyệt | **Chưa**: chữ ký là xác nhận trong nhật ký bất biến, không phải chữ ký số có chứng thư | Nói thẳng khi trình bày |
 
 Điều khoản của Thể lệ và Đề thi ngoài bảng điểm (hạn nộp, kho công khai, giấy phép OSI, không bí mật trong lịch sử, bản phát hành...) do nhóm `LUAT` kiểm. Hạn nộp trong Đề ghi năm 2025 trong khi cuộc thi là 2026: cần hỏi Ban tổ chức xác nhận.

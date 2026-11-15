@@ -20,6 +20,8 @@ import { validateSpec, toBpmn, toViewSql, simulate } from './compile.js'
 import { generateApp } from './ai.js'
 import { handleFiles } from './files.js'
 import { handleEvents, notify } from './events.js'
+import { handleCold, archiveFinished } from './cold.js'
+import { handleIngest } from './ingest.js'
 import { handleSearch, syncIndex } from './search.js'
 import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
@@ -164,8 +166,13 @@ setInterval(async () => {
   }
 }, 10000)
 
+// Mỗi ngày đẩy hồ sơ đã kết thúc quá ARCHIVE_AFTER_DAYS (mặc định 90) xuống kho lạnh.
+setInterval(() => archiveFinished().catch((err) => console.error('Xuất kho lạnh:', err.message)), 24 * 3600 * 1000).unref()
+
 createServer(async (req, res) => {
   if (req.url.startsWith('/events')) return handleEvents(req, res)
+  if (req.url.startsWith('/archive') || req.url.startsWith('/lineage')) return handleCold(req, res)
+  if (req.url.startsWith('/ingest')) return handleIngest(req, res)
   if (req.url.startsWith('/files')) return handleFiles(req, res)
   if (req.url.startsWith('/search') || req.url.startsWith('/ask')) return handleSearch(req, res)
   try {
