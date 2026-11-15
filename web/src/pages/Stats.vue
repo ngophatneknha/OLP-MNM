@@ -9,7 +9,8 @@ Mọi con số tính từ hồ sơ và nhật ký bằng mã (metrics.js), mỗi
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { gql, ROLE_LABEL } from '../lib.js'
 import { computeMetrics, formatHours } from '../metrics.js'
-import { computeMaturity, maturityLevel } from '../maturity.js'
+import { computeMaturity, incompleteLogs, maturityLevel } from '../maturity.js'
+import { download, toCsv, toJson } from '../exporter.js'
 import { t } from '../i18n.js'
 
 const submissions = ref(null)
@@ -20,7 +21,7 @@ async function load() {
   submissions.value = (await gql(`{ submission(order_by: {created_at: desc}, limit: 500) {
     id no status current_step waiting_role created_at finished_at
     app { key name } version { spec } app_version data
-    events { step_key action created_at }
+    events { step_key action actor_name note created_at }
     opinions { step_key }
   } }`)).submission
   try {
@@ -33,6 +34,8 @@ onUnmounted(() => clearInterval(timer))
 
 const m = computed(() => submissions.value && computeMetrics(submissions.value))
 const maturity = computed(() => submissions.value && extra.value && computeMaturity({ submissions: submissions.value, apps: extra.value.apps, autonomy: extra.value.autonomy }))
+const missingLogs = computed(() => (submissions.value ? incompleteLogs(submissions.value) : []))
+const stamp = () => new Date().toISOString().slice(0, 10)
 const SPACES = ['H', 'P', 'D', 'I']
 const maxHours = computed(() => Math.max(...(m.value?.steps.map((s) => s.avgHours) ?? [0]), 0.0001))
 const STATUS = [
@@ -95,6 +98,24 @@ const percent = (n) => (m.value.total ? Math.round((n / m.value.total) * 100) : 
           </li>
         </ul>
       </template>
+    </section>
+
+    <section aria-labelledby="log-title">
+      <h2 id="log-title" class="section-title">{{ t('log.title') }}</h2>
+      <p class="mt-1 max-w-[65ch] text-pencil">{{ t('log.lead') }}</p>
+      <p v-if="!missingLogs.length" class="mt-3 text-done">✓ {{ t('log.ok') }}</p>
+      <template v-else>
+        <p class="mt-3 text-seal">{{ t('log.missing', { n: missingLogs.length }) }}</p>
+        <ul class="panel mt-2">
+          <li v-for="s in missingLogs.slice(0, 10)" :key="s.id" class="panel-row">
+            <RouterLink :to="`/ho-so/${s.id}`" class="font-medium hover:text-pen hover:underline">{{ t('log.item', { name: s.app.name, no: s.no }) }}</RouterLink>
+          </li>
+        </ul>
+      </template>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button type="button" class="btn-quiet" @click="download(`dxlab-nhat-ky-${stamp()}.csv`, toCsv(submissions), 'text/csv;charset=utf-8')">{{ t('log.csv') }}</button>
+        <button type="button" class="btn-quiet" @click="download(`dxlab-nhat-ky-${stamp()}.json`, toJson(submissions), 'application/json')">{{ t('log.json') }}</button>
+      </div>
     </section>
 
     <section v-if="m.steps.length" aria-labelledby="slow-title">

@@ -55,6 +55,8 @@ Ba cách tạo: lấy từ **kho quy trình mẫu**, tự khai báo ô và bư�
 ### Số liệu (trưởng phòng, giám đốc)
 **Mức trưởng thành H-P-D-I** (điểm 0 đến 100 cho từng không gian, và điểm chung); bao nhiêu hồ sơ đang chờ, hoàn tất, bị từ chối; thời gian xử lý trung bình; **bước nào làm hồ sơ chờ lâu nhất**; hồ sơ đang chờ lâu. Mọi con số tính từ chính hồ sơ và nhật ký ký duyệt, dòng nào cũng bấm vào được hồ sơ gốc. Trang tự làm mới.
 
+**Nhật ký và xuất dữ liệu:** mục "Nhật ký và xuất dữ liệu" liệt kê hồ sơ đã xong nhưng thiếu dấu duyệt ở một bước áp dụng cho nó (bấm vào để mở hồ sơ), và có nút tải toàn bộ hồ sơ cùng nhật ký ra CSV hoặc JSON. Dữ liệu xuất ra chỉ gồm những gì vai trò của bạn được phép xem.
+
 **Cách tính mức trưởng thành** (thang điểm của dự án, không phải chuẩn công nghiệp; dưới 5 hồ sơ thì hiện "chưa đủ dữ liệu", không bịa số):
 
 | Không gian | Thành phần (trọng số) |
