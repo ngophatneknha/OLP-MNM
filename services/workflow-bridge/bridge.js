@@ -147,8 +147,9 @@ const handlers = { app_publish: publishApp, submission_start: startSubmission, s
 // Chỉ mục tìm kiếm tự đuổi kịp dữ liệu; chưa bật Meilisearch thì bỏ qua lặng lẽ.
 let lastSyncError = ''
 setInterval(() => syncIndex().then(() => { lastSyncError = '' }, (err) => {
-  if (err.message !== lastSyncError) console.error('Nạp chỉ mục tìm kiếm thất bại:', err.message) // chỉ ghi khi lỗi đổi, khỏi ngập nhật ký
-  lastSyncError = err.message
+  const msg = `${err.message} ${err.cause?.code ?? ''}`.trim()
+  if (msg !== lastSyncError) console.error('Nạp chỉ mục tìm kiếm thất bại:', msg) // chỉ ghi khi lỗi đổi, khỏi ngập nhật ký
+  lastSyncError = msg
 }), 10000)
 
 createServer(async (req, res) => {
