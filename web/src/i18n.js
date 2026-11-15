@@ -11,7 +11,13 @@ let saved = 'vi'
 try { saved = localStorage.getItem('lang') || 'vi' } catch { /* chặn lưu trữ: dùng mặc định */ }
 export const i18n = reactive({ lang: saved in MESSAGES ? saved : 'vi' })
 
-export const t = (key) => MESSAGES[i18n.lang][key] ?? MESSAGES.vi[key] ?? key
+/** Dịch một khóa; `{tên}` trong chuỗi được thay bằng giá trị trong `params`. */
+export const t = (key, params) => {
+  const text = MESSAGES[i18n.lang][key] ?? MESSAGES.vi[key] ?? key
+  return params ? text.replace(/\{(\w+)\}/g, (m, name) => params[name] ?? m) : text
+}
+/** Ngôn ngữ cho định dạng số và ngày giờ của trình duyệt. */
+export const locale = () => (i18n.lang === 'en' ? 'en-GB' : 'vi-VN')
 
 export function setLang(lang) {
   i18n.lang = lang

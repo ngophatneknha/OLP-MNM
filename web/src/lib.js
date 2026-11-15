@@ -6,8 +6,13 @@
 
 import Keycloak from 'keycloak-js'
 import { reactive } from 'vue'
+import { i18n, locale, t } from './i18n.js'
 
-export const ROLE_LABEL = { staff: 'Nhân viên', manager: 'Trưởng phòng', director: 'Giám đốc', accountant: 'Kế toán' }
+/** Tên vai trò theo ngôn ngữ đang chọn (getter để đổi ngôn ngữ là đổi ngay, không cần tải lại). */
+export const ROLE_LABEL = {
+  get staff() { return t('role.staff') }, get manager() { return t('role.manager') },
+  get director() { return t('role.director') }, get accountant() { return t('role.accountant') },
+}
 /** Bốn nấc tự chủ của trợ lý AI ở một bước duyệt (nấc 0 để chỉ số khớp với mã nấc 1..4). */
 export const AUTONOMY = [
   null,
@@ -59,7 +64,7 @@ export async function postJson(path, body) {
     body: JSON.stringify(body),
   })
   const json = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(json.message ?? (res.status === 429 ? 'Bạn hỏi quá nhanh, thử lại sau một phút' : `Lỗi ${res.status}`))
+  if (!res.ok) throw new Error(json.message ?? (res.status === 429 ? t('err.rate') : t('err.http', { status: res.status })))
   return json
 }
 
@@ -72,18 +77,17 @@ export function slug(text) {
 
 export const formatValue = (field, value) =>
   value === undefined || value === null || value === '' ? '—'
-    : field.type === 'number' ? Number(value).toLocaleString('vi-VN') : String(value)
+    : field.type === 'number' ? Number(value).toLocaleString(locale()) : String(value)
 
-export const formatTime = (iso) => new Date(iso).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+export const formatTime = (iso) => new Date(iso).toLocaleString(locale(), { dateStyle: 'short', timeStyle: 'short' })
 
-const relative = new Intl.RelativeTimeFormat('vi', { numeric: 'auto' })
 /** "2 giờ trước", "hôm qua" — con người đọc khoảng cách thời gian dễ hơn dấu thời gian. */
 export function ago(iso) {
   const seconds = (Date.parse(iso) - Date.now()) / 1000
   for (const [unit, size] of [['day', 86400], ['hour', 3600], ['minute', 60]]) {
-    if (Math.abs(seconds) >= size) return relative.format(Math.round(seconds / size), unit)
+    if (Math.abs(seconds) >= size) return new Intl.RelativeTimeFormat(i18n.lang, { numeric: 'auto' }).format(Math.round(seconds / size), unit)
   }
-  return 'vừa xong'
+  return t('time.now')
 }
 
 /** Tên gọi thân mật: Keycloak ghép "tên + họ" ("Chi Lê"), nên lấy từ đầu tiên. */
@@ -114,13 +118,14 @@ export const waitsOnMe = (s) => s.status === 'running' && s.waiting_role === aut
 
 /** Hồ sơ đang ở đâu, nói bằng một câu. */
 export function whereIs(s) {
-  if (s.status === 'approved') return `Đã hoàn tất ${ago(s.finished_at)}`
+  if (s.status === 'approved') return t('where.approved', { when: ago(s.finished_at) })
   if (s.status === 'rejected') {
     const refusal = s.events.findLast((e) => e.action === 'reject')
-    return `${refusal?.actor_name ?? 'Người duyệt'} không duyệt${refusal?.note ? `: ${refusal.note}` : ''}`
+    const who = refusal?.actor_name ?? t('where.approver')
+    return refusal?.note ? t('where.rejectedNote', { who, note: refusal.note }) : t('where.rejected', { who })
   }
   const step = stepOf(s)
-  return step ? `Đang chờ ${ROLE_LABEL[s.waiting_role]} ${step.type === 'task' ? 'thực hiện' : 'ký duyệt'}` : 'Đang chuyển tới người xử lý'
+  return step ? t('where.waiting', { role: ROLE_LABEL[s.waiting_role], action: t(step.type === 'task' ? 'where.doIt' : 'where.sign') }) : t('where.moving')
 }
 
 /** Ô thông tin đáng nhìn nhất của hồ sơ (ô bắt buộc đầu tiên), để một dòng danh sách vẫn đủ ý. */
@@ -137,55 +142,57 @@ export const routeText = (spec) => spec.steps
 export async function sendAction(submission, action, note) {
   await gql('mutation($o: submission_event_insert_input!) { insert_submission_event_one(object: $o) { id } }',
     { o: { submission_id: submission.id, step_key: submission.current_step, action, note: note?.trim() || null } })
-  toast({ approve: 'Đã duyệt hồ sơ', reject: 'Đã từ chối hồ sơ', done: 'Đã ghi nhận hoàn tất' }[action])
+  toast(t(`toast.${action}`))
 }
-
-const OP_TEXT = { '>': 'trên', '>=': 'từ', '<': 'dưới', '<=': 'tối đa', '==': 'là', '!=': 'khác' }
 
 /** "Chỉ khi Số tiền trên 5.000.000" (rỗng nếu bước không có điều kiện). */
 export function conditionText(spec, step) {
   if (!step.when) return ''
   const field = spec.fields.find((f) => f.key === step.when.field)
-  const value = typeof step.when.value === 'number' ? step.when.value.toLocaleString('vi-VN') : step.when.value
-  return `Chỉ khi ${field?.label ?? step.when.field} ${OP_TEXT[step.when.op] ?? step.when.op} ${value}`
+  const value = typeof step.when.value === 'number' ? step.when.value.toLocaleString(locale()) : step.when.value
+  const op = ['>', '>=', '<', '<=', '==', '!='].includes(step.when.op) ? t(`op.${step.when.op}`) : step.when.op
+  return t('cond.when', { field: field?.label ?? step.when.field, op, value })
 }
 
 /** So sánh hai spec, trả về các dòng thay đổi để người không biết kỹ thuật đọc được: [{ kind: add|remove|change, text }]. */
 export function diffSpec(before, after) {
   const out = []
   const index = (list) => new Map(list.map((x) => [x.key, x]))
-  const changes = (pairs) => pairs.filter(([, a, b]) => a !== b).map(([what, a, b]) => `${what}: ${a || 'không'} → ${b || 'không'}`)
+  const none = () => t('diff.no')
+  const changes = (pairs) => pairs.filter(([, a, b]) => a !== b).map(([what, a, b]) => t('diff.item', { what: t(`diff.${what}`), a: a || none(), b: b || none() }))
+  const yesNo = (v) => t(v ? 'diff.yes' : 'diff.no')
+  const kind = (step) => t(step.type === 'task' ? 'act.do' : 'act.approve')
 
   const oldFields = index(before.fields), newFields = index(after.fields)
-  for (const [key, f] of newFields) if (!oldFields.has(key)) out.push({ kind: 'add', text: `Thêm ô “${f.label}”` })
-  for (const [key, f] of oldFields) if (!newFields.has(key)) out.push({ kind: 'remove', text: `Bỏ ô “${f.label}”` })
+  for (const [key, f] of newFields) if (!oldFields.has(key)) out.push({ kind: 'add', text: t('diff.addField', { label: f.label }) })
+  for (const [key, f] of oldFields) if (!newFields.has(key)) out.push({ kind: 'remove', text: t('diff.removeField', { label: f.label }) })
   for (const [key, f] of newFields) {
     const o = oldFields.get(key)
     if (!o) continue
     const list = changes([
-      ['nhãn', o.label, f.label], ['kiểu', o.type, f.type],
-      ['bắt buộc', o.required ? 'có' : 'không', f.required ? 'có' : 'không'],
-      ['lựa chọn', (o.options ?? []).join(', '), (f.options ?? []).join(', ')],
+      ['label', o.label, f.label], ['type', o.type, f.type],
+      ['required', yesNo(o.required), yesNo(f.required)],
+      ['options', (o.options ?? []).join(', '), (f.options ?? []).join(', ')],
     ])
-    if (list.length) out.push({ kind: 'change', text: `Ô “${f.label}” — ${list.join('; ')}` })
+    if (list.length) out.push({ kind: 'change', text: t('diff.changeField', { label: f.label, list: list.join('; ') }) })
   }
 
   const oldSteps = index(before.steps), newSteps = index(after.steps)
-  for (const [key, s] of newSteps) if (!oldSteps.has(key)) out.push({ kind: 'add', text: `Thêm bước “${s.name}” (${ROLE_LABEL[s.role] ?? s.role})` })
-  for (const [key, s] of oldSteps) if (!newSteps.has(key)) out.push({ kind: 'remove', text: `Bỏ bước “${s.name}”` })
+  for (const [key, s] of newSteps) if (!oldSteps.has(key)) out.push({ kind: 'add', text: t('diff.addStep', { name: s.name, role: ROLE_LABEL[s.role] ?? s.role }) })
+  for (const [key, s] of oldSteps) if (!newSteps.has(key)) out.push({ kind: 'remove', text: t('diff.removeStep', { name: s.name }) })
   for (const [key, s] of newSteps) {
     const o = oldSteps.get(key)
     if (!o) continue
     const list = changes([
-      ['tên', o.name, s.name], ['người xử lý', ROLE_LABEL[o.role], ROLE_LABEL[s.role]],
-      ['loại', o.type === 'task' ? 'thực hiện' : 'duyệt', s.type === 'task' ? 'thực hiện' : 'duyệt'],
-      ['điều kiện', conditionText(before, o), conditionText(after, s)],
+      ['name', o.name, s.name], ['handler', ROLE_LABEL[o.role], ROLE_LABEL[s.role]],
+      ['kind', kind(o), kind(s)],
+      ['cond', conditionText(before, o), conditionText(after, s)],
     ])
-    if (list.length) out.push({ kind: 'change', text: `Bước “${s.name}” — ${list.join('; ')}` })
+    if (list.length) out.push({ kind: 'change', text: t('diff.changeStep', { name: s.name, list: list.join('; ') }) })
   }
   const common = (list, other) => list.filter((s) => other.has(s.key)).map((s) => s.key).join()
-  if (common(before.steps, newSteps) !== common(after.steps, oldSteps)) out.push({ kind: 'change', text: 'Đổi thứ tự các bước' })
-  if (!out.length) out.push({ kind: 'change', text: 'Không thay đổi cấu hình (chỉ đổi tên hoặc phát hành lại)' })
+  if (common(before.steps, newSteps) !== common(after.steps, oldSteps)) out.push({ kind: 'change', text: t('diff.reorder') })
+  if (!out.length) out.push({ kind: 'change', text: t('diff.none') })
   return out
 }
 
@@ -194,8 +201,8 @@ export const formatSize = (bytes) => bytes >= 1048576 ? `${(bytes / 1048576).toF
 
 /** Tải một tệp lên hồ sơ. Ném lỗi với câu chữ người dùng đọc được. */
 export async function uploadFile(submissionId, file) {
-  if (file.size > MAX_FILE_BYTES) throw new Error(`“${file.name}” lớn hơn 10 MB`)
-  if (file.size === 0) throw new Error(`“${file.name}” là tệp rỗng`)
+  if (file.size > MAX_FILE_BYTES) throw new Error(t('err.big', { name: file.name }))
+  if (file.size === 0) throw new Error(t('err.empty', { name: file.name }))
   await keycloak.updateToken(30)
   const res = await fetch(`${apiUrl}/files`, {
     method: 'POST',
@@ -205,14 +212,14 @@ export async function uploadFile(submissionId, file) {
     },
     body: file,
   })
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? `Không tải lên được “${file.name}”`)
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? t('err.upload', { name: file.name }))
 }
 
 /** Tải tệp về máy. Trình duyệt không gửi được token khi bấm liên kết, nên lấy qua fetch rồi lưu. */
 export async function downloadFile(file) {
   await keycloak.updateToken(30)
   const res = await fetch(`${apiUrl}/files/${file.id}`, { headers: { authorization: `Bearer ${keycloak.token}`, 'x-hasura-role': auth.role } })
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Không tải được tệp')
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? t('err.download'))
   const link = document.createElement('a')
   link.href = URL.createObjectURL(await res.blob())
   link.download = file.name

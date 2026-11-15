@@ -10,6 +10,7 @@ import { ChevronRight, CircleCheck } from 'lucide-vue-next'
 import { auth, gql, ago, givenName, initials, headline, whereIs, waitsOnMe, stepOf, routeText, suggestion, SUBMISSION_FIELDS } from '../lib.js'
 import DecisionBar from '../components/DecisionBar.vue'
 import CategoryIcon from '../components/CategoryIcon.vue'
+import { t } from '../i18n.js'
 
 const submissions = ref(null)
 const apps = ref([])
@@ -38,41 +39,41 @@ const waiting = computed(() => (submissions.value ?? []).filter(waitsOnMe))
 const mine = computed(() => (submissions.value ?? []).filter((s) => s.submitter_id === auth.userId))
 
 const hour = new Date().getHours()
-const greeting = hour < 11 ? 'Chào buổi sáng' : hour < 14 ? 'Chào buổi trưa' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối'
+const greeting = () => t(`home.greet.${hour < 11 ? 'morning' : hour < 14 ? 'noon' : hour < 18 ? 'afternoon' : 'evening'}`)
 const summary = computed(() => {
   if (submissions.value === null) return ''
   const running = mine.value.filter((s) => s.status === 'running').length
   const parts = []
-  if (waiting.value.length) parts.push(`${waiting.value.length} hồ sơ đang chờ bạn xử lý`)
-  if (running) parts.push(`${running} hồ sơ của bạn đang được xem xét`)
-  return parts.length ? `Có ${parts.join(' và ')}.` : 'Hôm nay chưa có việc nào chờ bạn.'
+  if (waiting.value.length) parts.push(t('home.sum.waiting', { n: waiting.value.length }))
+  if (running) parts.push(t('home.sum.running', { n: running }))
+  return parts.length ? t('home.sum.has', { parts: parts.join(t('home.sum.and')) }) : t('home.sum.none')
 })
 const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'pill-stop' }[s.status])
 </script>
 
 <template>
-  <h1 class="page-title">{{ greeting }}, {{ givenName(auth.name) }}</h1>
+  <h1 class="page-title">{{ greeting() }}, {{ givenName(auth.name) }}</h1>
   <p class="page-lead">{{ summary }}</p>
 
   <p v-if="failed" class="mt-6 rounded-md bg-seal-wash px-4 py-3 text-sm text-seal" role="alert">
-    Không tải được dữ liệu ({{ failed }}). Trang sẽ tự thử lại sau vài giây.
+    {{ t('home.failed', { err: failed }) }}
   </p>
 
   <div v-if="submissions" class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
     <div class="min-w-0 space-y-8">
       <section v-if="auth.role !== 'staff'" aria-labelledby="waiting-title">
-        <h2 id="waiting-title" class="section-title">Chờ bạn xử lý</h2>
+        <h2 id="waiting-title" class="section-title">{{ t('home.waitTitle') }}</h2>
         <div v-if="waiting.length === 0" class="panel mt-3 flex items-center gap-3 px-4 py-5 text-pencil">
-          <CircleCheck :size="20" class="text-done" aria-hidden="true" /> Bạn đã xử lý hết. Hồ sơ mới sẽ hiện ở đây ngay khi được gửi tới.
+          <CircleCheck :size="20" class="text-done" aria-hidden="true" /> {{ t('home.waitDone') }}
         </div>
         <ul v-else class="panel mt-3">
           <li v-for="s in waiting" :key="s.id" class="panel-row items-start">
             <span class="avatar mt-0.5" aria-hidden="true">{{ initials(s.submitter_name) }}</span>
             <div class="min-w-[min(100%,15rem)] flex-1">
-              <RouterLink :to="`/ho-so/${s.id}`" class="font-medium hover:text-pen hover:underline">{{ s.app.name }}, hồ sơ số {{ s.no }}</RouterLink>
-              <p class="text-sm text-pencil">{{ s.submitter_name }} gửi {{ ago(s.created_at) }}. Cần bạn {{ stepOf(s)?.type === 'task' ? 'thực hiện' : 'duyệt' }} ở bước “{{ stepOf(s)?.name }}”.</p>
+              <RouterLink :to="`/ho-so/${s.id}`" class="font-medium hover:text-pen hover:underline">{{ t('home.item', { name: s.app.name, no: s.no }) }}</RouterLink>
+              <p class="text-sm text-pencil">{{ t('home.sentAgo', { who: s.submitter_name, when: ago(s.created_at), action: t(stepOf(s)?.type === 'task' ? 'act.do' : 'act.approve'), step: stepOf(s)?.name }) }}</p>
               <p class="num mt-1 text-sm font-medium">{{ headline(s) }}</p>
-              <p v-if="suggestion(s)" class="sticky-note mt-2">Trợ lý gợi ý <strong>{{ suggestion(s).decision === 'approve' ? 'duyệt' : 'từ chối' }}</strong>: {{ suggestion(s).reason }}</p>
+              <p v-if="suggestion(s)" class="sticky-note mt-2">{{ t('home.suggests') }} <strong>{{ t(suggestion(s).decision === 'approve' ? 'act.approve' : 'act.reject') }}</strong>: {{ suggestion(s).reason }}</p>
             </div>
             <DecisionBar :submission="s" @done="load" />
           </li>
@@ -80,15 +81,15 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
       </section>
 
       <section aria-labelledby="mine-title">
-        <h2 id="mine-title" class="section-title">Hồ sơ bạn đã gửi</h2>
+        <h2 id="mine-title" class="section-title">{{ t('home.mineTitle') }}</h2>
         <div v-if="mine.length === 0" class="panel mt-3 px-4 py-5 text-pencil">
-          Bạn chưa gửi hồ sơ nào. Chọn một loại hồ sơ ở mục “Gửi hồ sơ mới” để bắt đầu.
+          {{ t('home.mineNone') }}
         </div>
         <div v-else class="panel mt-3">
           <RouterLink v-for="s in mine" :key="s.id" :to="`/ho-so/${s.id}`" class="panel-row">
             <CategoryIcon :category="s.app.category" />
             <div class="min-w-[min(100%,12rem)] flex-1">
-              <div class="font-medium">{{ s.app.name }}, hồ sơ số {{ s.no }}</div>
+              <div class="font-medium">{{ t('home.item', { name: s.app.name, no: s.no }) }}</div>
               <div class="num text-sm text-pencil">{{ headline(s) }}</div>
             </div>
             <span class="pill" :class="pill(s)">{{ whereIs(s) }}</span>
@@ -99,22 +100,22 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
     </div>
 
     <section aria-labelledby="new-title">
-      <h2 id="new-title" class="section-title">Gửi hồ sơ mới</h2>
+      <h2 id="new-title" class="section-title">{{ t('home.newTitle') }}</h2>
       <div v-if="apps.length === 0" class="panel mt-3 px-4 py-5 text-sm text-pencil">
-        Chưa có quy trình nào được xuất bản.
-        <template v-if="auth.role === 'manager'"><RouterLink to="/soan" class="font-medium text-pen hover:underline">Soạn quy trình đầu tiên</RouterLink>.</template>
-        <template v-else>Trưởng phòng có thể soạn quy trình đầu tiên.</template>
+        {{ t('home.noProcess') }}
+        <template v-if="auth.role === 'manager'"><RouterLink to="/soan" class="font-medium text-pen hover:underline">{{ t('home.firstProcess') }}</RouterLink>.</template>
+        <template v-else>{{ t('home.askManager') }}</template>
       </div>
       <div v-else class="panel mt-3">
         <RouterLink v-for="app in apps" :key="app.key" :to="`/gui/${app.key}`" class="panel-row">
           <CategoryIcon :category="app.category" />
           <div class="min-w-[min(100%,12rem)] flex-1">
             <div class="font-medium">{{ app.name }}</div>
-            <div class="text-xs text-pencil">Qua {{ routeText(app.spec) }}</div>
+            <div class="text-xs text-pencil">{{ t('home.via', { route: routeText(app.spec) }) }}</div>
           </div>
         </RouterLink>
       </div>
     </section>
   </div>
-  <p v-else-if="!failed" class="mt-8 text-pencil">Đang tải…</p>
+  <p v-else-if="!failed" class="mt-8 text-pencil">{{ t('common.loading') }}</p>
 </template>
