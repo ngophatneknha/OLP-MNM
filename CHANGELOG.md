@@ -9,6 +9,11 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-11-16
+
+### Fixed
+- Ca T1-SSO-10 in thêm nội dung trang Keycloak khi nhân viên không đăng nhập thẳng được, để tìm nguyên nhân lỗi chỉ xảy ra trên nhánh main.
+
 ## [2.3.0] - 2026-11-16
 
 ### Changed

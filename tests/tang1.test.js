@@ -95,7 +95,7 @@ describe('T1-SSO: Định danh và đăng nhập một lần (Keycloak, OIDC)', 
       assert.ok(!/code=/.test(r.location), `${user} không được nhận mã đăng nhập khi chưa có OTP`)
     }
     const staff = await next('staff1')
-    assert.equal(staff.status, 302)
+    assert.equal(staff.status, 302, `nhân viên phải đăng nhập thẳng; nhận ${staff.status}: ${staff.body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 400)}`)
     assert.match(staff.location, /code=/, 'nhân viên đăng nhập thẳng bằng mật khẩu')
   })
   test('T1-SSO-09 đăng xuất thu hồi phiên làm mới', async () => {
