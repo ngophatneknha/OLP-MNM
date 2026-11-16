@@ -64,10 +64,12 @@ const pill = (s) => ({ running: 'pill-wait', approved: 'pill-done', rejected: 'p
 </script>
 
 <template>
-  <section class="hero fade-up">
-    <h1 class="text-2xl font-semibold tracking-tight md:text-3xl">{{ greeting() }}, {{ givenName(auth.name) }}</h1>
-    <p class="mt-1 max-w-[60ch] text-white/85">{{ summary }}</p>
-    <dl v-if="submissions" class="mt-5 grid grid-cols-3 gap-3">
+  <section class="hero">
+    <div>
+      <h1 class="page-title">{{ greeting() }}, {{ givenName(auth.name) }}</h1>
+      <p class="page-lead">{{ summary }}</p>
+    </div>
+    <dl v-if="submissions" class="flex gap-4">
       <div class="hero-stat"><dt>{{ t('home.stat.waiting') }}</dt><dd class="num">{{ waiting.length }}</dd></div>
       <div class="hero-stat"><dt>{{ t('home.stat.running') }}</dt><dd class="num">{{ mine.filter((s) => s.status === 'running').length }}</dd></div>
       <div class="hero-stat"><dt>{{ t('home.stat.done') }}</dt><dd class="num">{{ mine.filter((s) => s.status === 'approved').length }}</dd></div>

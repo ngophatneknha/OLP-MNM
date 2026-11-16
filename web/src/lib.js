@@ -217,6 +217,19 @@ export function diffSpec(before, after) {
 export const MAX_FILE_BYTES = 10 * 1024 * 1024
 export const formatSize = (bytes) => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
 
+/** Nhờ trợ lý AI đọc chứng từ (PDF hoặc ảnh) và gợi ý giá trị cho các trường của quy trình. Không lưu gì lên máy chủ. */
+export async function fillFromFile(appKey, file) {
+  await keycloak.updateToken(30)
+  const res = await fetch(`${apiUrl}/fill?app=${encodeURIComponent(appKey)}`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${keycloak.token}`, 'x-hasura-role': auth.role, 'content-type': file.type || 'application/octet-stream' },
+    body: file,
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.message ?? t('err.http', { status: res.status }))
+  return json.values
+}
+
 /** Tải một tệp lên hồ sơ. Ném lỗi với câu chữ người dùng đọc được. */
 export async function uploadFile(submissionId, file) {
   if (file.size > MAX_FILE_BYTES) throw new Error(t('err.big', { name: file.name }))

@@ -97,6 +97,7 @@ Mọi yêu cầu đi qua APISIX (cổng 9080), nơi kiểm JWT, giới hạn t�
 | `/v1/graphql` | Dữ liệu qua Hasura, phân quyền theo dòng | mọi người dùng đã đăng nhập |
 | `/files` | Đính kèm và tải tệp (quét mã độc, tối đa 10 MB) | người có quyền với hồ sơ |
 | `/search`, `/ask` | Tìm kiếm và hỏi đáp có kiểm quyền | mọi người dùng (cần profile `search`) |
+| `/fill?app=` | AI đọc chứng từ (PDF, ảnh) và gợi ý giá trị cho form; không lưu tệp | mọi người dùng (cần trạm extractor và trợ lý AI) |
 | `/events` | Kênh thời gian thực (SSE), chỉ đẩy nhịp rỗng | mọi người dùng |
 | `/ingest` | Nạp hàng loạt hồ sơ CSV/JSON | người dùng nạp, bằng quyền của mình |
 | `/archive`, `/archive/verify`, `/lineage` | Kho lạnh, kiểm chứng sổ cái, phả hệ dữ liệu | giám đốc |

@@ -31,7 +31,7 @@ export function stepStates(spec, submission) {
 }
 
 /** Toạ độ sơ đồ nằm ngang: nút bắt đầu, từng bước, nút kết thúc; bước có điều kiện có đường vòng bỏ qua. */
-export function flowLayout(steps, { nodeW = 160, nodeH = 52, gap = 40, pad = 14 } = {}) {
+export function flowLayout(steps, { nodeW = 210, nodeH = 56, gap = 44, pad = 14 } = {}) {
   const top = 30 // chừa chỗ cho đường vòng phía trên
   const mid = top + nodeH / 2
   let x = pad + 10 // nút bắt đầu rộng 20

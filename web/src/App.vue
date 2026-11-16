@@ -14,9 +14,9 @@ const items = [
   { to: '/lich', label: 'nav.calendar', icon: CalendarDays, space: 'H' },
   { to: '/tai-lieu', label: 'nav.docs', icon: FolderOpen, space: 'H' },
   { to: '/ca-nhan', label: 'nav.profile', icon: UserRound, space: 'H' },
+  { to: '/to-chuc', label: 'nav.org', icon: Users, space: 'H', role: 'director' },
   { to: '/gui', label: 'nav.submit', icon: FilePlus2, space: 'P' },
   { to: '/quy-trinh', label: 'nav.processes', icon: Workflow, space: 'P' },
-  { to: '/to-chuc', label: 'nav.org', icon: Users, space: 'H', role: 'director' },
   { to: '/soan', label: 'nav.builder', icon: PencilRuler, space: 'P', role: 'manager' },
   { to: '/so-lieu', label: 'nav.stats', icon: ChartNoAxesColumn, space: 'D', roles: ['manager', 'director'] },
   { to: '/ban-do', label: 'nav.map', icon: MapPin, space: 'D', roles: ['manager', 'director'] },
@@ -33,7 +33,7 @@ const active = (to, path) => (to === '/' ? path === '/' || path.startsWith('/ho-
     <!-- Thanh điều hướng màu mực xanh: bên trái trên màn hình rộng, dưới đáy trên điện thoại. -->
     <aside class="sidebar fixed inset-x-0 bottom-0 z-30 text-white md:static md:flex md:min-h-screen md:w-60 md:shrink-0 md:flex-col">
       <div class="hidden items-center gap-3 px-5 py-5 md:flex">
-        <div class="grid h-9 w-9 place-items-center rounded-md bg-white font-serif text-sm font-bold text-pen">DX</div>
+        <div class="grid h-9 w-9 place-items-center rounded bg-white font-serif text-sm font-bold text-pen">DX</div>
         <div class="leading-tight">
           <div class="font-semibold">DX-Lab</div>
           <div class="text-xs text-white/70">Project Hub</div>
@@ -41,15 +41,17 @@ const active = (to, path) => (to === '/' ? path === '/' || path.startsWith('/ho-
       </div>
 
       <nav class="flex md:flex-col md:gap-1 md:px-3" :aria-label="t('nav.main')">
+        <template v-for="(item, i) in items" :key="item.to">
+        <div v-if="!i || items[i - 1].space !== item.space" class="hidden px-3 pb-1 pt-4 text-[0.6875rem] font-semibold uppercase tracking-wider text-white/50 md:block">{{ item.space }} · {{ t(`space.${item.space}`) }}</div>
         <RouterLink
-          v-for="item in items" :key="item.to" :to="item.to"
-          class="flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[0.6875rem] text-white/75 transition-colors hover:bg-white/10 hover:text-white md:flex-none md:flex-row md:gap-3 md:rounded-md md:px-3 md:py-2.5 md:text-sm"
+          :to="item.to"
+          class="flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[0.6875rem] text-white/75 transition-colors hover:bg-white/10 hover:text-white md:flex-none md:flex-row md:gap-3 md:rounded md:px-3 md:py-2 md:text-[0.8125rem]"
           :class="{ '!bg-white/15 font-medium !text-white': active(item.to, $route.path) }"
         >
           <component :is="item.icon" :size="19" aria-hidden="true" />
           <span class="md:flex-1">{{ t(item.label) }}</span>
-          <abbr class="hidden rounded bg-white/15 px-1.5 text-[0.625rem] font-semibold no-underline md:inline" :title="t(`space.${item.space}`)">{{ item.space }}</abbr>
-        </RouterLink>
+                  </RouterLink>
+        </template>
       </nav>
 
       <div class="mt-auto hidden items-center gap-3 border-t border-white/15 px-4 py-4 md:flex">
@@ -76,7 +78,7 @@ const active = (to, path) => (to === '/' ? path === '/' || path.startsWith('/ho-
           <button class="btn-icon" :aria-label="t('nav.logout')" @click="logout"><LogOut :size="18" aria-hidden="true" /></button>
         </div>
       </header>
-      <main id="main" class="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10">
+      <main id="main" class="mx-auto max-w-7xl px-4 py-5 md:px-8 md:py-6">
         <RouterView v-slot="{ Component }"><component :is="Component" class="fade-up" /></RouterView>
       </main>
     </div>

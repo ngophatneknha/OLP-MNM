@@ -54,8 +54,8 @@ const clip = (text, n) => (text.length > n ? `${text.slice(0, n - 1)}…` : text
           ]"
           :stroke-dasharray="n.step.state === 'skipped' ? '5 4' : null"
         />
-        <text :x="n.x + 10" :y="n.y + 22" class="fill-ink text-[12px] font-medium" :class="{ 'fill-pencil': n.step.state === 'skipped' }">{{ clip(n.step.name, 18) }}</text>
-        <text :x="n.x + 10" :y="n.y + 40" class="fill-pencil text-[10.5px]">{{ clip(ROLE_LABEL[n.step.role] ?? n.step.role, 18) }}</text>
+        <text :x="n.x + 10" :y="n.y + 22" class="fill-ink text-[13.5px] font-semibold" :class="{ 'fill-pencil': n.step.state === 'skipped' }">{{ clip(n.step.name, 26) }}</text>
+        <text :x="n.x + 10" :y="n.y + 42" class="fill-pencil text-[11.5px]">{{ clip(ROLE_LABEL[n.step.role] ?? n.step.role, 26) }}</text>
         <text v-if="GLYPH[n.step.state]" :x="n.x + n.w - 12" :y="n.y + 22" text-anchor="end" class="text-[14px] font-bold" :class="n.step.state === 'signed' ? 'fill-done' : n.step.state === 'refused' ? 'fill-seal' : 'fill-pen'">{{ GLYPH[n.step.state] }}</text>
       </g>
     </svg>

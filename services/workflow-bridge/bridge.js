@@ -23,6 +23,7 @@ import { handleEvents, notify } from './events.js'
 import { handleCold, archiveAll } from './cold.js'
 import { handleIngest } from './ingest.js'
 import { handleSensors } from './sensors.js'
+import { handleFill } from './fill.js'
 import { handlePki, signEvent } from './pki.js'
 import { handleNgsi } from './ngsi.js'
 import { handleOrgs } from './orgs.js'
@@ -185,6 +186,7 @@ createServer(async (req, res) => {
   if (req.url.startsWith('/signatures') || req.url.startsWith('/pki')) return handlePki(req, res)
   if (req.url.startsWith('/sensors') || req.url.startsWith('/telemetry')) return handleSensors(req, res)
   if (req.url.startsWith('/files')) return handleFiles(req, res)
+  if (req.url.startsWith('/fill')) return handleFill(req, res)
   if (req.url.startsWith('/search') || req.url.startsWith('/ask')) return handleSearch(req, res)
   try {
     if (req.method !== 'POST' || req.headers['x-bridge-secret'] !== BRIDGE_SECRET) {

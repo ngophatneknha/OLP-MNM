@@ -8,8 +8,8 @@ Gửi hồ sơ: chọn loại hồ sơ, điền form (dựng hoàn toàn từ qu
 import { t } from '../i18n.js'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, ChevronRight, Paperclip, Send, X } from 'lucide-vue-next'
-import { auth, gql, routeText, toast, uploadFile, formatSize } from '../lib.js'
+import { ArrowLeft, ChevronRight, Paperclip, Send, Sparkles, X } from 'lucide-vue-next'
+import { auth, gql, routeText, toast, uploadFile, formatSize, fillFromFile } from '../lib.js'
 import SignatureRow from '../components/SignatureRow.vue'
 import CategoryIcon from '../components/CategoryIcon.vue'
 
@@ -20,6 +20,22 @@ const form = reactive({})
 const errors = reactive({})
 const sending = ref(false)
 const files = ref([])
+const reading = ref(false)
+const aiFilled = reactive({})
+const readable = (file) => /^(application\/pdf|image\/(png|jpeg|tiff|bmp|gif))$/.test(file.type)
+async function readWithAi(file) {
+  reading.value = true
+  try {
+    const values = await fillFromFile(selected.value.key, file)
+    const keys = Object.keys(values)
+    for (const k of keys) { form[k] = values[k]; aiFilled[k] = true; delete errors[k] }
+    toast(keys.length ? t('apps.aiFilled', { n: keys.length }) : t('apps.aiNone'), keys.length > 0)
+  } catch (err) {
+    toast(t('apps.aiFail', { err: err.message }), false)
+  } finally {
+    reading.value = false
+  }
+}
 const pick = (event) => { files.value.push(...event.target.files); event.target.value = '' }
 
 onMounted(async () => {
@@ -31,6 +47,7 @@ watch(selected, () => {
   for (const key of Object.keys(form)) delete form[key]
   for (const key of Object.keys(errors)) delete errors[key]
   files.value = []
+  for (const key of Object.keys(aiFilled)) delete aiFilled[key]
 })
 
 async function submit() {
@@ -124,6 +141,7 @@ async function submit() {
               :type="field.type === 'date' ? 'date' : 'text'" :inputmode="field.type === 'number' ? 'decimal' : undefined"
               :aria-invalid="!!errors[field.key]" :aria-describedby="errors[field.key] ? `e-${field.key}` : undefined"
             />
+            <p v-if="aiFilled[field.key]" class="mt-1 inline-flex items-center gap-1 text-xs text-pen"><Sparkles :size="12" aria-hidden="true" /> {{ t('apps.aiCheck') }}</p>
             <p v-if="errors[field.key]" :id="`e-${field.key}`" class="mt-1 text-sm text-seal">{{ errors[field.key] }}</p>
           </div>
         </div>
@@ -134,6 +152,7 @@ async function submit() {
             <li v-for="(file, i) in files" :key="i" class="flex items-center gap-2">
               <Paperclip :size="14" class="text-pencil" aria-hidden="true" /> <span class="min-w-0 flex-1 truncate">{{ file.name }}</span>
               <span class="num text-pencil">{{ formatSize(file.size) }}</span>
+              <button v-if="readable(file)" type="button" class="btn-quiet !min-h-7 !px-2 text-xs text-pen" :disabled="reading" @click="readWithAi(file)"><Sparkles :size="14" aria-hidden="true" /> {{ reading ? t('apps.aiReading') : t('apps.aiRead') }}</button>
               <button type="button" class="btn-icon !h-7 !w-7" :aria-label="t('apps.removeFile', { name: file.name })" @click="files.splice(i, 1)"><X :size="14" aria-hidden="true" /></button>
             </li>
           </ul>
