@@ -7,7 +7,7 @@ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { GW, ROOT, ROLE, login, gqlRaw, publishApp, submit, act, waitStatus, as, sql, uid, b64u } from './lib.js'
+import { GW, ROOT, ROLE, login, gqlRaw, publishApp, submit, act, waitStatus, as, sql, uid, b64u, until } from './lib.js'
 
 const REPAIR = JSON.parse(readFileSync(join(ROOT, 'library/iot/sua_chua.json'), 'utf8')).spec
 const ONE_STEP = { fields: [{ key: 'so_tien', label: 'Số tiền', type: 'number', required: true }], steps: [{ key: 'truong_phong', name: 'Trưởng phòng duyệt', role: 'manager' }] }
@@ -114,7 +114,8 @@ describe('ORG: cách ly dữ liệu giữa các tổ chức', () => {
     assert.ok(listB.length >= 1 && listB.every((a) => a.object_key.startsWith('orgb/')))
     const listA = await (await call('director1', '/archive')).json()
     assert.ok(!listA.some((a) => a.id === out.id), 'giám đốc A thấy lần xuất của B')
-    for (const u of ['directorb1', 'director1']) { const v = await (await call(u, '/archive/verify')).json(); assert.equal(v.ok, true, `${u}: ${JSON.stringify(v.problems)}`) }
+    // Thử lại: COLD-03 (chạy song song) tạm sửa một tệp của tổ chức mặc định để chứng minh phát hiện được, nên chuỗi của A có thể lỗi trong giây lát.
+    for (const u of ['directorb1', 'director1']) await until(async () => (await (await call(u, '/archive/verify')).json()).ok || false, `${u}: chuỗi sổ cái kiểm chứng được`, 30_000)
     // Chuỗi băm của B bắt đầu từ mốc đầu riêng, không nối vào chuỗi của A.
     assert.equal(sql(`select prev_hash from cold_archive where org_id = 'orgb' order by seq limit 1`), '0'.repeat(64))
   })
