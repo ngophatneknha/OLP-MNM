@@ -9,6 +9,11 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-11-16
+
+### Fixed
+- Ca ORG-09 thử lại khi kiểm chứng sổ cái: ca COLD-03 chạy song song tạm sửa một tệp của tổ chức mặc định nên có lúc ORG-09 thấy lỗi giả. Chỉ sửa kiểm thử, mã sản phẩm không đổi.
+
 ## [2.3.1] - 2026-11-16
 
 ### Fixed
