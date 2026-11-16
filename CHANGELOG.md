@@ -9,6 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-11-16
+
+### Changed
+- Trang giới thiệu dự án thiết kế lại bằng bộ công cụ Impeccable: bỏ chữ chuyển sắc, ánh sáng viền, biểu tượng emoji và lưới thẻ giống nhau; chuyển sang thế giới giấy tờ văn phòng (nền giấy, chữ serif, mực xanh), bảng kẻ các bước, bảng bằng chứng gắn với ca kiểm thử, con dấu "ĐÃ DUYỆT" đóng lên ảnh chụp. Bộ dò của Impeccable không báo lỗi nào.
+
+### Added
+- `PRODUCT.md`: bối cảnh sản phẩm, người dùng, thế giới thị giác và ràng buộc cho các lần thiết kế sau.
+
 ## [2.2.0] - 2026-11-16
 
 ### Changed

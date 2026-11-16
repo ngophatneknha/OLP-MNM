@@ -3,6 +3,7 @@ SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 
 Trang giới thiệu dự án (GitHub Pages, nguồn: thư mục docs/). Một tệp tự chứa: CSS và JS nội tuyến, không tải gì từ bên ngoài.
+Thế giới thị giác: giấy tờ văn phòng Việt (nền giấy, mực xanh, con dấu đỏ), xem PRODUCT.md.
 -->
 <!doctype html>
 <html lang="vi">
@@ -10,273 +11,212 @@ Trang giới thiệu dự án (GitHub Pages, nguồn: thư mục docs/). Một t
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DX-Lab Project Hub: nói ra quy trình, nhận lại ứng dụng</title>
-<meta name="description" content="Hệ điều hành chuyển đổi số mã nguồn mở: mô tả quy trình bằng lời thường, AI soạn, người duyệt, một cú bấm là chạy.">
-<meta name="theme-color" content="#0b1230">
+<meta name="description" content="Hệ điều hành chuyển đổi số mã nguồn mở: mô tả quy trình bằng lời thường, AI soạn, người duyệt, một cú bấm là chạy thật.">
+<meta name="theme-color" content="#eef1f7">
 <style>
-:root{--bg:#070b1d;--bg2:#0d1430;--card:rgba(255,255,255,.05);--line:rgba(255,255,255,.12);--ink:#eef2ff;--mute:#a9b4d6;--pen:#4f7cff;--pen2:#7aa2ff;--seal:#ff3b5c;--ok:#34d399;--gold:#fbbf24}
+:root{
+  --paper:#eef1f7;--paper2:#e1e7f2;--sheet:#ffffff;--ink:#17202e;--pencil:#4b5667;
+  --pen:#1b3a8f;--pen-deep:#122a69;--seal:#b3122b;--line:#cbd3e2;
+  --serif:"Noto Serif","Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Be Vietnam Pro",sans-serif;
+}
 *{box-sizing:border-box;margin:0}
-html{scroll-behavior:smooth}
-body{font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Be Vietnam Pro",sans-serif;color:var(--ink);background:var(--bg);overflow-x:hidden}
-a{color:inherit;text-decoration:none}
-img{max-width:100%;display:block}
-.wrap{width:min(1120px,100% - 40px);margin-inline:auto}
-section{padding:96px 0;position:relative}
-h1,h2,h3{line-height:1.15;letter-spacing:-.02em;text-wrap:balance}
-h2{font-size:clamp(1.8rem,4vw,2.8rem)}
-.eyebrow{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--pen2);margin-bottom:14px}
-.lead{color:var(--mute);font-size:1.12rem;max-width:62ch;margin-top:16px}
-.grad{background:linear-gradient(100deg,#fff 0%,var(--pen2) 45%,#ff7a93 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-
-/* nền động */
-.aurora{position:fixed;inset:0;z-index:-1;background:radial-gradient(60rem 40rem at 80% -10%,rgba(79,124,255,.35),transparent 60%),radial-gradient(45rem 35rem at 0% 20%,rgba(255,59,92,.18),transparent 60%),radial-gradient(50rem 40rem at 50% 110%,rgba(122,162,255,.22),transparent 60%),var(--bg)}
-.grid{position:fixed;inset:0;z-index:-1;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:56px 56px;opacity:.18;mask-image:radial-gradient(70% 55% at 50% 30%,#000,transparent)}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{font:17px/1.65 var(--sans);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased}
+a{color:var(--pen)}
+img{max-width:100%;display:block;height:auto}
+::selection{background:var(--pen);color:#fff}
+:focus-visible{outline:2px solid var(--pen);outline-offset:3px;border-radius:3px}
+.wrap{width:min(1100px,100% - 40px);margin-inline:auto}
+h1,h2,h3{font-family:var(--serif);line-height:1.15;letter-spacing:-.01em;text-wrap:balance;font-weight:700}
+h2{font-size:clamp(1.7rem,3.6vw,2.5rem);max-width:22ch}
+h3{font-size:1.15rem}
+p{max-width:65ch}
+section{padding:88px 0 0}
+.sub{color:var(--pencil);margin-top:14px}
 
 /* thanh trên */
-nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(7,11,29,.65);border-bottom:1px solid var(--line)}
-nav .wrap{display:flex;align-items:center;gap:22px;height:64px}
-.logo{display:flex;align-items:center;gap:10px;font-weight:700}
-.logo i{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:#fff;color:#1b3a8f;font:700 .85rem Georgia,serif;font-style:normal}
-nav .links{display:flex;gap:22px;margin-left:auto;font-size:.92rem;color:var(--mute)}
-nav .links a:hover{color:#fff}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:12px;font-weight:600;transition:transform .2s,box-shadow .2s,background .2s}
-.btn.pri{background:linear-gradient(135deg,var(--pen),#2f5fd1);box-shadow:0 10px 30px -8px rgba(79,124,255,.8)}
-.btn.pri:hover{transform:translateY(-2px);box-shadow:0 16px 36px -8px rgba(79,124,255,.95)}
-.btn.sec{border:1px solid var(--line);background:var(--card)}
-.btn.sec:hover{background:rgba(255,255,255,.1)}
-nav .btn{padding:8px 16px;font-size:.9rem}
+header.top{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:28px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--ink);text-decoration:none}
+.brand i{display:grid;place-items:center;width:32px;height:32px;border-radius:6px;background:var(--pen);color:#fff;font:700 .8rem var(--serif);font-style:normal}
+header.top nav{display:flex;gap:24px;margin-left:auto;font-size:.93rem}
+header.top nav a{color:var(--pencil);text-decoration:none}
+header.top nav a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:4px}
+
+.btn{display:inline-flex;align-items:center;min-height:46px;padding:0 22px;border-radius:6px;font-weight:600;text-decoration:none;transition:background .2s,border-color .2s}
+.btn.pri{background:var(--pen);color:#fff}
+.btn.pri:hover{background:var(--pen-deep)}
+.btn.sec{border:1.5px solid var(--ink);color:var(--ink)}
+.btn.sec:hover{background:var(--paper2)}
 
 /* hero */
-.hero{padding:84px 0 40px;text-align:center}
-.pill{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 14px;font-size:.85rem;color:var(--mute)}
-.pill b{color:var(--ok)}
-.hero h1{font-size:clamp(2.4rem,7vw,5rem);margin:22px auto 0;max-width:15ch}
-.hero .lead{margin-inline:auto;text-align:center}
-.cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:34px}
-.stamp{position:absolute;right:max(2vw,calc(50% - 560px));top:80px;border:3px solid var(--seal);outline:2px solid rgba(255,59,92,.5);outline-offset:5px;color:var(--seal);font:700 1rem Georgia,serif;letter-spacing:.08em;padding:.3rem .9rem;border-radius:.5rem;transform:rotate(9deg);opacity:.85}
-.shot{margin-top:56px;perspective:1600px}
-.frame{border-radius:18px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.03));padding:10px;box-shadow:0 50px 120px -30px rgba(79,124,255,.55),0 0 0 1px rgba(255,255,255,.04) inset;transform:rotateX(7deg);transition:transform .6s}
-.shot:hover .frame{transform:rotateX(0)}
-.frame .bar{display:flex;gap:7px;padding:4px 8px 10px}
-.frame .bar span{width:11px;height:11px;border-radius:50%;background:#ff5f57}
-.frame .bar span:nth-child(2){background:#febc2e}.frame .bar span:nth-child(3){background:#28c840}
-.frame img{border-radius:10px}
+.hero{padding-top:64px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:56px;align-items:center}
+.hero h1{font-size:clamp(2.3rem,5.2vw,4rem)}
+.hero .lead{font-size:1.18rem;color:var(--pencil);margin-top:22px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
+.facts{margin-top:30px;font-size:.92rem;color:var(--pencil)}
+.sheet{position:relative;background:var(--sheet);border:1px solid var(--line);border-radius:4px;padding:10px;box-shadow:0 1px 0 #fff inset,0 2px 4px rgba(23,32,46,.08),0 24px 40px -24px rgba(23,32,46,.35);transform:rotate(1.2deg)}
+.sheet img{border-radius:2px}
+.stamp{position:absolute;right:-14px;bottom:-22px;border:3px solid var(--seal);outline:1.5px solid var(--seal);outline-offset:3px;color:var(--seal);font:700 1.05rem var(--serif);letter-spacing:.08em;padding:.3rem .95rem;border-radius:.4rem;background:rgba(255,255,255,.6);transform:rotate(-7deg);animation:press .5s .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes press{from{opacity:0;transform:rotate(-14deg) scale(1.9);filter:blur(2px)}to{opacity:1;transform:rotate(-7deg) scale(1);filter:blur(0)}}
 
-/* số liệu */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:70px}
-.stat{border:1px solid var(--line);background:var(--card);border-radius:18px;padding:26px 22px;text-align:center}
-.stat b{display:block;font-size:clamp(2rem,4vw,3rem);letter-spacing:-.03em;background:linear-gradient(180deg,#fff,var(--pen2));-webkit-background-clip:text;background-clip:text;color:transparent}
-.stat span{color:var(--mute);font-size:.92rem}
+/* các bước: bảng kẻ, không phải lưới thẻ */
+.ledger{margin-top:34px;border-top:2px solid var(--ink)}
+.row{display:grid;grid-template-columns:3.2rem minmax(0,15rem) minmax(0,1fr);gap:8px 24px;padding:22px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.row .no{font:700 1.5rem var(--serif);color:var(--pen)}
+.row h3{margin:0}
+.row p{color:var(--pencil)}
+.row q{display:block;margin-top:10px;font-family:var(--serif);font-style:italic;color:var(--ink)}
 
-/* thẻ tính năng */
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
-.card{position:relative;border:1px solid var(--line);background:var(--card);border-radius:20px;padding:28px;overflow:hidden;transition:transform .3s,border-color .3s}
-.card:hover{transform:translateY(-6px);border-color:rgba(122,162,255,.55)}
-.card::before{content:"";position:absolute;inset:0;background:radial-gradient(20rem 12rem at var(--x,50%) -20%,rgba(79,124,255,.25),transparent 70%);opacity:0;transition:opacity .3s}
-.card:hover::before{opacity:1}
-.card .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:1.5rem;background:linear-gradient(135deg,rgba(79,124,255,.3),rgba(255,59,92,.2));border:1px solid var(--line);margin-bottom:18px}
-.card h3{font-size:1.2rem;margin-bottom:8px}
-.card p{color:var(--mute);font-size:.96rem}
+/* bảng bằng chứng */
+.tablewrap{margin-top:34px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:620px;font-size:.96rem}
+th{font:700 .8rem var(--sans);text-align:left;color:var(--pencil);padding:0 14px 10px 0;border-bottom:2px solid var(--ink);letter-spacing:.02em}
+td{padding:14px 14px 14px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:600;width:34%}
+td code{font:.86rem ui-monospace,Consolas,monospace;background:var(--paper2);padding:2px 6px;border-radius:3px}
 
-/* quy trình 3 bước */
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px;counter-reset:s}
-.step{position:relative;padding:30px 26px;border-radius:20px;background:linear-gradient(160deg,rgba(79,124,255,.16),rgba(255,255,255,.03));border:1px solid var(--line)}
-.step::before{counter-increment:s;content:counter(s);position:absolute;top:-18px;left:24px;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:linear-gradient(135deg,var(--pen),var(--seal));box-shadow:0 8px 20px -6px rgba(255,59,92,.6)}
-.step h3{margin:6px 0 8px}.step p{color:var(--mute);font-size:.96rem}
-.quote{margin-top:22px;border-left:3px solid var(--seal);padding:4px 0 4px 18px;font-style:italic;color:#dbe4ff}
+/* ảnh chụp: bố cục không đều */
+.shots{display:grid;grid-template-columns:repeat(6,1fr);gap:28px 24px;margin-top:38px}
+.shots figure{background:var(--sheet);border:1px solid var(--line);padding:8px;border-radius:4px;box-shadow:0 14px 26px -20px rgba(23,32,46,.5)}
+.shots figure:nth-child(1){grid-column:1/5}.shots figure:nth-child(2){grid-column:5/7;align-self:end}
+.shots figure:nth-child(3){grid-column:1/3;align-self:start}.shots figure:nth-child(4){grid-column:3/7}
+.shots figure:nth-child(5){grid-column:1/4}.shots figure:nth-child(6){grid-column:4/7}
+.shots figcaption{padding:10px 4px 2px;font-size:.9rem;color:var(--pencil)}
 
 /* kiến trúc */
-.arch{margin-top:48px;border:1px solid var(--line);border-radius:22px;background:var(--card);padding:34px 28px}
-.tier{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:18px;border-radius:16px;border:1px dashed var(--line)}
-.tier + .tier{margin-top:14px}
-.tier h4{width:100%;text-align:center;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--pen2);margin-bottom:4px}
-.node{padding:9px 16px;border-radius:10px;font-size:.9rem;font-weight:600;background:rgba(79,124,255,.16);border:1px solid rgba(122,162,255,.4)}
-.node.hot{background:rgba(255,59,92,.16);border-color:rgba(255,59,92,.5)}
-.node small{display:block;font-weight:400;color:var(--mute);font-size:.74rem}
-.flow{text-align:center;color:var(--pen2);font-size:1.2rem;margin:8px 0}
-
-/* H-P-D-I */
-.hpdi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:48px}
-.hp{border-radius:20px;padding:26px 22px;border:1px solid var(--line);background:var(--card)}
-.hp b{display:block;font:700 3rem/1 Georgia,serif;margin-bottom:10px;background:linear-gradient(135deg,var(--pen2),var(--seal));-webkit-background-clip:text;background-clip:text;color:transparent}
-.hp h3{font-size:1.1rem;margin-bottom:6px}.hp p{color:var(--mute);font-size:.92rem}
-
-/* thư viện ảnh */
-.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
-.gallery figure{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card);transition:transform .3s}
-.gallery figure:hover{transform:scale(1.025)}
-.gallery figcaption{padding:12px 16px;font-size:.9rem;color:var(--mute)}
+.arch{margin-top:34px;display:grid;gap:0;border:1.5px solid var(--ink);background:var(--sheet)}
+.layer{display:grid;grid-template-columns:11rem minmax(0,1fr);gap:8px 20px;padding:18px 20px;border-top:1px solid var(--line)}
+.layer:first-child{border-top:0}
+.layer h3{font:700 .95rem var(--sans)}
+.layer ul{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.layer li{border:1px solid var(--line);background:var(--paper);padding:4px 11px;border-radius:4px;font-size:.92rem}
+.layer li b{color:var(--pen)}
+.layer.gate{background:var(--paper2)}
 
 /* nói thẳng */
-.honest{margin-top:40px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.honest li{list-style:none;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:14px 18px;font-size:.93rem;color:var(--mute)}
-.honest li::before{content:"○ ";color:var(--gold)}
+.honest{margin-top:30px;border-top:2px solid var(--ink)}
+.honest li{list-style:none;padding:13px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1.6rem 1fr;color:var(--ink)}
+.honest li::before{content:"–";color:var(--seal);font-weight:700}
 
-/* kêu gọi */
-.final{text-align:center}
-.final .box{border:1px solid var(--line);border-radius:28px;padding:70px 24px;background:radial-gradient(40rem 20rem at 50% 0,rgba(79,124,255,.35),transparent 70%),var(--card)}
-pre{display:inline-block;margin-top:26px;text-align:left;background:#04060f;border:1px solid var(--line);border-radius:14px;padding:18px 24px;font:.92rem/1.7 ui-monospace,Consolas,monospace;color:#cfe0ff;overflow-x:auto;max-width:100%}
-pre i{color:var(--ok);font-style:normal}
-footer{padding:36px 0;border-top:1px solid var(--line);color:var(--mute);font-size:.9rem;text-align:center}
-footer a{color:var(--pen2)}
-
-/* hiện dần khi cuộn */
-.rv{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .7s}
-.rv.in{opacity:1;transform:none}
+/* chạy thử */
+pre{margin-top:26px;background:#101827;color:#e4ecff;border-radius:6px;padding:20px 24px;font:.93rem/1.8 ui-monospace,Consolas,monospace;overflow-x:auto}
+pre i{color:#8fb0ff;font-style:normal;user-select:none}
+footer{margin-top:96px;padding:30px 0 40px;border-top:1px solid var(--line);font-size:.92rem;color:var(--pencil)}
+footer p{max-width:none}footer a{margin-right:14px}
 
 @media (max-width:900px){
- .cards,.steps,.gallery{grid-template-columns:1fr 1fr}.hpdi{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr 1fr}
- nav .links{display:none}nav .btn{margin-left:auto}.stamp{display:none}
+  .hero{grid-template-columns:1fr;gap:44px}.sheet{transform:none}
+  header.top nav{display:none}header.top .btn{margin-left:auto}
+  .row{grid-template-columns:2.6rem 1fr}.row p{grid-column:2}
+  .shots{grid-template-columns:1fr}.shots figure:nth-child(n){grid-column:auto}
+  .layer{grid-template-columns:1fr}
 }
-@media (max-width:600px){
- section{padding:64px 0}.cards,.steps,.gallery,.hpdi,.honest{grid-template-columns:1fr}.frame{transform:none}
-}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.rv{opacity:1;transform:none}html{scroll-behavior:auto}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
-<div class="aurora"></div><div class="grid"></div>
 
-<nav><div class="wrap">
-  <a class="logo" href="#"><i>DX</i> DX-Lab Project Hub</a>
-  <div class="links"><a href="#tinh-nang">Tính năng</a><a href="#cach-hoat-dong">Cách hoạt động</a><a href="#kien-truc">Kiến trúc</a><a href="#giao-dien">Giao diện</a><a href="#noi-thang">Nói thẳng</a></div>
-  <a class="btn pri" href="https://github.com/ngophatneknha/OLP-MNM">GitHub</a>
-</div></nav>
-
-<header class="hero"><div class="wrap">
-  <div class="stamp">ĐÃ DUYỆT</div>
-  <span class="pill"><b>●</b> Mã nguồn mở · Apache-2.0 · Open-core DX-OS</span>
-  <h1>Nói ra quy trình, <span class="grad">nhận lại ứng dụng</span></h1>
-  <p class="lead">Mô tả công việc bằng lời thường. AI soạn quy trình, người duyệt, một cú bấm là chạy thật, có chữ ký số, nhật ký bất biến và số liệu điều hành.</p>
-  <div class="cta">
-    <a class="btn pri" href="#chay-thu">Chạy thử trong 5 phút →</a>
-    <a class="btn sec" href="slides/index.html">Xem slide</a>
-    <a class="btn sec" href="KICH_BAN_DEMO.html">Kịch bản demo</a>
-  </div>
-  <div class="shot rv"><div class="frame"><div class="bar"><span></span><span></span><span></span></div><img src="images/ban-lam-viec.jpg" alt="Bàn làm việc: việc đang chờ bạn ký duyệt và hồ sơ bạn đã gửi" width="1280" height="720"></div></div>
-  <div class="stats">
-    <div class="stat rv"><b data-n="230" data-plus="+">0</b><span>ca kiểm thử trên hệ thống thật</span></div>
-    <div class="stat rv"><b data-n="9">0</b><span>dịch vụ nguồn mở trong bản lõi</span></div>
-    <div class="stat rv"><b data-n="3" data-suf=" GiB">0</b><span>RAM cho bản lõi (máy yếu vẫn chạy)</span></div>
-    <div class="stat rv"><b data-n="100" data-suf="%">0</b><span>tệp có giấy phép rõ (REUSE)</span></div>
-  </div>
+<header class="top"><div class="wrap">
+  <a class="brand" href="#"><i>DX</i> DX-Lab Project Hub</a>
+  <nav aria-label="Mục chính"><a href="#cach-hoat-dong">Cách hoạt động</a><a href="#bang-chung">Bằng chứng</a><a href="#giao-dien">Giao diện</a><a href="#kien-truc">Kiến trúc</a><a href="#noi-thang">Nói thẳng</a></nav>
+  <a class="btn pri" href="https://github.com/ngophatneknha/OLP-MNM">Mã nguồn</a>
 </div></header>
 
-<section id="tinh-nang"><div class="wrap">
-  <span class="eyebrow">Vì sao khác biệt</span>
-  <h2>Quy trình của tổ chức, quản lý <span class="grad">như mã nguồn mở</span></h2>
-  <p class="lead">Doanh nghiệp nhỏ thất bại khi chuyển đổi số vì phần mềm có sẵn không khớp cách làm việc, thuê viết riêng thì đắt, và quy trình đổi thì không ai biết đổi gì.</p>
-  <div class="cards">
-    <div class="card rv"><div class="ic">🗣️</div><h3>Nói là có</h3><p>Viết “nhân viên xin tạm ứng, trưởng phòng duyệt, trên 5 triệu thêm giám đốc”. AI soạn biểu mẫu, các bước, vai trò; bạn xem và sửa từng ô trước khi xuất bản.</p></div>
-    <div class="card rv"><div class="ic">🌿</div><h3>Có phiên bản như Git</h3><p>Mỗi lần phát hành là một phiên bản bất biến. Đề xuất thay đổi được chạy thử trên hồ sơ cũ; người duyệt phải khác người đề xuất.</p></div>
-    <div class="card rv"><div class="ic">🤖</div><h3>AI phải thử việc</h3><p>Bốn nấc: người làm, chạy bóng, gợi ý, tự làm. Chỉ được nâng nấc khi ý kiến của AI khớp quyết định thật đủ nhiều lần.</p></div>
-    <div class="card rv"><div class="ic">🔏</div><h3>Chữ ký số X.509</h3><p>Mỗi phê duyệt được ký bằng chứng thư do CA của chính tổ chức cấp. Chữ ký bất biến, kiểm chứng lại được.</p></div>
-    <div class="card rv"><div class="ic">🧊</div><h3>Kho lạnh băm nối chuỗi</h3><p>Hồ sơ đã kết thúc xuống kho S3 dạng JSONL, sổ cái băm nối chuỗi phát hiện mọi sửa đổi, truy vấn được bằng SQL.</p></div>
-    <div class="card rv"><div class="ic">🏢</div><h3>Nhiều tổ chức, một hệ thống</h3><p>Cách ly bằng <code>org_id</code> trong token, Hasura và CSDL. Tổ chức này không thấy một dòng dữ liệu của tổ chức kia.</p></div>
+<main>
+<div class="wrap hero">
+  <div>
+    <h1>Nói ra quy trình, nhận lại một ứng dụng chạy được.</h1>
+    <p class="lead">Quản lý mô tả công việc bằng lời thường. AI soạn, người duyệt, một cú bấm là chạy thật, mỗi phê duyệt có chữ ký số và nhật ký không sửa được.</p>
+    <div class="cta"><a class="btn pri" href="#chay-thu">Chạy thử trong 5 phút</a><a class="btn sec" href="slides/index.html">Xem slide</a></div>
+    <p class="facts">Mã nguồn mở Apache-2.0 · 9 dịch vụ nguồn mở trong bản lõi · hơn 200 ca kiểm thử chạy trên hệ thống thật</p>
   </div>
-</div></section>
+  <div class="sheet">
+    <img src="images/ban-lam-viec.jpg" alt="Bàn làm việc: việc đang chờ bạn ký duyệt và hồ sơ bạn đã gửi" width="1280" height="720">
+    <span class="stamp" aria-hidden="true">ĐÃ DUYỆT</span>
+  </div>
+</div>
 
 <section id="cach-hoat-dong"><div class="wrap">
-  <span class="eyebrow">Cách hoạt động</span>
-  <h2>Từ một câu nói đến <span class="grad">quy trình chạy thật</span></h2>
-  <div class="steps">
-    <div class="step rv"><h3>Mô tả</h3><p>Gõ hoặc nói cách công việc đang diễn ra, bằng lời thường.</p><div class="quote">“Nhân viên xin tạm ứng, trưởng phòng duyệt, trên 5 triệu phải thêm giám đốc, kế toán chi tiền.”</div></div>
-    <div class="step rv"><h3>Soạn và duyệt</h3><p>AI dựng bản nháp gồm biểu mẫu, bước, vai trò. Người quản lý xem sơ đồ, sửa từng ô, rồi gửi duyệt.</p></div>
-    <div class="step rv"><h3>Xuất bản và vận hành</h3><p>Một cú bấm biên dịch thành quy trình BPMN chạy trên Flowable, có hộp việc, số liệu và nhật ký bất biến.</p></div>
+  <h2>Từ một câu nói đến con dấu</h2>
+  <p class="sub">Doanh nghiệp nhỏ bỏ dở chuyển đổi số vì phần mềm có sẵn không khớp cách làm việc, thuê viết riêng thì đắt, và khi quy trình đổi thì không ai biết đã đổi gì.</p>
+  <div class="ledger">
+    <div class="row"><span class="no">1</span><h3>Mô tả</h3><div><p>Gõ cách công việc đang diễn ra, như đang nói với đồng nghiệp.</p><q>Nhân viên xin tạm ứng, trưởng phòng duyệt, trên 5 triệu phải thêm giám đốc, kế toán chi tiền.</q></div></div>
+    <div class="row"><span class="no">2</span><h3>Soạn và duyệt</h3><p>AI dựng bản nháp: biểu mẫu, các bước, vai trò. Người quản lý xem sơ đồ, sửa từng ô, rồi gửi duyệt. Người duyệt phải khác người đề xuất.</p></div>
+    <div class="row"><span class="no">3</span><h3>Xuất bản và vận hành</h3><p>Một cú bấm biên dịch thành quy trình BPMN chạy trên Flowable, có hộp việc, số liệu điều hành và nhật ký bất biến. Mỗi lần đổi là một phiên bản, chạy thử được trên hồ sơ cũ.</p></div>
+    <div class="row"><span class="no">4</span><h3>AI thử việc</h3><p>Ở mỗi bước duyệt có bốn nấc: người làm, chạy bóng, gợi ý, tự làm. Chỉ nâng nấc khi ý kiến của AI khớp quyết định thật đủ nhiều lần.</p></div>
   </div>
 </div></section>
 
-<section><div class="wrap">
-  <span class="eyebrow">Khung H-P-D-I</span>
-  <h2>Bốn không gian, <span class="grad">một nền tảng</span></h2>
-  <div class="hpdi">
-    <div class="hp rv"><b>H</b><h3>Con người</h3><p>Bàn làm việc, bảng công việc, lịch, tài liệu, trang cá nhân.</p></div>
-    <div class="hp rv"><b>P</b><h3>Quy trình</h3><p>Soạn, phiên bản, đề xuất thay đổi, kho mẫu.</p></div>
-    <div class="hp rv"><b>D</b><h3>Dữ liệu</h3><p>Số liệu điều hành, kho lạnh, cảm biến, bản đồ, NGSI-LD.</p></div>
-    <div class="hp rv"><b>I</b><h3>Trí tuệ</h3><p>Trợ lý AI có kiểm soát, hỏi đáp có dẫn nguồn và kiểm quyền.</p></div>
+<section id="bang-chung"><div class="wrap">
+  <h2>Mỗi điều nói ở đây đều có ca kiểm thử</h2>
+  <p class="sub">Kiểm thử đối chiếu từng điều khoản của đề thi, chạy trên hệ thống thật trong CI cho mỗi pull request.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Năng lực</th><th>Cách làm</th><th>Kiểm bởi</th></tr></thead>
+    <tbody>
+      <tr><td>Zero-Trust tại cổng API</td><td>Apache APISIX kiểm JWT tại biên, giới hạn tốc độ theo tuyến; không token thì 401</td><td><code>tang1</code> <code>hpdi</code></td></tr>
+      <tr><td>Chữ ký số cho phê duyệt</td><td>Chứng thư X.509 do CA riêng của từng tổ chức cấp, chữ ký chỉ thêm, kiểm chứng lại được</td><td><code>pki</code></td></tr>
+      <tr><td>Kho lạnh bất biến</td><td>Hồ sơ đã kết thúc xuống kho S3 dạng JSONL, sổ cái băm nối chuỗi, truy vấn bằng SQL</td><td><code>cold</code> <code>lakehouse</code></td></tr>
+      <tr><td>Cảm biến thành hồ sơ</td><td>Số đo vượt ngưỡng tự mở hồ sơ sửa chữa trong quy trình duyệt; NGSI-LD đọc, bản đồ cảm biến</td><td><code>iot</code></td></tr>
+      <tr><td>Nhiều tổ chức, một hệ thống</td><td>Cách ly bằng <code>org_id</code> trong token, Hasura và PostgreSQL; quản trị người dùng theo tổ chức</td><td><code>tenant</code> <code>upgrade</code></td></tr>
+      <tr><td>Tìm kiếm có kiểm quyền</td><td>Hỏi đáp có dẫn nguồn, đọc PDF và OCR; kết quả vẫn lọc theo quyền thật của người hỏi</td><td><code>search</code></td></tr>
+      <tr><td>Vận hành tin được</td><td>Sao lưu tự động, khôi phục kiểm mã băm, tự phục hồi, TLS, WAF, giám sát</td><td><code>ops</code> <code>restore</code> <code>recovery</code></td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="giao-dien"><div class="wrap">
+  <h2>Giao diện của bàn giấy văn phòng</h2>
+  <p class="sub">Mực xanh để ký, con dấu đỏ để xác nhận. Khung và nút là thứ ai cũng quen; điểm nhấn riêng là hàng ô ký có đóng dấu.</p>
+  <div class="shots">
+    <figure><img loading="lazy" src="images/tao-ung-dung.jpg" alt="Soạn quy trình: sửa từng ô thông tin và từng bước" width="1280" height="720"><figcaption>Soạn quy trình: hồ sơ sẽ trông thế nào hiện ngay bên dưới.</figcaption></figure>
+    <figure><img loading="lazy" src="images/chu-ky.jpg" alt="Hàng ô ký có đóng dấu" width="640" height="480"><figcaption>Hàng ô ký có đóng dấu.</figcaption></figure>
+    <figure><img loading="lazy" src="images/tro-ly.jpg" alt="Trợ lý AI với bốn nấc tự chủ" width="640" height="480"><figcaption>Trợ lý AI: bốn nấc và bằng chứng khớp.</figcaption></figure>
+    <figure><img loading="lazy" src="images/de-xuat-thay-doi.jpg" alt="Đề xuất thay đổi kèm kết quả chạy thử" width="1280" height="720"><figcaption>Đề xuất thay đổi: khác biệt bằng lời thường, chạy thử trên hồ sơ cũ.</figcaption></figure>
+    <figure><img loading="lazy" src="images/so-lieu.jpg" alt="Số liệu điều hành" width="1280" height="720"><figcaption>Số liệu: bước nào làm hồ sơ chờ lâu nhất.</figcaption></figure>
+    <figure><img loading="lazy" src="images/ban-lam-viec.jpg" alt="Bàn làm việc" width="1280" height="720"><figcaption>Bàn làm việc: việc chờ bạn luôn đứng đầu.</figcaption></figure>
   </div>
 </div></section>
 
 <section id="kien-truc"><div class="wrap">
-  <span class="eyebrow">Kiến trúc</span>
-  <h2>Lõi chạy ngầm, <span class="grad">Zero-Trust tại cổng</span></h2>
-  <p class="lead">Ứng dụng web chỉ nói chuyện với lõi qua một cổng API duy nhất, kiểm token ngay tại biên.</p>
-  <div class="arch rv">
-    <div class="tier"><h4>Tầng 2 · Không gian năng lực số</h4><div class="node">Ứng dụng web<small>Vue 3 · Tailwind</small></div></div>
-    <div class="flow">▼ chỉ qua cổng API ▼</div>
-    <div class="tier"><h4>Tầng 1 · Nền tảng lõi, không giao diện</h4>
-      <div class="node hot">Apache APISIX<small>cổng API · JWT</small></div>
-      <div class="node">Keycloak<small>SSO · MFA</small></div>
-      <div class="node">Hasura<small>API dữ liệu</small></div>
-      <div class="node">PostgreSQL<small>phân quyền theo dòng</small></div>
-      <div class="node">workflow-bridge<small>biên dịch · PKI · kho lạnh</small></div>
-      <div class="node">Flowable<small>BPMN</small></div>
-      <div class="node">SeaweedFS<small>S3 · SigV4</small></div>
-      <div class="node">ClamAV<small>kiểm dịch</small></div>
-    </div>
-    <div class="flow">▲ token thiết bị ▲</div>
-    <div class="tier"><h4>Thiết bị</h4><div class="node">Cảm biến OT<small>vượt ngưỡng tự mở hồ sơ sửa chữa</small></div></div>
-  </div>
-</div></section>
-
-<section id="giao-dien"><div class="wrap">
-  <span class="eyebrow">Giao diện</span>
-  <h2>Quen thuộc như <span class="grad">bàn giấy văn phòng</span></h2>
-  <p class="lead">Mực xanh để ký, con dấu đỏ để xác nhận. Khung và nút là thứ ai cũng quen; điểm nhấn là hàng ô ký có đóng dấu.</p>
-  <div class="gallery">
-    <figure class="rv"><img loading="lazy" src="images/tao-ung-dung.jpg" alt="Soạn quy trình" width="640" height="400"><figcaption>Soạn quy trình, xem trước hồ sơ ngay bên dưới</figcaption></figure>
-    <figure class="rv"><img loading="lazy" src="images/de-xuat-thay-doi.jpg" alt="Đề xuất thay đổi" width="640" height="400"><figcaption>Đề xuất thay đổi, chạy thử trên hồ sơ cũ</figcaption></figure>
-    <figure class="rv"><img loading="lazy" src="images/tro-ly.jpg" alt="Trợ lý AI" width="640" height="400"><figcaption>Trợ lý AI: bốn nấc tự chủ</figcaption></figure>
-    <figure class="rv"><img loading="lazy" src="images/so-lieu.jpg" alt="Số liệu" width="640" height="400"><figcaption>Số liệu điều hành và điểm trưởng thành</figcaption></figure>
-    <figure class="rv"><img loading="lazy" src="images/chu-ky.jpg" alt="Hàng ô ký" width="640" height="400"><figcaption>Hàng ô ký có đóng dấu</figcaption></figure>
-    <figure class="rv"><img loading="lazy" src="images/ban-lam-viec.jpg" alt="Bàn làm việc" width="640" height="400"><figcaption>Bàn làm việc: việc chờ bạn đứng đầu</figcaption></figure>
+  <h2>Lõi chạy ngầm, một cổng duy nhất</h2>
+  <p class="sub">Ứng dụng web chỉ nói chuyện với lõi qua cổng API, kiểm token ngay tại biên.</p>
+  <div class="arch">
+    <div class="layer"><h3>Ứng dụng</h3><ul><li><b>Vue 3</b> web, tiếng Việt và tiếng Anh</li><li>Thiết bị, cảm biến (token thiết bị)</li></ul></div>
+    <div class="layer gate"><h3>Cổng</h3><ul><li><b>Apache APISIX</b> kiểm JWT, giới hạn tốc độ</li><li><b>Keycloak</b> đăng nhập một lần, MFA</li></ul></div>
+    <div class="layer"><h3>Dữ liệu và quy trình</h3><ul><li><b>Hasura</b> API, phân quyền theo dòng</li><li><b>PostgreSQL</b></li><li><b>workflow-bridge</b> biên dịch, chữ ký, kho lạnh</li><li><b>Flowable</b> BPMN</li></ul></div>
+    <div class="layer"><h3>Tệp</h3><ul><li><b>SeaweedFS</b> kho S3, bắt buộc SigV4</li><li><b>ClamAV</b> kiểm dịch mã độc</li></ul></div>
   </div>
 </div></section>
 
 <section id="noi-thang"><div class="wrap">
-  <span class="eyebrow">Nói thẳng</span>
-  <h2>Điều <span class="grad">chưa làm</span>, khai báo rõ</h2>
-  <p class="lead">Các mục này là <code>todo</code> trong báo cáo kiểm thử, không tô hồng.</p>
+  <h2>Điều chưa làm, khai báo rõ</h2>
+  <p class="sub">Các mục này là <code>todo</code> trong báo cáo kiểm thử, không tô hồng.</p>
   <ul class="honest">
-    <li>Kho lạnh là JSONL (truy vấn SQL qua DuckDB), chưa phải Parquet/Iceberg.</li>
+    <li>Kho lạnh là JSONL (truy vấn SQL qua DuckDB), chưa phải Parquet hay Iceberg.</li>
     <li>NGSI-LD chỉ đọc; bản đồ cảm biến là SVG, chưa có nền bản đồ.</li>
-    <li>Chữ ký số là PKI phần mềm: chưa có HSM, CRL/OCSP.</li>
-    <li>Thời gian thực dùng SSE; thiết bị gọi HTTP, chưa MQTT/OPC UA.</li>
+    <li>Chữ ký số là PKI phần mềm: chưa có HSM, CRL hay OCSP.</li>
+    <li>Thời gian thực dùng SSE, thiết bị gọi HTTP; chưa có MQTT hay OPC UA.</li>
     <li>Tìm ngữ nghĩa là tùy chọn, mặc định tắt; OCR đọc 10 trang đầu.</li>
     <li>GitOps ở mức một máy; mã ứng dụng vẫn duy nhất toàn hệ thống.</li>
   </ul>
 </div></section>
 
-<section id="chay-thu" class="final"><div class="wrap"><div class="box rv">
-  <span class="eyebrow">Bắt đầu</span>
-  <h2>Chạy thử trong <span class="grad">5 phút</span></h2>
-  <p class="lead" style="margin-inline:auto">Cần Docker và Docker Compose v2, khoảng 4 GB RAM. Đăng nhập <code>staff1</code> tại localhost:3000.</p>
+<section id="chay-thu"><div class="wrap">
+  <h2>Chạy thử trong 5 phút</h2>
+  <p class="sub">Cần Docker và Docker Compose v2, khoảng 4 GB RAM. Sau khi lên, mở localhost:3000 và đăng nhập <code>staff1</code>.</p>
   <pre><i>$</i> git clone https://github.com/ngophatneknha/OLP-MNM.git
 <i>$</i> cd OLP-MNM &amp;&amp; cp .env.example .env
 <i>$</i> docker compose up -d --build
 <i>$</i> docker compose exec workflow-bridge node seed.js</pre>
-  <div class="cta">
-    <a class="btn pri" href="https://github.com/ngophatneknha/OLP-MNM/releases/latest">Tải bản phát hành</a>
-    <a class="btn sec" href="HUONG_DAN.html">Hướng dẫn sử dụng</a>
-    <a class="btn sec" href="architecture.html">Tài liệu kiến trúc</a>
-  </div>
-</div></div></section>
+  <div class="cta"><a class="btn pri" href="https://github.com/ngophatneknha/OLP-MNM/releases/latest">Tải bản phát hành</a><a class="btn sec" href="HUONG_DAN.html">Hướng dẫn sử dụng</a><a class="btn sec" href="KICH_BAN_DEMO.html">Kịch bản demo 15 phút</a></div>
+</div></section>
+</main>
 
-<footer><div class="wrap"><p style="margin-bottom:10px"><a href="HUONG_DAN.html">Hướng dẫn</a> · <a href="KY_THUAT.html">Kỹ thuật</a> · <a href="VAN_HANH.html">Vận hành</a> · <a href="TRI_TUE.html">Trí tuệ nhân tạo</a> · <a href="KIEM_THU.html">Kiểm thử</a> · <a href="BACKLOG.html">Đầu việc</a> · <a href="NOP_BAI.html">Nộp bài</a></p>DX-Lab Project Hub · Apache-2.0 · Đội HUIT.3ConRua · OLP Phần mềm nguồn mở 2026 · <a href="https://github.com/ngophatneknha/OLP-MNM">Mã nguồn</a></div></footer>
-
-<script>
-// Hiện dần khi cuộn và đếm số; không có JS thì mọi thứ vẫn hiện (xem .rv trong media prefers-reduced-motion và noscript).
-const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } }), { threshold: .15 })
-document.querySelectorAll('.rv').forEach((el) => io.observe(el))
-const count = (el) => {
-  const to = +el.dataset.n, t0 = performance.now()
-  const tick = (t) => { const k = Math.min((t - t0) / 1200, 1); el.textContent = Math.round(to * (1 - (1 - k) ** 3)) + (k === 1 ? (el.dataset.plus ?? '') : '') + (el.dataset.suf ?? ''); if (k < 1) requestAnimationFrame(tick) }
-  requestAnimationFrame(tick)
-}
-const co = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { count(e.target); co.unobserve(e.target) } }), { threshold: .6 })
-document.querySelectorAll('[data-n]').forEach((el) => co.observe(el))
-// Ánh sáng theo con trỏ trên thẻ tính năng.
-document.querySelectorAll('.card').forEach((c) => c.addEventListener('pointermove', (e) => { const r = c.getBoundingClientRect(); c.style.setProperty('--x', `${e.clientX - r.left}px`) }))
-</script>
-<noscript><style>.rv{opacity:1;transform:none}</style></noscript>
+<footer><div class="wrap">
+  <p style="margin-bottom:8px"><a href="HUONG_DAN.html">Hướng dẫn</a><a href="KY_THUAT.html">Kỹ thuật</a><a href="architecture.html">Kiến trúc</a><a href="VAN_HANH.html">Vận hành</a><a href="TRI_TUE.html">Trí tuệ nhân tạo</a><a href="KIEM_THU.html">Kiểm thử</a><a href="BACKLOG.html">Đầu việc</a><a href="NOP_BAI.html">Nộp bài</a></p>
+  <p>DX-Lab Project Hub · Apache-2.0 · Đội HUIT.3ConRua · OLP Phần mềm nguồn mở 2026</p>
+</div></footer>
 </body>
 </html>
