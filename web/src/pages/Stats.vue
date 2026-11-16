@@ -15,6 +15,8 @@ import { download, toCsv, toJson } from '../exporter.js'
 import { agreement } from '../autonomy.js'
 import { improvementHints, missingRoles } from '../hints.js'
 import { t } from '../i18n.js'
+import RadarChart from '../components/RadarChart.vue'
+import TrendChart from '../components/TrendChart.vue'
 
 const submissions = ref(null)
 const extra = ref(null) // quy trình, phiên bản, đề xuất, nấc tự chủ: chỉ để chấm mức trưởng thành
@@ -90,8 +92,17 @@ const percent = (n) => (m.value.total ? Math.round((n / m.value.total) * 100) : 
       <p v-if="!maturity.enough" class="panel mt-3 px-4 py-4 text-pencil">{{ t('mat.need') }} {{ maturity.need }} {{ t('mat.have') }} {{ maturity.have }}.</p>
       <template v-else>
         <p class="mt-3 text-xs text-pencil">{{ t('mat.basis', { subs: submissions.length, apps: extra.apps.length }) }}</p>
-        <p class="num mt-1 text-sm text-pencil">{{ t('mat.overall') }}: <strong class="text-2xl text-ink">{{ maturity.overall ?? '–' }}</strong> / 100 · {{ t('mat.level.' + maturityLevel(maturity.overall)) }}</p>
-        <p v-if="auth.role === 'director'" class="mt-1 text-xs text-pencil">{{ agree.total ? t('ai.agree', { hits: agree.hits, total: agree.total, pct: Math.round(agree.hits / agree.total * 100) }) : t('ai.none') }}</p>
+        <div class="panel mt-3 grid items-center gap-6 p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+          <RadarChart :scores="{ H: maturity.spaces.H.score, P: maturity.spaces.P.score, D: maturity.spaces.D.score, I: maturity.spaces.I.score }" />
+          <div>
+            <p class="text-sm text-pencil">{{ t('mat.overall') }}</p>
+            <p class="num flex items-baseline gap-2"><span class="text-6xl font-semibold tracking-tight">{{ maturity.overall ?? '–' }}</span><span class="text-lg text-pencil">/ 100</span></p>
+            <p class="mt-1"><span class="pill pill-plain">{{ t('mat.level.' + maturityLevel(maturity.overall)) }}</span></p>
+            <p v-if="auth.role === 'director'" class="mt-1 text-xs text-pencil">{{ agree.total ? t('ai.agree', { hits: agree.hits, total: agree.total, pct: Math.round(agree.hits / agree.total * 100) }) : t('ai.none') }}</p>
+            <h3 class="mt-5 text-sm font-semibold">{{ t('mat.trend') }}</h3>
+            <TrendChart :trend="trend" class="mt-2" />
+          </div>
+        </div>
         <ul class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <li v-for="space in SPACES" :key="space" class="panel p-4">
             <div class="flex items-baseline justify-between gap-2">
@@ -111,18 +122,6 @@ const percent = (n) => (m.value.total ? Math.round((n / m.value.total) * 100) : 
             </ul>
           </li>
         </ul>
-        <h3 class="mt-5 text-sm font-semibold">{{ t('mat.trend') }}</h3>
-        <div class="panel mt-2 overflow-x-auto">
-          <table class="num w-full text-left text-sm">
-            <thead class="text-pencil"><tr><th class="px-4 py-2 font-medium">{{ t('mat.week') }}</th><th class="px-4 py-2 text-right font-medium">H</th><th class="px-4 py-2 text-right font-medium">D</th></tr></thead>
-            <tbody>
-              <tr v-for="(w, i) in trend" :key="w.at" class="border-t border-line">
-                <th scope="row" class="px-4 py-2 font-medium">{{ i === trend.length - 1 ? t('mat.now') : t('mat.ago', { n: trend.length - 1 - i }) }}</th>
-                <td class="px-4 py-2 text-right">{{ w.H ?? '–' }}</td><td class="px-4 py-2 text-right">{{ w.D ?? '–' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </template>
     </section>
 

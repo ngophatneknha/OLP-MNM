@@ -3,45 +3,107 @@ SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 
 Bản đồ cảm biến (không gian [D]): vị trí và trạng thái cảm biến, đọc qua đầu ra NGSI-LD của cổng API.
+Không dùng nền bản đồ từ bên ngoài (chính sách CSP chỉ cho ảnh cùng nguồn): có lưới theo km, thanh tỉ lệ và hướng bắc,
+vị trí chiếu giữ đúng tỉ lệ. Cảnh báo khác trạng thái thường cả về màu lẫn hình (tam giác, không chỉ màu đỏ).
 -->
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { TriangleAlert, CircleCheck } from 'lucide-vue-next'
 import { getJson } from '../lib.js'
 import { live } from '../live.js'
-import { toPoints, project } from '../geo.js'
+import { toPoints, projectEqual } from '../geo.js'
 import { t } from '../i18n.js'
 
-const W = 640
-const H = 420
+const W = 720
+const H = 460
 const entities = ref(null)
+const hovered = ref('')
 let timer
 async function load() {
   try { entities.value = await getJson('/ngsi-ld/v1/entities?type=Device') } catch { entities.value = [] }
 }
 onMounted(() => { load(); timer = live(load) })
 onUnmounted(() => timer?.())
-const points = computed(() => project(toPoints(entities.value ?? []), W, H))
+
+const all = computed(() => toPoints(entities.value ?? []))
+const view = computed(() => projectEqual(all.value, W, H))
+const points = computed(() => view.value.points)
 const missing = computed(() => (entities.value?.length ?? 0) - points.value.length)
+const alarms = computed(() => points.value.filter((p) => p.alarm).length)
+
+// Bước lưới "đẹp" (1, 2, 5 nhân lũy thừa của 10 km) sao cho một ô rộng khoảng 90 px.
+const stepKm = computed(() => {
+  const raw = view.value.kmPerPx * 90
+  if (!raw) return 1
+  const mag = 10 ** Math.floor(Math.log10(raw))
+  return [1, 2, 5, 10].map((m) => m * mag).find((v) => v >= raw) ?? 10 * mag
+})
+const stepPx = computed(() => (view.value.kmPerPx ? stepKm.value / view.value.kmPerPx : 90))
+const vLines = computed(() => Array.from({ length: Math.floor(W / stepPx.value) + 1 }, (_, i) => (W / 2) % stepPx.value + i * stepPx.value))
+const hLines = computed(() => Array.from({ length: Math.floor(H / stepPx.value) + 1 }, (_, i) => (H / 2) % stepPx.value + i * stepPx.value))
+const kmLabel = computed(() => (stepKm.value < 1 ? `${Math.round(stepKm.value * 1000)} m` : `${stepKm.value} km`))
+const tri = (p) => `${p.x},${p.y - 12} ${p.x + 11},${p.y + 8} ${p.x - 11},${p.y + 8}`
+const state = (p) => (p.alarm ? 'alarm' : 'ok')
 </script>
 
 <template>
-  <h1 class="font-serif text-2xl font-bold">{{ t('map.title') }}</h1>
-  <p class="hint">{{ t('map.hint') }}</p>
+  <h1 class="page-title">{{ t('map.title') }}</h1>
+  <p class="page-lead">{{ t('map.hint') }}</p>
   <p v-if="entities === null" class="mt-6 text-pencil">{{ t('common.loading') }}</p>
-  <p v-else-if="!points.length" class="mt-6 text-pencil">{{ t('map.empty') }}</p>
+  <p v-else-if="!points.length" class="panel mt-6 px-4 py-5 text-pencil">{{ t('map.empty') }}</p>
   <template v-else>
-    <svg :viewBox="`0 0 ${W} ${H}`" class="mt-4 w-full max-w-3xl rounded-lg border border-line bg-surface" role="img" :aria-label="t('map.title')">
-      <g v-for="p in points" :key="p.id">
-        <circle :cx="p.x" :cy="p.y" r="9" :class="p.alarm ? 'fill-red-600' : 'fill-pen'" />
-        <text :x="p.x + 14" :y="p.y + 4" class="fill-current text-xs">{{ p.name }}</text>
-      </g>
-    </svg>
-    <ul class="panel mt-4 max-w-3xl">
-      <li v-for="p in points" :key="p.id" class="panel-row items-baseline">
-        <span class="min-w-0 flex-1">{{ p.name }} <span class="num text-sm text-pencil">{{ p.lat.toFixed(4) }}, {{ p.lon.toFixed(4) }}</span></span>
-        <span :class="p.alarm ? 'text-red-700' : 'text-pen'">{{ p.value ?? '—' }} {{ p.unit }} · {{ p.alarm ? t('map.alarm') : t('map.ok') }}</span>
-      </li>
-    </ul>
+    <dl class="mt-6 grid grid-cols-3 gap-3 sm:max-w-md">
+      <div class="panel px-4 py-3"><dt class="text-xs text-pencil">{{ t('map.sensors') }}</dt><dd class="num text-2xl font-semibold">{{ points.length }}</dd></div>
+      <div class="panel px-4 py-3"><dt class="text-xs text-pencil">{{ t('map.ok') }}</dt><dd class="num text-2xl font-semibold text-done">{{ points.length - alarms }}</dd></div>
+      <div class="panel px-4 py-3"><dt class="text-xs text-pencil">{{ t('map.alarm') }}</dt><dd class="num text-2xl font-semibold" :class="alarms ? 'text-seal' : ''">{{ alarms }}</dd></div>
+    </dl>
+
+    <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      <svg :viewBox="`0 0 ${W} ${H}`" class="h-auto w-full rounded-xl border border-line bg-pen-wash/60" role="img" :aria-label="t('map.aria', { n: points.length, a: alarms })">
+        <g stroke="var(--color-line)" stroke-width="1" stroke-opacity="0.9">
+          <line v-for="x in vLines" :key="'v' + x" :x1="x" :x2="x" y1="0" :y2="H" />
+          <line v-for="y in hLines" :key="'h' + y" x1="0" :x2="W" :y1="y" :y2="y" />
+        </g>
+        <g v-for="p in points" :key="p.id" class="cursor-pointer" @mouseenter="hovered = p.id" @mouseleave="hovered = ''">
+          <circle :cx="p.x" :cy="p.y" :r="hovered === p.id ? 30 : 22" :fill="p.alarm ? 'var(--color-seal)' : 'var(--color-pen)'" fill-opacity="0.14" :class="p.alarm ? 'halo' : ''" />
+          <polygon v-if="p.alarm" :points="tri(p)" fill="var(--color-seal)" stroke="var(--color-surface)" stroke-width="2.5" stroke-linejoin="round" />
+          <circle v-else :cx="p.x" :cy="p.y" r="8" fill="var(--color-pen)" stroke="var(--color-surface)" stroke-width="2.5" />
+          <text :x="p.x + 18" :y="p.y + 5" font-size="14" font-weight="600" fill="var(--color-ink)" stroke="var(--color-surface)" stroke-width="4" paint-order="stroke">{{ p.name }}</text>
+        </g>
+        <g transform="translate(24 428)" font-size="12" fill="var(--color-ink)">
+          <path :d="`M0 0 V-6 H${stepPx} V0`" fill="none" stroke="var(--color-ink)" stroke-width="2" />
+          <text :x="stepPx + 8" y="0" class="num">{{ kmLabel }}</text>
+        </g>
+        <g transform="translate(682 40)" fill="none" stroke="var(--color-ink)" stroke-width="2" stroke-linejoin="round">
+          <path d="M0 -18 L8 10 L0 4 L-8 10 Z" fill="var(--color-ink)" />
+          <text x="0" y="28" text-anchor="middle" stroke="none" fill="var(--color-ink)" font-size="13" font-weight="700">{{ t('map.north') }}</text>
+        </g>
+      </svg>
+
+      <ul class="panel self-start">
+        <li v-for="p in points" :key="p.id">
+          <button type="button" class="panel-row w-full text-left transition-colors" :class="hovered === p.id ? 'bg-pen-wash/70' : ''" @mouseenter="hovered = p.id" @mouseleave="hovered = ''" @focus="hovered = p.id" @blur="hovered = ''">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full" :class="p.alarm ? 'bg-seal-wash text-seal' : 'bg-done-wash text-done'">
+              <component :is="p.alarm ? TriangleAlert : CircleCheck" :size="18" aria-hidden="true" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-medium">{{ p.name }}</span>
+              <span class="num block text-xs text-pencil">{{ p.lat.toFixed(4) }}, {{ p.lon.toFixed(4) }}</span>
+            </span>
+            <span class="text-right">
+              <span class="num block text-lg font-semibold" :class="p.alarm ? 'text-seal' : ''">{{ p.value ?? '—' }} <span class="text-xs font-normal text-pencil">{{ p.unit }}</span></span>
+              <span class="pill" :class="p.alarm ? 'pill-stop' : 'pill-done'">{{ state(p) === 'alarm' ? t('map.alarm') : t('map.ok') }}</span>
+            </span>
+          </button>
+        </li>
+      </ul>
+    </div>
     <p v-if="missing > 0" class="hint">{{ t('map.missing', { n: missing }) }}</p>
   </template>
 </template>
+
+<style scoped>
+.halo { animation: halo 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes halo { 0% { transform: scale(0.8); opacity: 0.35; } 100% { transform: scale(1.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .halo { animation: none; } }
+</style>

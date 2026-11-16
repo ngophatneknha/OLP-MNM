@@ -9,6 +9,18 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-16
+
+### Added
+- AI điền form từ chứng từ: trên trang Gửi hồ sơ, bấm "AI điền từ chứng từ" cạnh tệp PDF hoặc ảnh; trạm extractor đọc chữ (pdftotext hoặc OCR), trợ lý AI gợi ý giá trị cho từng trường, ô do AI điền có nhãn nhắc kiểm tra. Đường mới `POST /fill?app=` không lưu tệp, không tạo hồ sơ; chữ gửi AI đã che số điện thoại, email, CCCD, số thẻ; cổng API giới hạn 10 lượt/phút. Kiểm thử đơn vị `fill.test.js`.
+- Biểu đồ mạng nhện H-P-D-I và đường xu hướng 4 tuần trên trang Số liệu (SVG, không thư viện); khi chưa đủ lịch sử thì ghi rõ thay vì vẽ biểu đồ trống.
+
+### Changed
+- Giao diện ứng dụng theo kiểu phần mềm doanh nghiệp: nền phẳng, bỏ chuyển sắc và khung chào trang trí, chữ 14px, thẻ bo góc nhỏ không đổ bóng, trang rộng hơn; thanh bên một màu, mục điều hướng gom theo bốn không gian H, P, D, I.
+- Bản đồ cảm biến viết lại: chiếu đúng tỉ lệ (hiệu chỉnh vĩ độ), lưới theo km, thanh tỉ lệ, hướng bắc, hàng số liệu tổng; cảm biến vượt ngưỡng là tam giác có quầng nhấp nháy (tôn trọng giảm chuyển động), danh sách bên cạnh làm nổi điểm tương ứng.
+- Sơ đồ quy trình: nút rộng hơn, chữ to hơn, tên bước ít bị cắt.
+- Tài liệu: thêm `/fill` vào bảng tuyến của `docs/KY_THUAT.md`; `docs/TRI_TUE.md` ghi rõ mọi tính năng AI đổi sang Ollama chỉ bằng ba biến môi trường.
+
 ## [2.3.2] - 2026-11-16
 
 ### Fixed
