@@ -4,6 +4,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { X509Certificate } from 'node:crypto'
 import { newCa, newLeaf, canonicalPayload, signPayload, verifySignature, encryptKey, decryptKey, fingerprint } from './pki.js'
+// Chứng thư có hiệu lực từ lúc cấp, nên thời điểm ký thử phải là bây giờ (không được cố định ngày).
+const NOW = new Date().toISOString()
 
 const ev = { id: 7, submission_id: '11111111-1111-1111-1111-111111111111', step_key: 'truong_phong', action: 'approve', note: null, actor_id: 'u1', created_at: '2026-11-16T01:02:03.000Z' }
 const setup = (org = 'default') => {
@@ -28,7 +30,7 @@ test('chứng thư CA và người ký là X.509 hợp lệ, người ký do CA 
 
 test('chữ ký đúng thì hợp lệ; sửa nội dung, chữ ký, hay dùng CA khác đều bị phát hiện', () => {
   const { ca, leaf, payload, signature } = setup()
-  const base = { payload, signature, certPem: leaf.certPem, caPem: ca.certPem, signedAt: '2026-11-16T01:02:04Z' }
+  const base = { payload, signature, certPem: leaf.certPem, caPem: ca.certPem, signedAt: NOW }
   assert.equal(verifySignature(base).valid, true)
   assert.equal(verifySignature({ ...base, payload: payload.replace('approve', 'reject') }).valid, false, 'đổi hành động')
   assert.equal(verifySignature({ ...base, payload: payload.replace('u1', 'u2') }).valid, false, 'đổi người ký')
@@ -43,7 +45,7 @@ test('chữ ký đúng thì hợp lệ; sửa nội dung, chữ ký, hay dùng C
 test('mã băm dữ liệu hồ sơ nằm trong bản tóm tắt: đổi dữ liệu thì chữ ký cũ không còn khớp', () => {
   const { ca, leaf, signature } = setup()
   const changed = canonicalPayload(ev, 'b'.repeat(64))
-  assert.equal(verifySignature({ payload: changed, signature, certPem: leaf.certPem, caPem: ca.certPem, signedAt: '2026-11-16T01:02:04Z' }).valid, false)
+  assert.equal(verifySignature({ payload: changed, signature, certPem: leaf.certPem, caPem: ca.certPem, signedAt: NOW }).valid, false)
 })
 
 test('khóa riêng mã hóa khi lưu: giải mã đúng khóa chủ, sai khóa chủ hay bị sửa thì lỗi', () => {
