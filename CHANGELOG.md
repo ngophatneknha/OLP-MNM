@@ -9,6 +9,11 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-16
+
+### Changed
+- Trang web giới thiệu dự án (GitHub Pages) viết lại thành một trang tự chứa `docs/index.html`: nền động, ảnh giao diện nghiêng 3D, số liệu đếm lên, thẻ tính năng, sơ đồ kiến trúc, thư viện ảnh, mục nói thẳng và hướng dẫn chạy thử. Thay `docs/index.md`.
+
 ## [2.1.0] - 2026-11-16
 
 ### Changed
