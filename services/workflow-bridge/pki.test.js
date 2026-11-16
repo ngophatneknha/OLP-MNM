@@ -4,7 +4,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { X509Certificate } from 'node:crypto'
 import { newCa, newLeaf, canonicalPayload, signPayload, verifySignature, encryptKey, decryptKey, fingerprint } from './pki.js'
-// Chứng thư có hiệu lực từ lúc cấp, nên thời điểm ký thử phải là bây giờ (không được cố định ngày).const NOW = new Date().toISOString()
+// Chứng thư có hiệu lực từ lúc cấp, nên thời điểm ký thử phải là bây giờ (không được cố định ngày).
+const NOW = new Date().toISOString()
 
 const ev = { id: 7, submission_id: '11111111-1111-1111-1111-111111111111', step_key: 'truong_phong', action: 'approve', note: null, actor_id: 'u1', created_at: '2026-11-16T01:02:03.000Z' }
 const setup = (org = 'default') => {
