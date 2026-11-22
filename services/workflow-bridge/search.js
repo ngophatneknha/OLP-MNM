@@ -6,19 +6,27 @@
 //   POST /ask      { question }  -> câu trả lời của AI chỉ dựa trên các đoạn khớp, kèm nguồn
 // Chỉ mục (Meilisearch) KHÔNG quyết định quyền: mọi kết quả đều được Hasura kiểm lại bằng chính token của người hỏi,
 // nên người không được xem hồ sơ thì không bao giờ thấy nội dung của nó, cả trong kết quả lẫn trong ngữ cảnh gửi cho AI.
-// PDF và ảnh được đọc chữ bằng trạm extractor (poppler, Tesseract OCR); tìm ngữ nghĩa (véc-tơ) bật bằng SEARCH_EMBEDDER (xem docs/TRI_TUE.md).
+// PDF và ảnh được đọc chữ bằng trạm extractor (poppler, Tesseract OCR); tìm ngữ nghĩa (véc-tơ) bật bằng SEARCH_EMBEDDER
+// (Meilisearch tự nhúng) hoặc profile vector (Qdrant + dịch vụ nhúng riêng, xem vector.js và docs/TRI_TUE.md).
 // shortcut: chỉ mục dùng Meilisearch; OCR chỉ đọc 10 trang đầu, chất lượng phụ thuộc ảnh gốc.
 
 import { s3fetch } from './s3.js'
 import { createHash } from 'node:crypto'
 import { aiConfigured, complete } from './ai.js'
 import { HttpError, asUser } from './files.js'
+import { vectorOn, upsert, vectorPage, fuse } from './vector.js'
 
-const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET, EXTRACTOR_URL, SEARCH_EMBEDDER, SEARCH_SEMANTIC_RATIO } = process.env
+const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET, EXTRACTOR_URL, SEARCH_SEMANTIC_RATIO } = process.env
+// Bật profile vector (Qdrant + dịch vụ nhúng) thì Meilisearch chỉ còn lo từ khóa, không tự nhúng nữa.
+const VECTOR = vectorOn()
+const SEARCH_EMBEDDER = VECTOR ? '' : process.env.SEARCH_EMBEDDER
 const INDEX = 'docs'
 const MAX_TEXT = 100_000
 const PAGE = 100
 const MAX_SCAN = 1000 // quét tối đa chừng này kết quả (bằng maxTotalHits mặc định của Meilisearch)
+const CHUNK = 450 // ký tự mỗi đoạn tệp: mô hình nhúng nhỏ chỉ đọc ~128 token, đoạn dài hơn thì phần sau bị bỏ khi nhúng
+const OVERLAP = 60 // các đoạn chồng nhau một chút để câu bị cắt ngang vẫn nằm trọn trong một đoạn
+const BATCH = 200 // tài liệu mỗi lần gửi: mỗi tác vụ nhúng ngắn (máy yếu ~0,5 s/đoạn), lỗi giữa chừng không mất phần đã xong
 const TEXTY = /\.(txt|md|csv|json|log|tsv|xml|yml|yaml)$/i
 const MARK_OPEN = '\u00ab'
 const MARK_CLOSE = '\u00bb'
@@ -61,14 +69,16 @@ const seen = new Map() // id tài liệu -> mã băm nội dung đã nạp, đ�
 async function ensureIndex() {
   if (ready) return
   await meili('POST', '/indexes', { uid: INDEX, primaryKey: 'id' }).catch(() => {}) // đã có thì bỏ qua
-  await meili('PATCH', `/indexes/${INDEX}/settings`, { searchableAttributes: ['title', 'text', 'name'] })
-  if (SEARCH_EMBEDDER) { // tìm ngữ nghĩa: Meilisearch tự nhúng văn bản bằng mô hình HuggingFace (tải lần đầu, nhúng nền)
-    await meili('PATCH', '/experimental-features', { vectorStore: true })
-    await meili('PATCH', `/indexes/${INDEX}/settings`, { embedders: { default: { source: 'huggingFace', model: SEARCH_EMBEDDER, documentTemplate: 'passage: {{doc.text|truncatewords: 80}}' } } })
+  // distinctAttribute: mỗi tệp chỉ trả về đoạn khớp nhất, khỏi một tệp dài chiếm hết trang kết quả
+  await meili('PATCH', `/indexes/${INDEX}/settings`, { searchableAttributes: ['title', 'text', 'name'], distinctAttribute: 'parent' })
+  if (SEARCH_EMBEDDER) { // tìm ngữ nghĩa: Meilisearch tự nhúng văn bản bằng mô hình HuggingFace chạy ngay trong nó (tải lần đầu, nhúng nền)
+    const [model, revision] = SEARCH_EMBEDDER.split('@') // "tên-mô-hình@mã-commit" để ghim đúng phiên bản mô hình
+    await meili('PATCH', `/indexes/${INDEX}/settings`, { embedders: { default: { source: 'huggingFace', model, ...(revision && { revision }), pooling: 'forceMean', documentTemplate: '{{doc.title}} {{doc.name}}\n{{doc.text}}', documentTemplateMaxBytes: 2000 } } })
   }
   ready = true
 }
 
+const vectorQueue = new Map() // id -> tài liệu đã vào Meilisearch nhưng chưa vào Qdrant (dịch vụ nhúng tạm chết): nạp bù lần sau
 const fails = new Map() // id tệp -> số lần đọc lỗi; quá 3 lần thì bỏ qua, khỏi lấy đi lấy lại mãi
 
 const MIME_BY_EXT = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', tif: 'image/tiff', tiff: 'image/tiff', bmp: 'image/bmp', gif: 'image/gif' }
@@ -109,9 +119,24 @@ async function fileText(att) {
   }
 }
 
+/** Cắt văn bản dài thành các đoạn ~CHUNK ký tự, chồng nhau OVERLAP ký tự, ngắt ở khoảng trắng để không cắt đôi một từ. */
+export function chunks(text, size = CHUNK, overlap = OVERLAP) {
+  const out = []
+  for (let start = 0; start < text.length;) {
+    let end = Math.min(start + size, text.length)
+    if (end < text.length) { const sp = text.lastIndexOf(' ', end); if (sp > start + overlap) end = sp }
+    if (end < text.length && /[\uDC00-\uDFFF]/.test(text[end])) end-- // không cắt đôi emoji/ký tự ngoài BMP: nửa ký tự là JSON sai, Meilisearch từ chối cả lô
+    out.push(text.slice(start, end).trim())
+    if (end >= text.length) break
+    const back = text.indexOf(' ', end - overlap) // lùi lại một chút để chồng đoạn, bắt đầu ở đầu một từ
+    start = back > start && back < end ? back + 1 : end
+  }
+  return out.filter(Boolean).map((p) => p.toWellFormed()) // tệp cắt ở MAX_TEXT có thể còn nửa ký tự: thay bằng U+FFFD thay vì để Meilisearch từ chối
+}
+
 /** Meilisearch nhận tài liệu rồi mới xử lý ngầm: chờ tác vụ xong, lỗi thì báo để lần sau thử lại. */
 async function waitTask(uid) {
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 1200; i++) { // tối đa 5 phút: lần đầu bật tìm ngữ nghĩa, Meilisearch phải nhúng cả chỉ mục
     const t = await meili('GET', `/tasks/${uid}`)
     if (t.status === 'succeeded') return
     if (t.status === 'failed' || t.status === 'canceled') throw new Error(`Meilisearch từ chối nạp: ${t.error?.message ?? t.status}`)
@@ -130,12 +155,13 @@ export async function syncIndex() {
   const skipped = []
   for (const s of data.submission) {
     const title = `${s.app.name} số ${s.no}`
-    const items = [{ id: `sub-${s.id}`, submission_id: s.id, kind: 'submission', title, text: submissionText(s) }]
+    // shortcut: hồ sơ không chia đoạn (thường ngắn); hồ sơ rất dài thì phần cuối không được nhúng, chỉ tìm theo từ khóa.
+    const items = [{ id: `sub-${s.id}`, parent: `sub-${s.id}`, submission_id: s.id, kind: 'submission', title, name: null, text: submissionText(s) }] // name có mặt (dù rỗng): mẫu nhúng dùng {{doc.name}}, thiếu trường là Meilisearch từ chối cả lô
     for (const a of s.attachments) {
       const key = `att-${a.id}`
       if (seen.has(key)) continue
       const text = await fileText(a)
-      if (text) items.push({ id: key, submission_id: s.id, kind: 'file', title, name: a.name, text })
+      if (text) chunks(text).forEach((part, i) => items.push({ id: `${key}-${i}`, parent: key, submission_id: s.id, kind: 'file', title, name: a.name, text: part }))
       else if (text === null) skipped.push(key)
       else if (fails.set(key, (fails.get(key) ?? 0) + 1).get(key) >= 3) skipped.push(key)
     }
@@ -146,12 +172,31 @@ export async function syncIndex() {
   }
   if (docs.length) {
     await ensureIndex()
-    const task = await meili('POST', `/indexes/${INDEX}/documents?primaryKey=id`, docs.map(([d]) => d))
-    await waitTask(task.taskUid)
-    for (const [d, hash] of docs) seen.set(d.id, hash)
+    for (let i = 0; i < docs.length; i += BATCH) {
+      const part = docs.slice(i, i + BATCH)
+      const task = await meili('POST', `/indexes/${INDEX}/documents?primaryKey=id`, part.map(([d]) => d))
+      await waitTask(task.taskUid)
+      if (VECTOR) for (const [d] of part) vectorQueue.set(d.id, d)
+      for (const [d, hash] of part) seen.set(d.id, hash)
+    }
+    // Chỉ đánh dấu cả tệp (parent, để lần sau khỏi đọc lại) khi mọi đoạn của nó đã nạp xong.
+    for (const [d, hash] of docs) seen.set(d.parent, seen.get(d.parent) ?? hash)
   }
   for (const key of skipped) seen.set(key, '-') // chỉ đánh dấu sau khi cả lần nạp thành công
+  if (VECTOR) await flushVectors()
   return docs.length
+}
+
+/** Đưa hàng chờ sang Qdrant. Dịch vụ nhúng hay Qdrant chết thì chỉ ghi log và giữ hàng chờ: tìm từ khóa vẫn đủ dữ liệu, ngữ nghĩa bù sau. */
+async function flushVectors() {
+  while (vectorQueue.size) {
+    const part = [...vectorQueue.values()].slice(0, BATCH)
+    try { await upsert(part) } catch (err) {
+      console.error(`Chưa nạp được ${vectorQueue.size} đoạn vào Qdrant, sẽ thử lại lần đồng bộ sau: ${err.message}`)
+      return
+    }
+    for (const d of part) vectorQueue.delete(d.id)
+  }
 }
 
 class Unavailable extends HttpError {
@@ -165,21 +210,44 @@ export function searchBody(q, embedder, ratio) {
   return body
 }
 
+/** [đường dẫn, thân] của một trang kết quả. */
+export function searchRequest(q, embedder, ratio, offset) {
+  return [`/indexes/${INDEX}/search`, { ...searchBody(q, embedder, ratio), offset }]
+}
+
+/** Một trang kết quả khi bật profile vector: từ khóa (Meilisearch) và ngữ nghĩa (Qdrant) chạy song song rồi trộn hạng.
+ *  Qdrant hoặc dịch vụ nhúng lỗi thì vẫn trả kết quả từ khóa, không báo lỗi cho người dùng. */
+async function fusedPage(q, offset) {
+  const ratio = searchBody(q, 'x', SEARCH_SEMANTIC_RATIO).hybrid.semanticRatio
+  const [keyword, vector] = await Promise.all([
+    meili('POST', `/indexes/${INDEX}/search`, { ...searchBody(q, ''), offset, showRankingScore: true }).then((r) => r.hits), // điểm từ khóa để trộn với điểm ngữ nghĩa
+    vectorPage(q, offset, PAGE).catch((err) => {
+      if (!err.paused) console.error(`Tìm ngữ nghĩa lỗi, dùng từ khóa (tạm ngừng 30 s): ${err.message}`) // mỗi lần tạm ngừng chỉ ghi một dòng
+      if (err.status === 404) seen.clear() // kho véc-tơ bị mất (xóa volume): lần đồng bộ sau nạp lại từ đầu
+      return []
+    }),
+  ])
+  return { hits: fuse(keyword, vector, ratio), more: keyword.length === PAGE || vector.length === PAGE }
+}
+
 /** Tìm rồi lọc theo quyền thật của người hỏi (Hasura quyết định, không phải chỉ mục). */
 export async function permittedHits(req, q, want = 10) {
   if (!MEILI_URL) throw new Unavailable()
   const out = []
+  const parents = new Set() // các trang sau (hoặc từ khóa và ngữ nghĩa) có thể trả về đoạn khác của cùng một tệp: chỉ giữ đoạn hạng cao nhất
   try {
     await ensureIndex()
     // Quét từng trang kết quả: chỉ mục chứa tài liệu của mọi người nên trang đầu có thể toàn thứ người hỏi không được xem (nhất là khi tìm ngữ nghĩa, luôn trả về láng giềng gần nhất).
     for (let offset = 0; offset < MAX_SCAN && out.length < want; offset += PAGE) {
-      const found = await meili('POST', `/indexes/${INDEX}/search`, { ...searchBody(q, SEARCH_EMBEDDER, SEARCH_SEMANTIC_RATIO), limit: PAGE, offset })
+      const page = (embedder) => meili('POST', ...searchRequest(q, embedder, SEARCH_SEMANTIC_RATIO, offset))
+      // Mô hình nhúng chưa tải xong hoặc tải lỗi (máy không ra được mạng) thì vẫn tìm được theo từ khóa.
+      const found = VECTOR ? await fusedPage(q, offset) : await page(SEARCH_EMBEDDER).catch((err) => { if (SEARCH_EMBEDDER && err.message.includes('embedder')) return page(''); throw err })
       if (!found.hits.length) break
       const ids = [...new Set(found.hits.map((h) => h.submission_id))]
       const { submission } = await asUser(req, 'query($ids: [uuid!]!) { submission(where: {id: {_in: $ids}}) { id } }', { ids })
       const visible = new Set(submission.map((s) => s.id))
-      for (const h of found.hits) if (visible.has(h.submission_id)) out.push(h)
-      if (found.hits.length < PAGE) break
+      for (const h of found.hits) if (visible.has(h.submission_id) && !parents.has(h.parent ?? h.id)) { parents.add(h.parent ?? h.id); out.push(h) }
+      if (!found.more && found.hits.length < PAGE) break
     }
   } catch (err) {
     if (err instanceof HttpError) throw err // lỗi của Hasura/quyền không được che thành "chưa bật tìm kiếm"

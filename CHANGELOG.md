@@ -9,6 +9,31 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-11-22
+
+### Added
+- AI-02 tìm ngữ nghĩa bằng Qdrant (cách khuyên dùng): profile `vector` mới gồm Qdrant 1.20.2 và dịch vụ nhúng Text Embeddings Inference 1.9 bản CPU (đều Apache-2.0) chạy bản int8 chính thức của `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (Apache-2.0, chỉ cần CPU, tải một lần có kiểm sha256); Meilisearch chỉ còn lo từ khóa, `workflow-bridge` trộn hai bên theo điểm rồi kiểm quyền qua Hasura như cũ (`vector.js`, không thêm gói npm). Không dùng Ollama nên không tranh tài nguyên với mô hình ngôn ngữ; tiền tố (nếu mô hình cần) đặt qua biến môi trường. Tài liệu mới tải lên SeaweedFS tự được nhúng vào Qdrant và tìm được bằng câu diễn đạt khác sau chưa tới 10 giây; mỗi lần khởi động `workflow-bridge` dựng lại kho véc-tơ nên đổi mô hình chỉ cần khởi động lại. Đo 39 câu: 33/39 đúng hạng 1 (chỉ từ khóa 28/39), p95 210 ms khi 8 người cùng tìm câu mới, RAM dịch vụ nhúng 0,48 GB (cả phần ngữ nghĩa ~0,7 GB). Máy chủ mạnh có thể đổi sang `gte-multilingual-base` (39/39, RAM 1,56 GB) bằng biến môi trường. Dịch vụ nhúng hay Qdrant chết thì tìm kiếm lùi về từ khóa, không lỗi 503 khi đông người; phần véc-tơ được nạp bù khi dịch vụ sống lại.
+- `eval-search.mjs` thêm chế độ `qua-bridge`: đo 39 câu qua đúng mã bridge (kể cả kiểm quyền) với Meilisearch hoặc Qdrant tùy biến môi trường; `bao-mat` chạy được với Qdrant.
+- `scripts/eval-search.mjs`: bộ đo trước triển khai, chỉ cần một container Meilisearch: chất lượng (39 câu hỏi, 5 nhóm, kho 312 tài liệu có nhiễu), câu lạc đề, độ trễ p50/p95 khi 8 người tìm cùng lúc, thời gian khởi động lại, và chế độ `bao-mat` chạy đúng mã bridge để kiểm rò rỉ quyền, trường hợp xấu (tệp 100.000 ký tự, emoji, CSV, tiếng Anh, câu hỏi dài) và đầu vào xấu.
+- `search-guard.test.js`: hàng rào kiến trúc và bảo mật chạy không cần Docker: bridge không dùng gói npm, Meilisearch là bản Community không mở cổng, kết quả và ngữ cảnh hỏi đáp chỉ gồm hồ sơ Hasura cho phép (kiểm bằng token người hỏi, với cả ba chế độ tìm), lùi về từ khóa khi mô hình chưa sẵn sàng.
+
+### Changed
+- Meilisearch nâng từ 1.11.3 lên 1.57.0 (bản Community, MIT); máy ít RAM có thể để nó tự nhúng bằng `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (Apache-2.0) qua `SEARCH_EMBEDDER`, không thêm container. Mô hình lưu trong volume riêng `meilimodels`, xóa chỉ mục hay dựng lại container không phải tải lại. Đo trên kho 312 tài liệu với 39 câu hỏi tiếng Việt (diễn đạt khác chữ, tra mã số, không dấu, gõ sai, nằm sâu trong tệp dài): đúng hạng 1 từ 28/39 (chỉ từ khóa) lên 33/39; RAM khoảng 950 MB (xem `docs/TRI_TUE.md`). Nâng cấp cần xóa volume `meilidata` một lần (chỉ mục tự dựng lại từ Hasura).
+- Tệp dài được chia đoạn khoảng 450 ký tự, chồng nhau; mỗi tệp chỉ trả về đoạn khớp nhất. Đoạn trích và ngữ cảnh RAG chính xác hơn; kiểm quyền qua Hasura giữ nguyên.
+
+### Fixed
+- Bật mô hình nhúng thì Meilisearch từ chối nạp mọi hồ sơ (mẫu nhúng dùng `{{doc.name}}` mà hồ sơ không có trường `name`): nay mọi tài liệu đều có `name`; thêm kiểm thử đối chiếu trường của mẫu với mọi loại tài liệu.
+- Cắt đoạn trúng giữa emoji làm Meilisearch từ chối cả lô và bridge gửi lại mãi: không cắt đôi ký tự, thay nửa ký tự còn sót bằng U+FFFD.
+- Tệp lớn (100.000 ký tự, hơn 220 đoạn) có thể nạp quá thời gian chờ rồi gửi lại từ đầu mãi: nạp theo lô 200 đoạn, lỗi giữa chừng chỉ gửi lại phần thiếu.
+- Nạp tệp lớn khi bật mô hình làm Meilisearch vượt 1,2 GB RAM và bị tắt: giới hạn `MEILI_MAX_INDEXING_THREADS=2`, `MEILI_MAX_INDEXING_MEMORY=512 MiB` (đỉnh còn khoảng 920 MB).
+- Giới hạn byte của mẫu nhúng nâng từ 1000 lên 2000: đoạn 450 ký tự tiếng Việt có dấu có thể vượt 1000 byte và mất phần cuối khi nhúng.
+- Bật `SEARCH_EMBEDDER` mà mô hình chưa tải được (máy không ra mạng) không còn làm hỏng cả tìm kiếm: tự lùi về tìm từ khóa.
+- Bỏ lệnh bật `vectorStore` thử nghiệm, Meilisearch mới đã bỏ cờ này và từ chối yêu cầu.
+- Chờ Meilisearch nạp tối đa 5 phút thay vì 10 giây, để lần nhúng đầu tiên không bị coi là lỗi rồi gửi lại mãi.
+- Dịch vụ nhúng chưa sẵn sàng lúc khởi động thì mỗi câu tìm gặp lỗi "Collection doesn't exist" và bridge quên hết tệp đã nạp (phải đọc, OCR lại toàn bộ): nay chỉ nạp lại khi kho véc-tơ đã dựng rồi mới mất, và tạm ngừng hỏi Qdrant 30 giây.
+- ClamAV tạm giữ hai bản mẫu nhận dạng (~2 GB) khi tự cập nhật nên hết RAM trên máy Docker 4 GB có bật profile `vector`: nạp lại tuần tự (`ConcurrentDatabaseReload no`), đỉnh còn khoảng 950 MB; đổi lại tải tệp lên chờ quét khoảng nửa phút mỗi lần cập nhật.
+- Kiểm thử tìm kiếm chờ đúng tệp cần tìm thay vì "có kết quả là xong", và chỉ cấm thấy hồ sơ ngoài quyền: tìm ngữ nghĩa luôn trả láng giềng gần nhất trong hồ sơ của chính người hỏi (đã đo, không đặt được ngưỡng điểm, xem `docs/TRI_TUE.md`).
+
 ## [2.4.0] - 2026-11-16
 
 ### Added

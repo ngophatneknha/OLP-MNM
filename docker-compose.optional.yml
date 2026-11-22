@@ -104,15 +104,78 @@ services:
 
   # Tìm kiếm toàn văn hồ sơ và tệp đính kèm dạng văn bản. Không công bố cổng: chỉ workflow-bridge gọi tới, và chính nó kiểm quyền từng kết quả.
   meilisearch:
-    image: getmeili/meilisearch:v1.11.3
+    image: getmeili/meilisearch:v1.57.0 # bản Community (MIT); KHÔNG dùng image meilisearch-enterprise (BUSL)
     profiles: ["search"]
     restart: unless-stopped
     environment:
       MEILI_ENV: production
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me-meili-key}
       MEILI_NO_ANALYTICS: "true"
+      # Máy yếu: nhúng chạy bằng CPU. Giới hạn luồng và bộ nhớ khi nạp để Meilisearch không chiếm hết máy và không bị tắt vì hết RAM.
+      MEILI_MAX_INDEXING_THREADS: ${MEILI_MAX_INDEXING_THREADS:-2}
+      MEILI_MAX_INDEXING_MEMORY: ${MEILI_MAX_INDEXING_MEMORY:-512 MiB}
     volumes:
       - meilidata:/meili_data
+      - meilimodels:/root/.cache/huggingface # mô hình nhúng (~470 MB): dựng lại container hay xóa chỉ mục không phải tải lại (Meili bỏ qua HF_HOME)
+
+  # Tìm ngữ nghĩa tách riêng (profile vector): Qdrant lưu véc-tơ, dịch vụ nhúng chạy mô hình bằng CPU.
+  # Không dùng Ollama nên không tranh tài nguyên với mô hình ngôn ngữ. Bật thì đặt VECTOR_URL và EMBED_URL (xem .env.example).
+  qdrant:
+    image: qdrant/qdrant:v1.20.2 # Apache-2.0
+    profiles: ["vector"]
+    restart: unless-stopped
+    environment:
+      QDRANT__SERVICE__API_KEY: ${VECTOR_API_KEY:-change-me-vector-key}
+      QDRANT__TELEMETRY_DISABLED: "true"
+      # Máy yếu: giới hạn luồng và gộp ít phân đoạn; đã đo trên máy 4 nhân: RAM ~120 MB, độ đúng không đổi.
+      QDRANT__SERVICE__MAX_WORKERS: 2
+      QDRANT__STORAGE__PERFORMANCE__MAX_SEARCH_THREADS: 2
+      QDRANT__STORAGE__PERFORMANCE__OPTIMIZER_CPU_BUDGET: 1
+      QDRANT__STORAGE__OPTIMIZERS__DEFAULT_SEGMENT_NUMBER: 2
+    volumes:
+      - qdrantdata:/qdrant/storage
+
+  # Tải mô hình mặc định một lần vào volume: bản lượng tử int8 chính thức của MiniLM (118 MB), kiểm sha256 từng tệp.
+  # Dịch vụ nhúng tự tải chỉ lấy được bản fp32; bản int8 đã đo: cùng độ đúng 33/39, RAM 0,48 GB thay vì 0,96 GB, nhanh hơn (cần CPU có AVX2).
+  embedder-model:
+    image: alpine:3.21 # MIT; wget của BusyBox (GPL-2.0), chỉ chạy, không phân phối lại
+    profiles: ["vector"]
+    volumes:
+      - embedmodel:/model
+    entrypoint:
+      - sh
+      - -ec
+      - |
+        cd /model
+        base=https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/e8f8c211226b894fcb81acc59f3b34ba3efd5f42
+        while read -r sum dst src; do
+          if [ -f "$$dst" ] && echo "$$sum  $$dst" | sha256sum -c >/dev/null 2>&1; then continue; fi
+          mkdir -p "$$(dirname "$$dst")"
+          for try in 1 2 3 4 5; do wget -q -c -O "$$dst.part" "$$base/$$src" && break; sleep 5; done # mạng chập chờn: tải tiếp phần dở
+          if ! echo "$$sum  $$dst.part" | sha256sum -c >/dev/null 2>&1; then rm -f -- "$$dst.part"; echo "Sai sha256: $$src"; exit 1; fi
+          mv "$$dst.part" "$$dst"
+        done <<'LIST'
+        6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e config.json config.json
+        2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8 tokenizer.json tokenizer.json
+        70f4448f31320443fe3557cacea5abf2dcc4915dda8c80646bec9f3bb0aa5a1f sentence_bert_config.json sentence_bert_config.json
+        4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23 1_Pooling/config.json 1_Pooling/config.json
+        98a01d88b7de996cdea58c32ca71208c09968d143798814b2ea09d3439dc334f onnx/model.onnx onnx/model_quint8_avx2.onnx
+        LIST
+
+  embedder:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9 # Text Embeddings Inference, Apache-2.0
+    profiles: ["vector"]
+    restart: unless-stopped
+    depends_on:
+      embedder-model:
+        condition: service_completed_successfully
+    # Mặc định chạy bản int8 ở trên. Máy chủ dư RAM/CPU có thể đặt EMBED_MODEL (tên trên Hugging Face) và EMBED_REVISION (mã commit) để dùng mô hình khác,
+    # ví dụ gte-multilingual-base (đúng 39/39 nhưng RAM 1,56 GB, nạp chậm gấp 10 lần). Đổi mô hình chỉ cần khởi động lại workflow-bridge:
+    # nó dựng lại kho véc-tơ và nhúng lại toàn bộ (đặt EMBED_*_PREFIX nếu mô hình mới cần tiền tố).
+    command: ["--model-id", "${EMBED_MODEL:-/model}", "--revision", "${EMBED_REVISION:-main}", "--api-key", "${EMBED_API_KEY:-change-me-embed-key}", "--max-batch-tokens", "2048", "--tokenization-workers", "1"] # lô nhỏ: giảm RAM, độ đúng không đổi (đã đo)
+    volumes:
+      - embedmodel:/model:ro
+      - embedmodels:/data # mô hình khác (EMBED_MODEL) tải một lần vào đây
 
   # Mô hình ngôn ngữ chạy tại chỗ (không gửi dữ liệu ra ngoài). Cần tải mô hình một lần, xem docs/TRI_TUE.md.
   ollama:
@@ -125,6 +188,10 @@ services:
 volumes:
   baodata:
   meilidata:
+  meilimodels:
+  qdrantdata:
+  embedmodel:
+  embedmodels:
   ollamadata:
   caddydata:
   promdata:
