@@ -47,24 +47,25 @@ describe('I-SEARCH: tìm kiếm và hỏi đáp có kiểm quyền', { skip }, (
       const res = await call('staff1', '/search', { q: secret })
       assert.equal(res.status, 200)
       const { hits } = await res.json()
-      return hits.length ? hits : null
+      return hits.some((h) => h.submission_id === sid && h.kind === 'file') ? hits : null // tìm ngữ nghĩa có thể trả láng giềng (kể cả chính hồ sơ) trước khi tệp mới vào chỉ mục
     }, 'chỉ mục đuổi kịp tệp mới', 90_000)
     assert.ok(r.some((h) => h.submission_id === sid && h.kind === 'file' && h.name === 'bien-ban.txt'))
     assert.match(r[0].snippet, /«[^»]*»/, 'từ khớp phải được đánh dấu')
   })
 
   test('I-SEARCH-02 người không được xem hồ sơ KHÔNG thấy nội dung của nó (quyền do Hasura quyết định, không phải chỉ mục)', async () => {
-    await until(async () => (await (await call('staff1', '/search', { q: secret })).json()).hits.length, 'chỉ mục sẵn sàng', 90_000)
+    await until(async () => (await (await call('staff1', '/search', { q: secret })).json()).hits.some((h) => h.submission_id === sid && h.kind === 'file'), 'chỉ mục sẵn sàng', 90_000)
     const other = await (await call('staff2', '/search', { q: secret })).json()
-    assert.deepEqual(other.hits, [], 'nhân viên khác không được thấy gì')
+    // Tìm ngữ nghĩa luôn trả láng giềng gần nhất (hồ sơ của chính staff2); điều cấm là thấy hồ sơ của người khác.
+    assert.ok(!other.hits.some((h) => h.submission_id === sid), 'nhân viên khác không được thấy hồ sơ này')
     assert.ok(!JSON.stringify(other).includes(secret))
   })
 
   test('I-SEARCH-03 hỏi đáp: người không có quyền nhận câu trả lời rỗng và không lộ nội dung; người có quyền nhận nguồn đúng', async () => {
     const denied = await (await call('staff2', '/ask', { question: `mã nội bộ ${secret} là gì?` })).json()
-    assert.deepEqual(denied.sources, [])
+    assert.ok(!denied.sources.some((s) => s.submission_id === sid), 'không dẫn nguồn hồ sơ không có quyền')
     assert.ok(!JSON.stringify(denied).includes(secret), 'nội dung không được lọt vào câu trả lời')
-    assert.match(denied.answer, /Không tìm thấy/)
+    if (!denied.sources.length) assert.match(denied.answer, /Không tìm thấy/)
 
     const ok = await (await call('staff1', '/ask', { question: `mã nội bộ ${secret} là gì?` })).json()
     assert.ok(ok.sources.some((s) => s.submission_id === sid), 'phải dẫn nguồn đúng hồ sơ')
@@ -104,15 +105,16 @@ describe('I-SEARCH: tìm kiếm và hỏi đáp có kiểm quyền', { skip }, (
     const scan = textPdf(scanWord)
     assert.equal((await upload('staff1', id, 'anh-chup.png', rasterise(scan, 'png'), 'image/png')).status, 200)
     assert.equal((await upload('staff1', id, 'ban-quet.pdf', scannedPdf(rasterise(textPdf(scanPdfWord), 'pgm')), 'application/pdf')).status, 200)
-    const find = (q) => until(async () => { const { hits } = await (await call('staff1', '/search', { q })).json(); return hits.length ? hits : null }, `tìm thấy ${q}`, 360_000)
-    assert.ok((await find(word)).some((h) => h.name === 'hop-dong.pdf'), 'PDF có lớp chữ')
-    assert.ok((await find('QUETANH')).some((h) => h.submission_id === id && h.name === 'anh-chup.png'), 'ảnh qua OCR')
-    assert.ok((await find('BANQUET')).some((h) => h.submission_id === id && h.name === 'ban-quet.pdf'), 'PDF quét qua OCR')
-    assert.deepEqual((await (await call('staff2', '/search', { q: word })).json()).hits, [], 'người khác không thấy')
+    // Chờ đúng tệp cần tìm (tìm ngữ nghĩa có thể trả láng giềng trước khi tệp được đọc xong).
+    const find = (q, name) => until(async () => { const { hits } = await (await call('staff1', '/search', { q })).json(); return hits.some((h) => h.submission_id === id && h.name === name) || null }, `tìm thấy ${q}`, 360_000)
+    assert.ok(await find(word, 'hop-dong.pdf'), 'PDF có lớp chữ')
+    assert.ok(await find('QUETANH', 'anh-chup.png'), 'ảnh qua OCR')
+    assert.ok(await find('BANQUET', 'ban-quet.pdf'), 'PDF quét qua OCR')
+    assert.ok(!(await (await call('staff2', '/search', { q: word })).json()).hits.some((h) => h.submission_id === id), 'người khác không thấy')
   })
 })
 
-// Cần bật tìm ngữ nghĩa: SEARCH_EMBEDDER=intfloat/multilingual-e5-small khi chạy docker compose (tải mô hình lần đầu mất vài phút).
+// Cần bật tìm ngữ nghĩa: SEARCH_EMBEDDER=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 khi chạy docker compose (tải mô hình lần đầu mất vài phút).
 const semanticSkip = process.env.SEMANTIC_OPTIONAL ? false : 'đặt SEMANTIC_OPTIONAL=1 sau khi bật SEARCH_EMBEDDER'
 describe('I-SEARCH-SEM: tìm ngữ nghĩa (Meilisearch lai, mô hình nhúng đa ngữ)', { skip: semanticSkip }, () => {
   test('I-SEARCH-07 tìm ra tài liệu cùng nghĩa dù không trùng từ nào; người khác vẫn không thấy', async () => {

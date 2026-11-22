@@ -160,6 +160,7 @@ docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tl
 | `vault` | OpenBao | két bí mật, chuyển bí mật khỏi `.env` (`scripts/vault.sh`) |
 | `monitoring` | Prometheus | số đo của cổng API |
 | `search` | Meilisearch | tìm kiếm toàn văn, hỏi đáp có dẫn nguồn và kiểm quyền |
+| `vector` | Qdrant, Text Embeddings Inference | tìm ngữ nghĩa (khuyên dùng cùng `search`), dịch vụ nhúng tách riêng |
 | `ai` | Ollama | mô hình ngôn ngữ chạy tại chỗ |
 
 Hướng dẫn: [VAN_HANH.md](docs/VAN_HANH.md) (TLS, WAF, két, sao lưu tự động và khôi phục, GitOps nhẹ, MFA, giám sát), [TRI_TUE.md](docs/TRI_TUE.md) (tìm kiếm, AI).
@@ -183,7 +184,7 @@ Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kh
 Các mục dưới đây khai báo là `todo` trong báo cáo kiểm thử, không tô hồng:
 
 - Kho lạnh là tệp JSONL (truy vấn được bằng SQL qua DuckDB), chưa phải bảng lakehouse Parquet/Iceberg; NGSI-LD chỉ đọc; bản đồ cảm biến là SVG tối giản, chưa có nền bản đồ.
-- Tìm ngữ nghĩa là tùy chọn (mặc định tắt, mô hình nhỏ); OCR chỉ 10 trang đầu; chưa có cơ sở dữ liệu véc-tơ riêng (Qdrant).
+- Tìm ngữ nghĩa là tùy chọn (profile `vector`, mặc định tắt, mô hình nhỏ MiniLM); OCR chỉ 10 trang đầu.
 - Chữ ký số là PKI phần mềm (chứng thư X.509 do CA của từng tổ chức cấp, ký phía máy chủ, khóa mã hóa trong CSDL): **chưa có HSM, CRL/OCSP** và chưa phải chữ ký số có giá trị pháp lý theo luật.
 - Thời gian thực dùng SSE (chưa WebSocket); thiết bị gọi HTTP (chưa MQTT/OPC UA).
 - Sao lưu tự động chỉ gồm CSDL (kho tệp dùng script); két bí mật mới có một khóa mở; GitOps chỉ ở mức một máy, chưa phải ArgoCD/Flux.

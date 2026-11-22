@@ -22,7 +22,7 @@ Kiến trúc và luồng dữ liệu: [architecture.md](architecture.md). Sao l�
 | `apisix` | Cổng API duy nhất: kiểm JWT, CORS, giới hạn tần suất | 9080 | hasura, keycloak |
 | `web` | Ứng dụng web Vue 3 do nginx phục vụ | 3000 | apisix |
 
-Tùy chọn (`docker-compose.optional.yml`): `caddy` (profile `tls`), `prometheus` (profile `monitoring`, cổng 9092), `meilisearch` (profile `search`), `ollama` (profile `ai`).
+Tùy chọn (`docker-compose.optional.yml`): `caddy` (profile `tls`), `prometheus` (profile `monitoring`, cổng 9092), `meilisearch` (profile `search`), `qdrant` và `embedder` (profile `vector`, tìm ngữ nghĩa), `ollama` (profile `ai`).
 
 ## Khởi động, dừng, kiểm tra
 
@@ -55,6 +55,8 @@ Sau khi sửa `.env`: `docker compose up -d` (dịch vụ nào đổi cấu hìn
 | Trạng thái động cơ quy trình | PostgreSQL, cơ sở `flowable` | `scripts/backup.sh` |
 | Tệp đính kèm | volume `s3data` (SeaweedFS) | `scripts/backup.sh` |
 | Chỉ mục tìm kiếm | volume `meilidata` | không cần: tự dựng lại từ dữ liệu |
+| Mô hình nhúng của tìm ngữ nghĩa | volume `embedmodel` (profile `vector`, bản int8 ~118 MB, kiểm sha256), `embedmodels` (mô hình khác đặt qua `EMBED_MODEL`) hoặc `meilimodels` (Meilisearch tự nhúng, ~470 MB) | không cần: tải lại từ HuggingFace |
+| Véc-tơ tìm ngữ nghĩa | volume `qdrantdata` | không cần: tự nhúng và nạp lại từ Hasura |
 
 Nhật ký ký duyệt (`submission_event`) **bất biến ở tầng cơ sở dữ liệu**: không UPDATE, DELETE hay TRUNCATE được, kể cả khi gọi thẳng vào cơ sở dữ liệu.
 

@@ -133,9 +133,17 @@ services:
       # Tìm kiếm và hỏi đáp (tùy chọn): chỉ hoạt động khi bật profile search ở docker-compose.optional.yml.
       MEILI_URL: http://meilisearch:7700
       EXTRACTOR_URL: http://extractor:8000
-      # Tìm ngữ nghĩa (tùy chọn): tên mô hình HuggingFace, ví dụ intfloat/multilingual-e5-small; trống là chỉ tìm từ khóa.
+      # Tìm ngữ nghĩa (tùy chọn): tên mô hình HuggingFace, khuyên dùng sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 (ghim bằng tên@mã-commit); trống là chỉ tìm từ khóa.
       SEARCH_EMBEDDER: ${SEARCH_EMBEDDER:-}
       SEARCH_SEMANTIC_RATIO: ${SEARCH_SEMANTIC_RATIO:-0.5}
+      # Tìm ngữ nghĩa tách riêng (profile vector): đặt VECTOR_URL=http://qdrant:6333 và EMBED_URL=http://embedder thì SEARCH_EMBEDDER bị bỏ qua.
+      VECTOR_URL: ${VECTOR_URL:-}
+      VECTOR_API_KEY: ${VECTOR_API_KEY:-change-me-vector-key}
+      EMBED_URL: ${EMBED_URL:-}
+      EMBED_API_KEY: ${EMBED_API_KEY:-change-me-embed-key}
+      # Tiền tố riêng của mô hình nhúng (chỉ khi mô hình yêu cầu); mô hình mặc định không cần.
+      EMBED_QUERY_PREFIX: ${EMBED_QUERY_PREFIX:-}
+      EMBED_DOC_PREFIX: ${EMBED_DOC_PREFIX:-}
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-change-me-meili-key}
       HASURA_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
       # Trợ lý AI (tùy chọn): mọi máy chủ tương thích OpenAI /chat/completions (Ollama, vLLM, Mistral...).
@@ -177,6 +185,8 @@ services:
     restart: unless-stopped
     environment:
       CLAMD_STARTUP_TIMEOUT: 600
+      # Nạp lại mẫu nhận dạng sau khi tự cập nhật theo kiểu tuần tự: không giữ hai bản (~2 GB) cùng lúc, máy 4 GB bật thêm profile vector không bị hết RAM; đổi lại quét tạm chờ vài chục giây mỗi lần nạp.
+      CLAMD_CONF_ConcurrentDatabaseReload: "no"
     volumes:
       - clamdb:/var/lib/clamav
     healthcheck:

@@ -24,7 +24,10 @@ Các thành phần chạy dưới dạng **container độc lập, không sửa 
 | Coraza + coraza-caddy (tường lửa ứng dụng, tùy chọn) | 2.6.2 | Apache-2.0 | `LICENSE` trong github.com/corazawaf/coraza-caddy | ☑ |
 | OWASP Core Rule Set (bộ luật của Coraza, tùy chọn) | đi kèm coraza-caddy | Apache-2.0 | `LICENSE` trong github.com/coreruleset/coreruleset | ☑ |
 | OpenBao (két bí mật, tùy chọn) | 2.1.0 | MPL-2.0 | `LICENSE` trong github.com/openbao/openbao | ☑ |
-| Meilisearch (tìm kiếm toàn văn, tùy chọn) | 1.11.3 | MIT | `LICENSE` trong github.com/meilisearch/meilisearch | ☑ |
+| Meilisearch Community Edition (tìm kiếm toàn văn và ngữ nghĩa, tùy chọn; image `getmeili/meilisearch`) | 1.57.0 | MIT | `LICENSE`, `LICENSE-MIT`, `LICENSE-EE` và `Dockerfile` trong github.com/meilisearch/meilisearch, thẻ v1.57.0 | ☑ |
+| Qdrant (kho véc-tơ cho tìm ngữ nghĩa, tùy chọn, profile `vector`; image `qdrant/qdrant`) | 1.20.2 | Apache-2.0 | `LICENSE` trong github.com/qdrant/qdrant | ☑ |
+| Text Embeddings Inference (dịch vụ nhúng chạy CPU, tùy chọn, profile `vector`; image `ghcr.io/huggingface/text-embeddings-inference`) | 1.9 (bản cpu) | Apache-2.0 | `LICENSE` trong github.com/huggingface/text-embeddings-inference | ☑ |
+| Alpine Linux (tải mô hình nhúng một lần bằng `wget` của BusyBox, tùy chọn, profile `vector`; image `alpine`) | 3.21 | MIT (image), GPL-2.0 (BusyBox) | `LICENSE` trong gitlab.alpinelinux.org/alpine/docker-alpine; `LICENSE` trong busybox.net | ☑ |
 | Ollama (mô hình AI chạy tại chỗ, tùy chọn) | 0.5.7 | MIT | `LICENSE` trong github.com/ollama/ollama | ☑ |
 | Prometheus (giám sát, tùy chọn) | 2.55.1 | Apache-2.0 | `LICENSE` trong github.com/prometheus/prometheus | ☑ |
 | poppler-utils (`pdftotext`, `pdftoppm`; trạm đọc chữ, tùy chọn) | gói Debian của image `python:3.12-slim` | GPL-2.0-or-later | `COPYING` trong gitlab.freedesktop.org/poppler/poppler | ☑ |
@@ -38,6 +41,8 @@ Các thành phần chạy dưới dạng **container độc lập, không sửa 
 Ghi chú:
 
 - Hasura: chỉ dùng tính năng của bản cộng đồng; không bật hay cấu hình tính năng Enterprise nào.
+- Meilisearch: từ các bản 1.x gần đây, kho mã chứa thêm phần Enterprise Edition theo BUSL-1.1 (`LICENSE-EE`). Image `getmeili/meilisearch` dựng không kèm phần đó nên là MIT; dự án không dùng image `meilisearch-enterprise` và không dùng tính năng EE (chia shard, snapshot S3). Xác minh ngày 22/11/2026.
+- Mô hình nhúng cho tìm ngữ nghĩa (tùy chọn; profile `vector` tải bản int8 `onnx/model_quint8_avx2.onnx` có kiểm sha256, hoặc Meilisearch tự tải khi đặt `SEARCH_EMBEDDER`): `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (Apache-2.0, commit `e8f8c211`). Tùy chọn cho máy chủ mạnh: `Alibaba-NLP/gte-multilingual-base` (Apache-2.0, commit `9bbca17d`). Đã xác minh ngày 22/11/2026 qua trường `cardData.license` của API Hugging Face; mô hình không bị khóa (gated). Phải đối chiếu lại khi đổi mô hình hoặc mã commit. Không dùng mô hình theo điều khoản riêng như Gemma.
 - Các image còn chứa gói hệ điều hành nền (Alpine, Debian) với giấy phép riêng của chúng; dự án không sửa và không phân phối lại các gói đó.
 - Giấy phép kiểu MIT/BSD của curl, nginx, Node.js tương thích với Apache-2.0 vì các thành phần chỉ được chạy, không trộn mã.
 
