@@ -179,11 +179,16 @@ describe('D: Không gian Dữ liệu số — số liệu thực chứng', () =>
     assert.equal(sql("select count(*) from submission_event where created_at > now() + interval '1 minute'"), '0')
     assert.equal(sql('select count(*) from (select created_at, lag(created_at) over (partition by submission_id order by id) p from submission_event) t where created_at < p'), '0')
   })
-  test('D-06 lakehouse Iceberg có lược đồ phiên bản (ca chạy thật LAKE-02 đến LAKE-07), NGSI-LD ghi và thuê bao (IOT-09 đến IOT-12), bản đồ có nền tự chứa', () => {
+  test('D-06 lakehouse Iceberg có lược đồ phiên bản (ca chạy thật LAKE-02 đến LAKE-07), NGSI-LD ghi và thuê bao (IOT-09 đến IOT-12), bản đồ có nền tự chứa', async () => {
     assert.ok(existsSync(join(ROOT, 'infra/duckdb/lake.py')) && existsSync(join(ROOT, 'scripts/lake.sh')))
     assert.match(readFileSync(join(ROOT, 'services/workflow-bridge/ngsi.js'), 'utf8'), /\/ngsi-ld\/v1\/subscriptions/)
     const base = JSON.parse(readFileSync(join(ROOT, 'web/public/basemap-vn.json'), 'utf8'))
     assert.equal(base.features.filter((f) => !f.properties.archipelago).length, 34, 'nền bản đồ theo 34 tỉnh, thành sau sắp xếp năm 2025')
+    // Ảnh web đang chạy phải mang đúng tệp nền trong kho (ảnh cũ chưa dựng lại thì trả trang HTML thay cho JSON và bản đồ mất nền).
+    const served = await fetch(`${WEB}/basemap-vn.json`)
+    assert.match(served.headers.get('content-type') ?? '', /application\/json/, 'web chưa phục vụ basemap-vn.json: dựng lại ảnh web')
+    assert.deepEqual(await served.json(), base, 'nền bản đồ trong ảnh web khác bản trong kho')
+    assert.doesNotMatch((await fetch(`${WEB}/basemap-khong-co.json`)).headers.get('content-type') ?? '', /json/, 'tệp không có không được trả về như JSON')
   })
 })
 
