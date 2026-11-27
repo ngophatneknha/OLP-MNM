@@ -12,3 +12,10 @@ plugin_attr:
     export_addr:
       ip: 0.0.0.0
       port: 9091
+
+# Nhật ký truy cập dạng JSON một dòng (để bộ gom nhật ký Vector đọc thẳng, profile logs), có mã truy vết request_id.
+# Không ghi chuỗi truy vấn hay tiêu đề xác thực: chỉ phương thức, đường dẫn, mã trạng thái, thời gian.
+nginx_config:
+  http:
+    access_log_format: '{"ts":"$time_iso8601","svc":"apisix","method":"$request_method","path":"$uri","status":$status,"ms":$request_time,"request_id":"$http_x_request_id"}'
+    access_log_format_escape: json

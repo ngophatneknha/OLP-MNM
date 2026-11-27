@@ -5,6 +5,16 @@
 # (kiểm tra chữ ký bằng JWKS ngay tại biên), có CORS và giới hạn tần suất.
 # Biến ${{...}} lấy từ môi trường của container (xem docker-compose.yml).
 
+# Mỗi yêu cầu qua cổng mang một mã truy vết X-Request-Id (giữ mã do bên gọi gửi nếu có), chuyển xuống dịch vụ phía sau
+# và trả lại trong phản hồi; nhật ký của cổng và của workflow-bridge cùng ghi mã này để ghép hành trình một yêu cầu.
+global_rules:
+  - id: trace
+    plugins:
+      request-id:
+        header_name: X-Request-Id
+        include_in_response: true
+        algorithm: uuid
+
 routes:
   - id: graphql
     uri: /v1/graphql

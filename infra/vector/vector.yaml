@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Bộ gom nhật ký tập trung (profile logs): Vector đọc nhật ký mọi container của dự án qua Docker API (socket chỉ đọc),
+# tách dòng JSON (APISIX, workflow-bridge) thành trường, che PII rồi gửi vào VictoriaLogs.
+# Tìm theo mã truy vết: curl "http://127.0.0.1:9428/select/logsql/query" -d 'query=request_id:"<mã>"'
+# shortcut: một máy (một Vector, một VictoriaLogs); chưa có OpenTelemetry/span, truy vết bằng mã X-Request-Id dùng chung.
+
+sources:
+  docker:
+    type: docker_logs
+
+transforms:
+  # Chỉ giữ container của chính dự án này (nhãn Docker Compose), bỏ bộ gom và kho nhật ký để không tự gom vòng lặp.
+  mine:
+    type: filter
+    inputs: ["docker"]
+    condition: |
+      project = get_env_var("COMPOSE_PROJECT_NAME") ?? "olp-mnm"
+      service = string(.label."com.docker.compose.service") ?? ""
+      .label."com.docker.compose.project" == project && !includes(["vector", "victorialogs"], service)
+  shape:
+    type: remap
+    inputs: ["mine"]
+    source: |
+      .service = .label."com.docker.compose.service"
+      msg = string!(.message)
+      parsed, err = parse_json(msg)
+      if err == null && is_object(parsed) {
+        . = merge!(., parsed)
+      }
+      # Che PII cùng mẫu với services/workflow-bridge/pii.js trước khi lưu: email, số thẻ, CCCD 12 số, số điện thoại Việt Nam.
+      for_each(["message", "path"]) -> |_i, k| {
+        v = get!(., [k])
+        if is_string(v) {
+          v = replace(string!(v), r'[\w.+-]+@[\w-]+(?:\.[\w-]+)+', "[EMAIL]")
+          v = replace(v, r'\b\d{4}(?:[ -]\d{4}){2,3}(?:[ -]\d{1,4})?\b|\b\d{13,19}\b', "[SỐ THẺ]")
+          v = replace(v, r'\b\d{12}\b', "[CCCD]")
+          v = replace(v, r'(?:\+84|0084|\b0)[ .-]?\d{2,3}(?:[ .-]?\d{3}){2}\b', "[SĐT]")
+          . = set!(., [k], v)
+        }
+      }
+      del(.label)
+      del(.container_id)
+      del(.image)
+
+sinks:
+  victorialogs:
+    type: http
+    inputs: ["shape"]
+    uri: "http://victorialogs:9428/insert/jsonline?_stream_fields=service&_msg_field=message&_time_field=timestamp"
+    encoding:
+      codec: json
+    framing:
+      method: newline_delimited
+    compression: gzip
+    healthcheck:
+      enabled: false

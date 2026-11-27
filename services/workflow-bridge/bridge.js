@@ -28,6 +28,7 @@ import { handlePki, signEvent } from './pki.js'
 import { handleNgsi } from './ngsi.js'
 import { handleOrgs } from './orgs.js'
 import { sql, lit } from './db.js'
+import { maskPii } from './pii.js'
 import { handleSearch, syncIndex } from './search.js'
 import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
@@ -154,6 +155,22 @@ setInterval(sweepPendingApps, 10000)
 let autonomyReady = false
 setInterval(async () => { if (!autonomyReady) autonomyReady = await ensureAllAutonomy().then(() => true, () => false) }, 10000)
 
+// Nhật ký truy cập JSON một dòng, có mã truy vết X-Request-Id do cổng APISIX gắn, để ghép với nhật ký của cổng (profile logs: Vector, VictoriaLogs).
+// Chỉ ghi phương thức, đường dẫn (bỏ chuỗi truy vấn, đã che PII), mã trạng thái và thời gian; không ghi thân yêu cầu hay token.
+const REQUEST_ID = /^[\w.:-]{1,128}$/
+const safeDecode = (p) => { try { return decodeURIComponent(p) } catch { return p } }
+function accessLog(req, res) {
+  if (req.url === '/' && !req.headers['x-request-id']) return // kiểm tra sức khỏe của Docker mỗi 15 giây: không ghi cho khỏi ngập
+  const start = process.hrtime.bigint()
+  res.on('finish', () => {
+    const id = req.headers['x-request-id']
+    console.log(JSON.stringify({
+      ts: new Date().toISOString(), svc: 'workflow-bridge', method: req.method, path: maskPii(safeDecode(req.url.split('?')[0]).slice(0, 300)), status: res.statusCode,
+      ms: Number(process.hrtime.bigint() - start) / 1e6, request_id: typeof id === 'string' && REQUEST_ID.test(id) ? id : undefined,
+    }))
+  })
+}
+
 const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission, app_change_check: checkChange }
 
 // Chỉ mục tìm kiếm tự đuổi kịp dữ liệu; chưa bật Meilisearch thì bỏ qua lặng lẽ.
@@ -178,6 +195,7 @@ setInterval(async () => {
 setInterval(() => archiveAll().catch((err) => console.error('Xuất kho lạnh:', err.message)), 24 * 3600 * 1000).unref()
 
 createServer(async (req, res) => {
+  accessLog(req, res)
   if (req.url.startsWith('/events')) return handleEvents(req, res)
   if (req.url.startsWith('/archive') || req.url.startsWith('/lineage')) return handleCold(req, res)
   if (req.url.startsWith('/ingest')) return handleIngest(req, res)

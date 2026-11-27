@@ -10,6 +10,7 @@
 #   Sao lưu tự động theo lịch:   ... --profile backup up -d   (xem docs/VAN_HANH.md)
 #   SQL trên kho lạnh (DuckDB):   sh scripts/cold-sql.sh "SELECT ..."   (profile lakehouse)
 #   Bảng Iceberg của kho lạnh:    sh scripts/lake.sh sync | info | sql "SELECT ... FROM lake"
+#   Gom nhật ký tập trung:      ... --profile logs up -d    (Vector -> VictoriaLogs, tìm theo request_id)
 #   Mô hình AI chạy tại chỗ:      ... --profile ai up -d
 # Hướng dẫn: docs/VAN_HANH.md, docs/TRI_TUE.md
 
@@ -190,7 +191,33 @@ services:
     volumes:
       - ollamadata:/root/.ollama
 
+  # Kho nhật ký tập trung (profile logs). Chỉ mở cổng trên 127.0.0.1 của máy chủ cho người vận hành (giao diện tìm kiếm ở /select/vmui).
+  victorialogs:
+    image: victoriametrics/victoria-logs:v1.53.0 # bản cộng đồng Apache-2.0; KHÔNG dùng thẻ -enterprise
+    profiles: ["logs"]
+    restart: unless-stopped
+    command: ["-storageDataPath=/vlogs", "-retentionPeriod=${LOGS_RETENTION:-14d}", "-httpListenAddr=:9428"]
+    volumes:
+      - vlogsdata:/vlogs
+    ports:
+      - "127.0.0.1:9428:9428"
+
+  # Bộ gom nhật ký (profile logs): đọc nhật ký container qua Docker API. Socket gắn chỉ đọc nhưng vẫn cho Vector thấy mọi container
+  # trên máy, nên chỉ bật trên máy chủ do đội vận hành quản lý (xem docs/VAN_HANH.md).
+  vector:
+    image: timberio/vector:0.61.0-alpine # MPL-2.0, chạy container riêng, không sửa mã
+    profiles: ["logs"]
+    restart: unless-stopped
+    environment:
+      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-olp-mnm}
+    volumes:
+      - ./infra/vector/vector.yaml:/etc/vector/vector.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - victorialogs
+
 volumes:
+  vlogsdata:
   baodata:
   meilidata:
   meilimodels:
