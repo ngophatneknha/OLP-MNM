@@ -9,10 +9,11 @@
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import https from 'node:https'
 import { basename, join } from 'node:path'
-import { ROOT, GW, until, run } from './lib.js'
+import { ROOT, GW, until, run, sql } from './lib.js'
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
 const skip = process.env.OPS_OPTIONAL ? false : 'đặt OPS_OPTIONAL=1 sau khi bật profile tls và monitoring'
@@ -97,6 +98,21 @@ test('OPS-BACKUP sao lưu tự động: dịch vụ backup (profile backup) ch�
     // Tệp do container (root) tạo nên dọn bằng chính container, không dọn từ máy chạy kiểm thử (Linux báo EACCES).
     if (dir) run('docker', [...compose, 'run', '--rm', '--no-deps', '--entrypoint', 'rm', 'backup', '-rf', `/backups/${basename(dir)}`], { stdio: 'pipe' })
   }
+})
+
+test('OPS-MIGRATE nâng cấp CSDL đang chạy: migrate.sh áp các tệp từ 05 trở đi, chạy lại được; tệp lỗi thì dừng và báo, tệp sau không được áp', { timeout: 180_000 }, () => {
+  const out = run('sh', ['scripts/migrate.sh'])
+  for (const f of ['05-org.sql', '09-ngsi.sql', '10-stream.sql']) assert.match(out, new RegExp(`Đã áp ${f.replace('.', '\\.')}`))
+  assert.doesNotMatch(out, /Đã áp 0[2-4]/, 'không áp lại lược đồ gốc 02..04')
+  assert.match(run('sh', ['scripts/migrate.sh']), /Đã áp 10-stream\.sql/, 'chạy lần hai không lỗi')
+  assert.equal(sql("SELECT to_regclass('public.ngsi_subscription') IS NOT NULL AND to_regclass('public.stream_published') IS NOT NULL"), 't')
+  const dir = mkdtempSync(join(tmpdir(), 'dxlab-migrate-'))
+  try {
+    writeFileSync(join(dir, '05-hong.sql'), 'SELECT khong_co_cot FROM khong_co_bang;')
+    writeFileSync(join(dir, '06-sau.sql'), "CREATE TABLE IF NOT EXISTS ca_thu_migrate (x int);")
+    assert.throws(() => run('sh', ['scripts/migrate.sh'], { env: { ...process.env, MIGRATE_DIR: dir }, stdio: 'pipe' }), /Lỗi khi áp 05-hong\.sql/)
+    assert.equal(sql("SELECT to_regclass('public.ca_thu_migrate') IS NULL"), 't', 'tệp sau tệp lỗi không được áp')
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
 test('OPS-GITOPS kiểm cấu hình trong kho: lệnh check chạy được; cấu hình hỏng thì bị bắt', { timeout: 120_000 }, () => {
