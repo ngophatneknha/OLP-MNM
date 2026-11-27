@@ -179,7 +179,7 @@ describe('D: Không gian Dữ liệu số — số liệu thực chứng', () =>
     assert.equal(sql("select count(*) from submission_event where created_at > now() + interval '1 minute'"), '0')
     assert.equal(sql('select count(*) from (select created_at, lag(created_at) over (partition by submission_id order by id) p from submission_event) t where created_at < p'), '0')
   })
-  test('D-06 lakehouse Iceberg có lược đồ phiên bản (ca chạy thật LAKE-02 đến LAKE-04), NGSI-LD ghi và thuê bao (IOT-09 đến IOT-12), bản đồ có nền tự chứa', () => {
+  test('D-06 lakehouse Iceberg có lược đồ phiên bản (ca chạy thật LAKE-02 đến LAKE-07), NGSI-LD ghi và thuê bao (IOT-09 đến IOT-12), bản đồ có nền tự chứa', () => {
     assert.ok(existsSync(join(ROOT, 'infra/duckdb/lake.py')) && existsSync(join(ROOT, 'scripts/lake.sh')))
     assert.match(readFileSync(join(ROOT, 'services/workflow-bridge/ngsi.js'), 'utf8'), /\/ngsi-ld\/v1\/subscriptions/)
     const base = JSON.parse(readFileSync(join(ROOT, 'web/public/basemap-vn.json'), 'utf8'))

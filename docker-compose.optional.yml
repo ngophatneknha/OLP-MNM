@@ -27,6 +27,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      # Số ngày giữ ảnh chụp Iceberg (lake.sh expire); ảnh chụp cũ vẫn chứa dữ liệu cá nhân đã sửa, xóa.
+      LAKE_SNAPSHOT_DAYS: ${LAKE_SNAPSHOT_DAYS:-30}
     depends_on:
       seaweedfs:
         condition: service_healthy

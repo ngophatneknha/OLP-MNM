@@ -95,3 +95,50 @@ test('LAKE-04 nạp lại không nhân đôi; tệp hỏng và tệp trái kiể
     put(wrong, '-')
   }
 })
+
+test('LAKE-05 quyền xóa dữ liệu cá nhân: forget bỏ hồ sơ khỏi bảng và khỏi MỌI ảnh chụp cũ, tệp cũ bị xóa, nạp lại không đưa hồ sơ về', LAKE, async () => {
+  const gone = await approvedAndArchived(ONE_STEP, { so_tien: 3_100_000 })
+  lake('sync')
+  const before = lake('info').snapshots.map((s) => s.snapshot_id)
+  assert.deepEqual(lake('sql', `SELECT count(*) AS n FROM lake WHERE id = '${gone.id}'`), [{ n: 1 }])
+  const r = lake('forget', gone.id)
+  assert.equal(r.deleted_rows, 1)
+  assert.ok(r.expired_snapshots >= 1 && r.removed_files >= 1, JSON.stringify(r))
+  assert.deepEqual(lake('sql', `SELECT count(*) AS n FROM lake WHERE id = '${gone.id}'`), [{ n: 0 }])
+  const after = lake('info').snapshots.map((s) => s.snapshot_id)
+  assert.equal(after.length, 1, 'chỉ còn ảnh chụp hiện tại')
+  assert.ok(!before.includes(after[0]))
+  assert.throws(() => lake('sql', 'SELECT count(*) AS n FROM lake', before.at(-1)), 'ảnh chụp cũ (còn hồ sơ) không đọc lại được nữa')
+  // Tìm thẳng trong S3: không còn tệp Parquet nào của bảng chứa mã hồ sơ.
+  const left = JSON.parse(run('docker', ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.optional.yml', '--profile', 'lakehouse', 'run', '--rm', '-T', '--no-deps', '--entrypoint', 'python', 'lakehouse', '-c',
+    "import os,sys,json,pyarrow.fs as f,pyarrow.parquet as pq;fs=f.S3FileSystem(endpoint_override='seaweedfs:8333',scheme='http',access_key=os.environ['S3_ACCESS_KEY'],secret_key=os.environ['S3_SECRET_KEY'],region='us-east-1')\nhit=[i.path for i in fs.get_file_info(f.FileSelector('dxlab-cold/lake',recursive=True)) if i.path.endswith('.parquet') and sys.argv[1] in pq.ParquetFile(fs.open_input_file(i.path)).read(columns=['id']).column('id').to_pylist()]\nprint(json.dumps(hit))", gone.id], { stdio: ['ignore', 'pipe', 'ignore'] }))
+  assert.deepEqual(left, [])
+  const again = lake('sync')
+  assert.deepEqual(lake('sql', `SELECT count(*) AS n FROM lake WHERE id = '${gone.id}'`), [{ n: 0 }], JSON.stringify(again))
+})
+
+test('LAKE-06 hạn giữ ảnh chụp và gộp tệp: expire giữ ảnh hiện tại, compact giảm số tệp mà không đổi dữ liệu; mã hồ sơ sai dạng bị từ chối', LAKE, async () => {
+  await approvedAndArchived(ONE_STEP, { so_tien: 10 })
+  lake('sync')
+  const n = lake('sql', 'SELECT count(*) AS n, sum(data_so_tien) AS s FROM lake')[0]
+  const c = lake('compact')
+  assert.ok(c.files_after <= c.files_before, JSON.stringify(c))
+  assert.deepEqual(lake('sql', 'SELECT count(*) AS n, sum(data_so_tien) AS s FROM lake')[0], n)
+  const e = lake('expire', '0')
+  assert.ok(e.expired_snapshots >= 1, JSON.stringify(e))
+  assert.equal(lake('info').snapshots.length, 1)
+  assert.deepEqual(lake('sql', 'SELECT count(*) AS n, sum(data_so_tien) AS s FROM lake')[0], n)
+  assert.throws(() => lake('forget', "x' OR 1=1"))
+})
+
+test('LAKE-07 hai lệnh ghi cùng lúc: lệnh sau dừng ngay vì khóa pg_advisory_lock, không ghi chồng', LAKE, async () => {
+  const { spawn } = await import('node:child_process')
+  const { ROOT, sql } = await import('./lib.js')
+  // Giữ khóa bằng psql trong 15 giây (cùng khóa lake.py dùng), rồi chạy sync.
+  const held = spawn('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'dxlab', '-d', 'dxlab', '-c', "SELECT pg_advisory_lock(hashtext('dxlab-lake')), pg_sleep(15)"], { cwd: ROOT, stdio: 'ignore' })
+  try {
+    await new Promise((ok) => setTimeout(ok, 2000))
+    assert.equal(sql("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND objid = hashtext('dxlab-lake')::oid"), '1')
+    assert.throws(() => run('sh', ['scripts/lake.sh', 'sync'], { stdio: ['ignore', 'pipe', 'pipe'] }), /pg_advisory_lock/)
+  } finally { held.kill(); await new Promise((ok) => held.on('exit', ok)) }
+})

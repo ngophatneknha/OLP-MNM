@@ -6,6 +6,9 @@
 #   sh scripts/lake.sh sync                                   nạp tệp JSONL mới của kho lạnh vào bảng cold.submission
 #   sh scripts/lake.sh info                                   phiên bản lược đồ và ảnh chụp (snapshot)
 #   sh scripts/lake.sh sql "SELECT org, count(*) FROM lake GROUP BY ALL" [snapshot_id]
+#   sh scripts/lake.sh expire [ngày]                          xóa ảnh chụp cũ (mặc định LAKE_SNAPSHOT_DAYS=30) và tệp không còn dùng
+#   sh scripts/lake.sh compact                                gộp tệp Parquet nhỏ
+#   sh scripts/lake.sh forget <mã hồ sơ>                      xóa hẳn một hồ sơ, kể cả trong ảnh chụp cũ (quyền xóa dữ liệu cá nhân)
 # Chi tiết: docs/VAN_HANH.md, mục Bảng Iceberg.
 set -eu
 cd "$(dirname "$0")/.."
