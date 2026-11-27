@@ -3,15 +3,15 @@ SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 SPDX-License-Identifier: Apache-2.0
 
 Bản đồ cảm biến (không gian [D]): vị trí và trạng thái cảm biến, đọc qua đầu ra NGSI-LD của cổng API.
-Không dùng nền bản đồ từ bên ngoài (chính sách CSP chỉ cho ảnh cùng nguồn): có lưới theo km, thanh tỉ lệ và hướng bắc,
-vị trí chiếu giữ đúng tỉ lệ. Cảnh báo khác trạng thái thường cả về màu lẫn hình (tam giác, không chỉ màu đỏ).
+Không dùng nền bản đồ từ bên ngoài (chính sách CSP chỉ cho ảnh cùng nguồn): nền là ranh giới tỉnh, thành tự chứa
+(public/basemap-vn.json, Natural Earth, có Hoàng Sa và Trường Sa), kèm lưới theo km, thanh tỉ lệ và hướng bắc; vị trí chiếu giữ đúng tỉ lệ. Cảnh báo khác trạng thái thường cả về màu lẫn hình (tam giác, không chỉ màu đỏ).
 -->
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { TriangleAlert, CircleCheck } from 'lucide-vue-next'
 import { getJson } from '../lib.js'
 import { live } from '../live.js'
-import { toPoints, projectEqual } from '../geo.js'
+import { toPoints, projectEqual, shapePaths, regionAt } from '../geo.js'
 import { t } from '../i18n.js'
 
 const W = 720
@@ -22,12 +22,23 @@ let timer
 async function load() {
   try { entities.value = await getJson('/ngsi-ld/v1/entities?type=Device') } catch { entities.value = [] }
 }
-onMounted(() => { load(); timer = live(load) })
+// Nền bản đồ cùng nguồn với trang; tải hỏng thì bản đồ vẫn vẽ điểm trên lưới như trước.
+const basemap = ref(null)
+async function loadBase() {
+  try { const r = await fetch('/basemap-vn.json'); basemap.value = r.ok ? await r.json() : null } catch { basemap.value = null }
+}
+onMounted(() => { load(); loadBase(); timer = live(load) })
 onUnmounted(() => timer?.())
 
 const all = computed(() => toPoints(entities.value ?? []))
 const view = computed(() => projectEqual(all.value, W, H))
 const points = computed(() => view.value.points)
+const shapes = computed(() => shapePaths(basemap.value, view.value.toXY, W, H))
+const region = computed(() => {
+  if (!points.value.length) return ''
+  const mean = (k) => points.value.reduce((sum, p) => sum + p[k], 0) / points.value.length
+  return regionAt(basemap.value, mean('lon'), mean('lat'))
+})
 const missing = computed(() => (entities.value?.length ?? 0) - points.value.length)
 const alarms = computed(() => points.value.filter((p) => p.alarm).length)
 
@@ -60,7 +71,10 @@ const state = (p) => (p.alarm ? 'alarm' : 'ok')
 
     <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
       <svg :viewBox="`0 0 ${W} ${H}`" class="h-auto w-full rounded-xl border border-line bg-pen-wash/60" role="img" :aria-label="t('map.aria', { n: points.length, a: alarms })">
-        <g stroke="var(--color-line)" stroke-width="1" stroke-opacity="0.9">
+        <g fill="var(--color-surface)" stroke="var(--color-pencil)" stroke-width="1" stroke-opacity="0.55" stroke-linejoin="round">
+          <path v-for="s in shapes" :key="s.code" :d="s.d"><title>{{ s.name }}</title></path>
+        </g>
+        <g stroke="var(--color-line)" stroke-width="1" stroke-opacity="0.6">
           <line v-for="x in vLines" :key="'v' + x" :x1="x" :x2="x" y1="0" :y2="H" />
           <line v-for="y in hLines" :key="'h' + y" x1="0" :x2="W" :y1="y" :y2="y" />
         </g>
@@ -74,6 +88,7 @@ const state = (p) => (p.alarm ? 'alarm' : 'ok')
           <path :d="`M0 0 V-6 H${stepPx} V0`" fill="none" stroke="var(--color-ink)" stroke-width="2" />
           <text :x="stepPx + 8" y="0" class="num">{{ kmLabel }}</text>
         </g>
+        <text v-if="region" :x="W - 16" :y="H - 16" text-anchor="end" font-size="13" fill="var(--color-pencil)" stroke="var(--color-surface)" stroke-width="4" paint-order="stroke">{{ t('map.region', { name: region }) }}</text>
         <g transform="translate(682 40)" fill="none" stroke="var(--color-ink)" stroke-width="2" stroke-linejoin="round">
           <path d="M0 -18 L8 10 L0 4 L-8 10 Z" fill="var(--color-ink)" />
           <text x="0" y="28" text-anchor="middle" stroke="none" fill="var(--color-ink)" font-size="13" font-weight="700">{{ t('map.north') }}</text>
@@ -99,6 +114,7 @@ const state = (p) => (p.alarm ? 'alarm' : 'ok')
       </ul>
     </div>
     <p v-if="missing > 0" class="hint">{{ t('map.missing', { n: missing }) }}</p>
+    <p v-if="shapes.length" class="hint">{{ t('map.source') }}</p>
   </template>
 </template>
 

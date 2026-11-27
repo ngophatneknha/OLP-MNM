@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Bản đồ cảm biến (WebGIS tối giản): đọc thực thể NGSI-LD, chiếu vị trí WGS84 lên khung SVG.
-// shortcut: chiếu phẳng (kinh độ/vĩ độ tuyến tính, đủ cho vùng nhỏ như một cơ sở hay một thành phố), không có nền bản đồ; cần nền thì thêm Leaflet và ô bản đồ.
+// Nền bản đồ: ranh giới tỉnh, thành (web/public/basemap-vn.json, dựng bằng scripts/basemap.mjs từ Natural Earth), chiếu cùng phép với các điểm.
+// shortcut: chiếu phẳng giữ tỉ lệ quanh vĩ độ giữa vùng (đủ cho một cơ sở, một thành phố hay một miền), nền chỉ tới mức tỉnh, không có đường phố.
 
 /** Thực thể NGSI-LD Device -> điểm trên bản đồ; bỏ cảm biến chưa có vị trí. */
 export function toPoints(entities) {
@@ -44,5 +45,46 @@ export function projectEqual(points, width, height, pad = 56) {
   const scale = Math.min((width - 2 * pad) / span(kx), (height - 2 * pad) / span(ky)) // px mỗi km
   const mid = (f) => (Math.max(...points.map(f)) + Math.min(...points.map(f))) / 2
   const [mx, my] = [mid(kx), mid(ky)]
-  return { points: points.map((p) => ({ ...p, x: width / 2 + (kx(p) - mx) * scale, y: height / 2 - (ky(p) - my) * scale })), kmPerPx: 1 / scale }
+  const toXY = (lon, lat) => [width / 2 + (kx({ lon }) - mx) * scale, height / 2 - (ky({ lat }) - my) * scale]
+  return { points: points.map((p) => { const [x, y] = toXY(p.lon, p.lat); return { ...p, x, y } }), kmPerPx: 1 / scale, toXY }
+}
+
+const polygonsOf = (g) => (g?.type === 'MultiPolygon' ? g.coordinates : g?.type === 'Polygon' ? [g.coordinates] : [])
+
+/**
+ * Nền bản đồ: mỗi vùng của GeoJSON (Polygon/MultiPolygon) thành một chuỗi path SVG theo phép chiếu toXY của projectEqual.
+ * Bỏ vùng nằm hẳn ngoài khung (chừa lề) để SVG nhẹ; dữ liệu hỏng hay thiếu thì trả mảng rỗng, bản đồ vẫn vẽ các điểm.
+ */
+export function shapePaths(fc, toXY, width, height, margin = 40) {
+  if (!toXY || !Array.isArray(fc?.features)) return []
+  const out = []
+  for (const f of fc.features) {
+    const rings = polygonsOf(f?.geometry).flat().filter((r) => Array.isArray(r) && r.length >= 4 && r.every((p) => Number.isFinite(p?.[0]) && Number.isFinite(p?.[1])))
+    if (!rings.length) continue
+    const xy = rings.map((r) => r.map(([lon, lat]) => toXY(lon, lat)))
+    const xs = xy.flat().map((p) => p[0])
+    const ys = xy.flat().map((p) => p[1])
+    if (Math.max(...xs) < -margin || Math.min(...xs) > width + margin || Math.max(...ys) < -margin || Math.min(...ys) > height + margin) continue
+    const d = xy.map((r) => `M${r.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join('L')}Z`).join('')
+    out.push({ code: f.properties?.code ?? '', name: f.properties?.name ?? '', d })
+  }
+  return out
+}
+
+/** Điểm (lon, lat) nằm trong vòng r? Thuật toán tia (ray casting). */
+const inRing = (lon, lat, r) => {
+  let inside = false
+  for (let i = 0, j = r.length - 1; i < r.length; j = i, i += 1) {
+    const [xi, yi] = r[i]
+    const [xj, yj] = r[j]
+    if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside
+  }
+  return inside
+}
+/** Tên vùng (tỉnh, thành) chứa điểm; không thuộc vùng nào thì trả ''. Vòng thứ hai trở đi của đa giác là lỗ thủng. */
+export function regionAt(fc, lon, lat) {
+  for (const f of fc?.features ?? []) {
+    if (polygonsOf(f?.geometry).some((poly) => poly.length && inRing(lon, lat, poly[0]) && !poly.slice(1).some((hole) => inRing(lon, lat, hole)))) return f.properties?.name ?? ''
+  }
+  return ''
 }
