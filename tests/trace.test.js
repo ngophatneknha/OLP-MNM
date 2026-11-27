@@ -9,7 +9,7 @@ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { ROOT, GW, ROLE, login, until, uid } from './lib.js'
+import { ROOT, GW, ROLE, login, until, uid, run } from './lib.js'
 
 const LOGS = process.env.LOGS_URL ?? 'http://127.0.0.1:9428'
 const read = (p) => readFileSync(join(ROOT, p), 'utf8')
@@ -61,5 +61,69 @@ describe('TRACE: nhật ký tập trung và mã truy vết (Z-11)', () => {
       for (const bad of ['an.nguyen@congty.vn', '0912345678', 'bimat', token.slice(-20)]) assert.ok(!raw.includes(bad), `${r.service} lộ ${bad}`)
       assert.match(r.path, /\[EMAIL\]/)
     }
+  })
+})
+
+// Trục sự kiện: máy kiểm thử nghe NATS qua cổng 127.0.0.1:4222 bằng chính máy khách tối giản của bridge.
+const streamSkip = process.env.STREAM_OPTIONAL ? false : 'đặt STREAM_OPTIONAL=1 sau khi bật profile stream và NATS_URL=nats://nats:4222'
+const NATS = process.env.NATS_TEST_URL ?? 'nats://127.0.0.1:4222'
+const TOKEN = process.env.NATS_TOKEN ?? 'change-me'
+const ONE_STEP = { fields: [{ key: 'so_tien', label: 'Số tiền', type: 'number', required: true }], steps: [{ key: 'truong_phong', name: 'Trưởng phòng duyệt', role: 'manager' }] }
+const compose = ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.optional.yml', '--profile', 'stream']
+
+describe('STREAM: trục sự kiện NATS JetStream theo mẫu outbox (Z-11)', { skip: streamSkip }, () => {
+  let natsConnect
+  let jsPublish
+  let nc
+  const got = []
+  async function approved(amount) {
+    const { publishApp, submit, act, waitStatus } = await import('./lib.js')
+    const app = await publishApp(ONE_STEP)
+    const id = (await submit('staff1', app, { so_tien: amount })).data.insert_submission_one.id
+    await waitStatus('manager1', id, { current_step: 'truong_phong' })
+    assert.ok(!(await act('manager1', id, 'truong_phong', 'approve')).errors)
+    await waitStatus('staff1', id, { status: 'approved' })
+    return id
+  }
+
+  test('STREAM-01 duyệt hồ sơ thì có tin trên chủ đề dx.<tổ chức>.submission.approve, đúng hồ sơ, không chứa dữ liệu biểu mẫu', { timeout: 90_000 }, async () => {
+    ;({ natsConnect, jsPublish } = await import('../services/workflow-bridge/stream.js'))
+    nc = await natsConnect(NATS, TOKEN)
+    nc.subscribe('dx.default.submission.>', (m) => got.push({ subject: m.subject, data: JSON.parse(m.data) }))
+    const id = await approved(7_310_000)
+    const msg = await until(() => got.find((m) => m.data.submission_id === id), 'tin sự kiện của hồ sơ vừa duyệt', 30_000)
+    assert.equal(msg.subject, 'dx.default.submission.approve')
+    assert.deepEqual([msg.data.org, msg.data.action, msg.data.step_key], ['default', 'approve', 'truong_phong'])
+    assert.ok(!JSON.stringify(msg.data).includes('7310000'), 'tin lộ dữ liệu biểu mẫu')
+  })
+
+  test('STREAM-02 tin được lưu và phát lại được; phát lại cùng mã sự kiện thì JetStream báo trùng, không thêm tin', { timeout: 60_000 }, async () => {
+    const last = got.at(-1)
+    const res = JSON.parse((await nc.request('$JS.API.STREAM.MSG.GET.DX', JSON.stringify({ last_by_subj: last.subject }))).data)
+    assert.equal(JSON.parse(Buffer.from(res.message.data, 'base64').toString()).event_id, last.data.event_id)
+    const info = async () => JSON.parse((await nc.request('$JS.API.STREAM.INFO.DX', '')).data).state.messages
+    const before = await info()
+    const ack = await jsPublish(nc, last.subject, last.data, `submission_event:${last.data.event_id}`)
+    assert.equal(ack.duplicate, true)
+    assert.equal(await info(), before)
+  })
+
+  test('STREAM-03 NATS tắt thì việc duyệt vẫn chạy; bật lại thì tin bù tới (outbox); sai token thì không kết nối được', { timeout: 240_000 }, async () => {
+    nc.close()
+    run('docker', [...compose, 'stop', 'nats'])
+    let id
+    try {
+      id = await approved(1_000)
+    } finally {
+      run('docker', [...compose, 'start', 'nats'])
+    }
+    await until(async () => { try { nc = await natsConnect(NATS, TOKEN); return true } catch { return false } }, 'NATS chạy lại', 60_000)
+    // Tin lúc NATS tắt đã nằm trong JetStream (bridge phát bù) dù lúc đó không ai nghe: đọc lại theo chủ đề.
+    await until(async () => {
+      const r = JSON.parse((await nc.request('$JS.API.STREAM.MSG.GET.DX', JSON.stringify({ last_by_subj: 'dx.default.submission.approve' }))).data)
+      return r.message && JSON.parse(Buffer.from(r.message.data, 'base64').toString()).submission_id === id
+    }, 'tin của hồ sơ duyệt lúc NATS tắt được phát bù', 90_000)
+    nc.close()
+    await assert.rejects(natsConnect(NATS, 'sai-token').then((c) => c.request('$JS.API.INFO', '')), /NATS|ECONNRESET|đóng/)
   })
 })

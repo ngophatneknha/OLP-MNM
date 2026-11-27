@@ -29,6 +29,7 @@ import { handleNgsi } from './ngsi.js'
 import { handleOrgs } from './orgs.js'
 import { sql, lit } from './db.js'
 import { maskPii } from './pii.js'
+import { startRelay } from './stream.js'
 import { handleSearch, syncIndex } from './search.js'
 import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
@@ -190,6 +191,9 @@ setInterval(async () => {
     syncing = false
   }
 }, 10000)
+
+// Trục sự kiện NATS (profile stream): chỉ chạy khi đặt NATS_URL.
+startRelay()
 
 // Mỗi ngày đẩy hồ sơ đã kết thúc quá ARCHIVE_AFTER_DAYS (mặc định 90) xuống kho lạnh.
 setInterval(() => archiveAll().catch((err) => console.error('Xuất kho lạnh:', err.message)), 24 * 3600 * 1000).unref()

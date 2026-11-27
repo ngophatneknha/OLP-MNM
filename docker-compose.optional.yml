@@ -11,6 +11,7 @@
 #   SQL trên kho lạnh (DuckDB):   sh scripts/cold-sql.sh "SELECT ..."   (profile lakehouse)
 #   Bảng Iceberg của kho lạnh:    sh scripts/lake.sh sync | info | sql "SELECT ... FROM lake"
 #   Gom nhật ký tập trung:      ... --profile logs up -d    (Vector -> VictoriaLogs, tìm theo request_id)
+#   Trục sự kiện NATS:          NATS_URL=nats://nats:4222 ... --profile stream up -d   (xem docs/VAN_HANH.md)
 #   Mô hình AI chạy tại chỗ:      ... --profile ai up -d
 # Hướng dẫn: docs/VAN_HANH.md, docs/TRI_TUE.md
 
@@ -216,8 +217,26 @@ services:
     depends_on:
       - victorialogs
 
+  # Trục sự kiện streaming (profile stream): NATS JetStream lưu tin trên đĩa, phát lại được. workflow-bridge phát sự kiện duyệt
+  # hồ sơ theo mẫu outbox khi đặt NATS_URL=nats://nats:4222. Cổng chỉ mở trên 127.0.0.1 của máy chủ, cần token.
+  nats:
+    image: nats:2.14.10-alpine # Apache-2.0
+    profiles: ["stream"]
+    restart: unless-stopped
+    command: ["-js", "-sd", "/data", "--auth", "${NATS_TOKEN:-change-me-nats-token}", "-m", "8222"]
+    volumes:
+      - natsdata:/data
+    ports:
+      - "127.0.0.1:4222:4222"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8222/healthz?js-enabled-only=true | grep -q ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   vlogsdata:
+  natsdata:
   baodata:
   meilidata:
   meilimodels:

@@ -132,6 +132,9 @@ services:
       CLAMAV_HOST: clamav
       # Máy được nhận thông báo thuê bao NGSI-LD, dạng "máy:cổng,máy-khác" (trống là cấm gửi). Chặn bridge bị lợi dụng gọi vào mạng nội bộ.
       NGSI_NOTIFY_ALLOW: ${NGSI_NOTIFY_ALLOW:-}
+      # Trục sự kiện (tùy chọn, profile stream ở docker-compose.optional.yml): đặt NATS_URL=nats://nats:4222; trống là tắt.
+      NATS_URL: ${NATS_URL:-}
+      NATS_TOKEN: ${NATS_TOKEN:-change-me-nats-token}
       # Tìm kiếm và hỏi đáp (tùy chọn): chỉ hoạt động khi bật profile search ở docker-compose.optional.yml.
       MEILI_URL: http://meilisearch:7700
       EXTRACTOR_URL: http://extractor:8000
