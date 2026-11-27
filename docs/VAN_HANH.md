@@ -150,9 +150,20 @@ sh scripts/lake.sh sync                     # nạp tệp mới; chạy lại kh
 sh scripts/lake.sh info                     # phiên bản lược đồ, ảnh chụp
 sh scripts/lake.sh sql "SELECT org, app_key, count(*) AS n, sum(data_so_tien) AS tong FROM lake GROUP BY ALL"
 sh scripts/lake.sh sql "SELECT count(*) FROM lake" <snapshot_id>   # đọc lại ảnh chụp cũ
+sh scripts/lake.sh expire                   # xóa ảnh chụp cũ hơn LAKE_SNAPSHOT_DAYS (mặc định 30) ngày và tệp không còn dùng
+sh scripts/lake.sh compact                  # gộp tệp Parquet nhỏ
+sh scripts/lake.sh forget <mã hồ sơ>        # xóa hẳn một hồ sơ theo yêu cầu của chủ thể dữ liệu
 ```
 
-Mỗi trường của hồ sơ thành cột `data_<mã>` (số là `double`, đúng/sai là `boolean`, còn lại là chuỗi); trường mới thì thêm cột và lược đồ lên phiên bản. Tệp có giá trị trái kiểu cột đã có, hoặc tệp hỏng, bị bỏ qua cả tệp và báo lý do. Giới hạn (shortcut): một tiến trình ghi tại một thời điểm, chưa gộp tệp nhỏ hay xóa ảnh chụp cũ; chạy bằng quyền vận hành.
+Mỗi trường của hồ sơ thành cột `data_<mã>`. Kiểu suy từ giá trị JSON, không đoán từ nội dung chuỗi: số là `double`, đúng/sai là `boolean`, còn lại là chuỗi; nên `"8"` (chuỗi) và `8` (số) là hai kiểu khác nhau. Trường mới thì thêm cột và lược đồ lên phiên bản. Tệp có giá trị trái kiểu cột đã có, hoặc tệp hỏng, bị bỏ qua cả tệp và báo lý do; sửa nguồn rồi `sync` lại. Nạp lại không nhân đôi vì tệp đã nạp được nhận ra qua cột `object_key`.
+
+Lệnh ghi (`sync`, `expire`, `compact`, `forget`) giữ khóa `pg_try_advisory_lock` trong PostgreSQL: chạy hai lệnh ghi cùng lúc thì lệnh sau dừng ngay với thông báo, không ghi chồng (ca LAKE-07).
+
+Hạn giữ dữ liệu và quyền xóa (Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15, hiệu lực 01/01/2026):
+
+- Ảnh chụp cho phép du hành thời gian nhưng vẫn giữ dữ liệu cũ, kể cả hồ sơ đã sửa hay đã xóa. Vì vậy ảnh chụp chỉ giữ `LAKE_SNAPSHOT_DAYS` ngày: chạy `sh scripts/lake.sh expire` định kỳ (ví dụ cron hằng ngày). `expire` không bao giờ xóa ảnh chụp hiện tại.
+- Khi chủ thể dữ liệu yêu cầu xóa: `sh scripts/lake.sh forget <mã hồ sơ>` bỏ hàng khỏi bảng, xóa MỌI ảnh chụp cũ (vì ảnh cũ còn chứa hàng đó) và xóa mọi tệp Parquet, manifest, metadata không còn dùng; ghi dấu băm SHA-256 của mã vào thuộc tính bảng để lần `sync` sau không nạp lại hồ sơ đó từ tệp JSONL (ca LAKE-05). Đổi lại, các ảnh chụp cũ không đọc lại được nữa.
+- Giới hạn (shortcut): `forget` chỉ xóa trong bảng Iceberg. Tệp JSONL gốc của kho lạnh là dữ liệu chỉ thêm có sổ cái băm, phải xử lý theo quy trình của kho lạnh (và bản sao lưu) riêng; `compact` ghi lại cả bảng nên chỉ hợp bảng vừa và nhỏ; chạy bằng quyền vận hành, không theo token người dùng.
 
 ## Nhật ký tập trung và mã truy vết
 

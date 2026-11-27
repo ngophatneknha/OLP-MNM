@@ -40,6 +40,26 @@ docker compose down -v              # dừng và XÓA dữ liệu
 
 Lần khởi động đầu mất 1-2 phút; ClamAV cần thêm vài phút để tải cơ sở dữ liệu nhận dạng (khoảng 1,5 GB RAM). Cần khoảng 4 GB RAM cho Docker.
 
+RAM đo thật bằng `docker stats` (27/11/2026, máy Linux 4 lõi, 16 GB, hệ thống nghỉ sau khi chạy bộ kiểm thử; số liệu của từng máy sẽ khác, đo lại bằng `docker stats --no-stream` trên máy triển khai):
+
+| Thành phần | RAM |
+|---|---|
+| ClamAV | 1,03 GB |
+| Keycloak | 585 MB |
+| Flowable | 397 MB |
+| SeaweedFS | 239 MB |
+| Hasura | 227 MB |
+| APISIX | 117 MB |
+| PostgreSQL | 91 MB |
+| workflow-bridge | 30 MB |
+| web (nginx) | 6 MB |
+| **Cộng phần bắt buộc** | **khoảng 2,7 GB** |
+| Profile `logs`: VictoriaLogs + Vector | 105 MB + 43 MB |
+| Profile `stream`: NATS JetStream | 6 MB |
+| `lake.sh` (chạy từng lệnh rồi thoát; bảng 29 hồ sơ, phần lớn là nạp thư viện): `sql` / `compact` | đỉnh 177 MB / 242 MB |
+
+Dự án không dùng Trino hay Nessie (bảng Iceberg đọc bằng DuckDB, danh mục nằm trong PostgreSQL), nên không có hai dịch vụ JVM thường trực đó.
+
 ## Cấu hình
 
 Mọi cấu hình nằm trong `.env` (mẫu `.env.example`), không phải sửa mã. Gồm mật khẩu cơ sở dữ liệu, quản trị Keycloak, khóa nội bộ giữa Hasura và cầu nối, địa chỉ công khai (`KEYCLOAK_PUBLIC_URL`, `API_PUBLIC_URL`, `APP_ORIGIN`), khóa kho tệp S3 (`S3_ACCESS_KEY`, `S3_SECRET_KEY`) và trợ lý AI (`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`). **Đổi mọi giá trị `change-me` trước khi đưa lên Internet.** Khóa AI chỉ nằm trong `.env`, tệp này không được commit.

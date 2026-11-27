@@ -101,6 +101,9 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | LAKE-02 | Nạp kho lạnh vào bảng Apache Iceberg `cold.submission` (`scripts/lake.sh sync`): đủ cột, trường dữ liệu thành cột có kiểu, phân vùng theo tổ chức, mỗi lần nạp là một ảnh chụp | PyIceberg, tệp Parquet trong S3, danh mục trong PostgreSQL |
 | LAKE-03 | Lược đồ có phiên bản: trường mới thêm cột, `schema-id` tăng, phiên bản cũ vẫn giữ, hàng cũ có cột mới là null; đọc lại ảnh chụp cũ không thấy hồ sơ mới | du hành thời gian theo `snapshot_id` |
 | LAKE-04 | Nạp lại không nhân đôi; tệp hỏng và tệp trái kiểu cột bị bỏ qua có lý do, bảng không hỏng | ca nghịch |
+| LAKE-05 | Quyền xóa dữ liệu cá nhân: `forget` bỏ hồ sơ khỏi bảng và mọi ảnh chụp cũ, không còn tệp Parquet nào chứa mã hồ sơ, nạp lại không đưa về | Luật 91/2025/QH15 |
+| LAKE-06 | `expire` giữ ảnh chụp hiện tại, `compact` giảm số tệp mà không đổi dữ liệu; mã hồ sơ sai dạng bị từ chối | |
+| LAKE-07 | Hai lệnh ghi cùng lúc: lệnh sau dừng ngay vì `pg_advisory_lock` | ca nghịch |
 
 Giới hạn nói thẳng: kho lạnh gốc là tệp JSONL, bảng Iceberg nạp lại từ đó (một tiến trình ghi, chưa gộp tệp nhỏ); bản sao trong cơ sở dữ liệu nóng được giữ nguyên (chưa xóa sau khi xuất); sổ cái chống sửa ở tầng CSDL và băm chuỗi, nhưng chưa có neo bên ngoài (ví dụ ký thời gian) để chống người nắm cả CSDL lẫn kho S3 viết lại toàn bộ chuỗi.
 
@@ -210,7 +213,7 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | Z-02 | **Coraza + OWASP CRS** trước cổng API (profile `waf`, cổng 9081): SQL injection, XSS, đi ngược thư mục bị 403, yêu cầu sạch đi tiếp | Mặc định người dùng vẫn đi thẳng cổng 9080; bật WAF là dùng 9081. Chưa chỉnh luật riêng cho GraphQL, có thể cần loại trừ khi gặp báo nhầm |
 | Z-03 | **Thời gian thực** bằng SSE qua cổng API: không token bị 401, có token nhận nhịp ngay khi ứng dụng xuất bản và khi có hồ sơ mới; mọi màn hình dùng chung một kênh (`web/src/live.js`, có kiểm thử đơn vị) | Là SSE, không phải WebSocket (đề tham chiếu Centrifugo). Kênh chỉ đẩy nhịp rỗng, dữ liệu vẫn qua GraphQL kiểm quyền; một tiến trình bridge giữ danh sách kết nối |
 | OPS-08 | **Tài nguyên**: bản lõi dùng dưới 5 GiB RAM khi nhàn rỗi, đo thật bằng `docker stats` (`scripts/measure.sh` in từng dịch vụ) | Đo trên máy phát triển: khoảng 3 GiB cho 9 dịch vụ lõi, trong đó ClamAV gần 1 GiB và Keycloak 650 MiB; thành phần tùy chọn tách profile để máy yếu bỏ qua |
-| Z-11 | **Nhật ký tập trung và trục sự kiện**: cổng gắn mã `X-Request-Id`, APISIX và workflow-bridge ghi nhật ký JSON cùng mã; Vector che PII rồi gửi vào VictoriaLogs (profile `logs`); sự kiện duyệt hồ sơ phát lên NATS JetStream theo mẫu outbox, có ack và chống trùng (profile `stream`) | TRACE-01 đến TRACE-04, STREAM-01 đến STREAM-03 (`tests/trace.test.js`). Một máy; chưa có span OpenTelemetry; NATS một token cho cả hệ thống. Không dùng Redpanda (BSL), Parseable, Loki (AGPL) |
+| Z-11 | **Nhật ký tập trung và trục sự kiện**: cổng gắn mã `X-Request-Id`, APISIX và workflow-bridge ghi nhật ký JSON cùng mã; Vector che PII rồi gửi vào VictoriaLogs (profile `logs`); sự kiện duyệt hồ sơ phát lên NATS JetStream theo mẫu outbox, có ack và chống trùng (profile `stream`) | TRACE-01 đến TRACE-05 (mã sai dạng bị thay, che token Bearer, JWT, Vault), STREAM-01 đến STREAM-05 (giao dịch commit trễ không bị bỏ sót, một bản bridge phát) (`tests/trace.test.js`). Đây là ghép nhật ký theo mã (log correlation), chưa phải truy vết phân tán có span OpenTelemetry; một máy; NATS một token cho cả hệ thống. Không dùng Redpanda (source-available, không được OSI công nhận), Parseable, Loki (AGPL) |
 | Z-04 | **Ẩn thông tin cá nhân** (email, số điện thoại, CCCD, số thẻ) trước khi gửi tới máy chủ AI; kiểm bằng máy chủ AI giả ghi lại nội dung nhận được | Nhận dạng theo mẫu, chưa nhận được họ tên và địa chỉ |
 
 ## Đối chiếu lần cuối với Đề thi (phiên bản 2.0.0)
@@ -222,9 +225,9 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | Nguyên lý (iv): Zero-Trust, MFA, kiểm dịch mã độc tại biên | Đạt | T1-SSO-10, T1-OBJ-08, Z-01, Z-02, Z-04 |
 | Nguyên lý (iv): cấu hình hạ tầng bằng mã, tự phục hồi tức thì | Đạt | `docker-compose.yml`, OPS-06, OPS-07 |
 | Lớp 1 tham chiếu: truyền phát trạng thái thời gian thực | Đạt bằng SSE (không dùng WebSocket) | Z-03 |
-| Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh | Đạt: tệp JSONL bất biến trong S3, nạp tiếp vào bảng Apache Iceberg (Parquet, lược đồ có phiên bản) | COLD-01 đến COLD-04, LAKE-02 đến LAKE-04 |
+| Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh | Đạt: tệp JSONL bất biến trong S3, nạp tiếp vào bảng Apache Iceberg (Parquet, lược đồ có phiên bản) | COLD-01 đến COLD-04, LAKE-02 đến LAKE-07 |
 | Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | Đạt ở mức HTTP: cảm biến gửi số đo bằng token riêng, vượt ngưỡng tự mở hồ sơ sửa chữa qua quy trình của người | IOT-01 đến IOT-07 |
-| Lớp dữ liệu [D]: SQL trên kho lạnh, NGSI-LD, bản đồ | Đạt: DuckDB trên JSONL và trên bảng Iceberg; NGSI-LD đọc, ghi và thuê bao (tập con của chuẩn); bản đồ có nền tỉnh, thành tự chứa | LAKE-01 đến LAKE-04, IOT-08 đến IOT-12 |
+| Lớp dữ liệu [D]: SQL trên kho lạnh, NGSI-LD, bản đồ | Đạt: DuckDB trên JSONL và trên bảng Iceberg; NGSI-LD đọc, ghi và thuê bao (tập con của chuẩn); bản đồ có nền tỉnh, thành tự chứa | LAKE-01 đến LAKE-07, IOT-08 đến IOT-12 |
 | Lớp trí tuệ [I]: đọc PDF, OCR, tìm ngữ nghĩa | Đạt: trạm poppler + Tesseract; tìm ngữ nghĩa tùy chọn qua Meilisearch lai | I-SEARCH-06, I-SEARCH-07 |
 | Vận hành: sao lưu theo lịch, GitOps nhẹ | Đạt: dịch vụ `backup`, `scripts/gitops.sh` (một máy, chưa ArgoCD/Flux) | OPS-BACKUP, OPS-GITOPS |
 | Nhiều tổ chức: quản trị người dùng, BI riêng, đường nâng cấp | Đạt; còn `app.key` duy nhất toàn hệ thống | ORG-12 đến ORG-16, UPG-01 |
