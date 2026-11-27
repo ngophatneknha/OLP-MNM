@@ -5,16 +5,7 @@
 # (kiểm tra chữ ký bằng JWKS ngay tại biên), có CORS và giới hạn tần suất.
 # Biến ${{...}} lấy từ môi trường của container (xem docker-compose.yml).
 
-# Mỗi yêu cầu qua cổng mang một mã truy vết X-Request-Id (giữ mã do bên gọi gửi nếu có), chuyển xuống dịch vụ phía sau
-# và trả lại trong phản hồi; nhật ký của cổng và của workflow-bridge cùng ghi mã này để ghép hành trình một yêu cầu.
-global_rules:
-  - id: trace
-    plugins:
-      request-id:
-        header_name: X-Request-Id
-        include_in_response: true
-        algorithm: uuid
-
+# Mã truy vết X-Request-Id: xem global_rules cuối tệp.
 routes:
   - id: graphql
     uri: /v1/graphql
@@ -215,9 +206,34 @@ routes:
     plugins:
       proxy-rewrite:
         regex_uri: ["^/auth/(.*)", "/$1"]
+# Một khóa global_rules duy nhất (YAML trùng khóa thì khóa sau đè khóa trước).
 global_rules:
   - id: metrics
     plugins:
       prometheus:
         prefer_name: true
+  # Mỗi yêu cầu qua cổng mang một mã X-Request-Id, chuyển xuống dịch vụ phía sau và trả lại trong phản hồi; nhật ký của cổng và của
+  # workflow-bridge cùng ghi mã này để ghép hành trình một yêu cầu (log correlation, chưa phải distributed tracing có span).
+  # Mã do bên gọi gửi chỉ được giữ khi đúng dạng [A-Za-z0-9._:-]{1,128}; sai dạng (ký tự lạ, quá dài, gửi hai lần) thì cổng thay bằng
+  # UUID mới, để không ai chèn ký tự điều khiển hay chuỗi rất dài vào nhật ký. Mã vẫn do bên gọi chọn được: chỉ dùng để ghép nhật ký,
+  # không dùng để xác thực hay phân quyền. serverless-pre-function (ưu tiên 10000) chạy sau request-id (12015) trong cùng pha rewrite.
+  - id: trace
+    plugins:
+      request-id:
+        header_name: X-Request-Id
+        include_in_response: true
+        algorithm: uuid
+      serverless-pre-function:
+        phase: rewrite
+        functions:
+          - |
+            return function(conf, ctx)
+              local core = require("apisix.core")
+              local id = ngx.req.get_headers()["X-Request-Id"]
+              if type(id) ~= "string" or not ngx.re.find(id, [[^[A-Za-z0-9._:-]{1,128}$]], "jo") then
+                id = require("resty.jit-uuid")()
+                core.request.set_header(ctx, "X-Request-Id", id)
+                ctx["request-id-X-Request-Id"] = id
+              end
+            end
 #END

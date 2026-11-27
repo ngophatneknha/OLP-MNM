@@ -162,7 +162,17 @@ curl http://127.0.0.1:9428/select/logsql/query -d 'query=request_id:"<mã trong 
 curl http://127.0.0.1:9428/select/logsql/query -d 'query=service:workflow-bridge AND status:500'
 ```
 
-Cổng APISIX gắn mã `X-Request-Id` cho mọi yêu cầu (giữ mã do bên gọi gửi), chuyển xuống workflow-bridge và trả lại trong phản hồi; cả hai ghi nhật ký truy cập JSON một dòng có mã này, không ghi chuỗi truy vấn hay token. Vector đọc nhật ký mọi container của dự án qua Docker API, che email, số điện thoại, CCCD, số thẻ, rồi gửi vào VictoriaLogs (giữ `LOGS_RETENTION`, mặc định 14 ngày). Giao diện tìm kiếm: http://127.0.0.1:9428/select/vmui (chỉ mở trên máy chủ). Lưu ý bảo mật: Vector cần socket Docker (gắn chỉ đọc) và nhờ đó thấy mọi container trên máy, nên chỉ bật trên máy chủ do đội vận hành quản lý. Giới hạn (shortcut): một máy; truy vết bằng mã chung chứ chưa có span OpenTelemetry.
+Cổng APISIX gắn mã `X-Request-Id` cho mọi yêu cầu, chuyển xuống workflow-bridge và trả lại trong phản hồi; cả hai ghi nhật ký truy cập JSON một dòng có mã này, không ghi chuỗi truy vấn hay token. Mã do bên gọi gửi chỉ được giữ khi đúng dạng `[A-Za-z0-9._:-]{1,128}`; sai dạng (ký tự lạ, quá dài, gửi hai lần) thì cổng thay bằng UUID mới. Bên gọi vẫn tự chọn được mã, nên mã chỉ dùng để ghép nhật ký, không dùng để xác thực. Đây là **ghép nhật ký theo mã (log correlation)**, chưa phải truy vết phân tán (distributed tracing: span có thời lượng từng chặng, tiêu đề `traceparent` W3C, OpenTelemetry); muốn có thì bật plugin `opentelemetry` của APISIX và thêm SDK OpenTelemetry vào bridge.
+
+Vector đọc nhật ký mọi container của dự án qua Docker API, che token Bearer, JWT, token Vault/OpenBao, cookie, tham số kiểu `password=`, rồi email, số điện thoại, CCCD, số thẻ, sau đó gửi vào VictoriaLogs (giữ `LOGS_RETENTION`, mặc định 14 ngày). Giao diện tìm kiếm: http://127.0.0.1:9428/select/vmui.
+
+Bảo mật của phần nhật ký:
+
+- VictoriaLogs không có đăng nhập, nên chỉ mở trên `127.0.0.1:9428`; NATS chỉ mở `127.0.0.1:4222` (có token); PostgreSQL không mở cổng nào ra máy chủ. Kiểm trên máy chủ: `ss -tlnp | grep -E ':(9428|4222|5432)'` phải chỉ thấy `127.0.0.1` hoặc không thấy gì. Xem từ xa thì đi qua đường hầm SSH (`ssh -L 9428:127.0.0.1:9428 <máy chủ>`); cần mở cho nhiều người thì đặt sau APISIX với `openid-connect` (Keycloak) hoặc `vmauth` (Apache-2.0) chứ không mở thẳng cổng.
+- Vector cần socket Docker (gắn chỉ đọc) và nhờ đó thấy mọi container trên máy, nên chỉ bật trên máy chủ do đội vận hành quản lý.
+- Nhật ký thô của Docker trên đĩa (`/var/lib/docker/containers`, chỉ root đọc) chưa được che. Giới hạn kích thước bằng `/etc/docker/daemon.json`: `{"log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}` rồi khởi động lại Docker.
+
+Giới hạn (shortcut): một máy, một Vector, một VictoriaLogs.
 
 ## Trục sự kiện (NATS JetStream)
 

@@ -20,12 +20,20 @@ const logs = async (query) => (await (await fetch(`${LOGS}/select/logsql/query`,
 const call = async (user, path, headers = {}) => fetch(`${GW}${path}`, { headers: { authorization: `Bearer ${await login(user)}`, 'x-hasura-role': ROLE[user], ...headers } })
 
 describe('TRACE: nhật ký tập trung và mã truy vết (Z-11)', () => {
-  test('TRACE-01 cổng API gắn mã truy vết cho mọi yêu cầu, giữ mã do bên gọi gửi, trả lại trong phản hồi (kể cả khi bị từ chối 401)', async () => {
+  test('TRACE-01 cổng API gắn mã truy vết cho mọi yêu cầu, giữ mã đúng dạng do bên gọi gửi, trả lại trong phản hồi (kể cả khi bị từ chối 401)', async () => {
     const res = await fetch(`${GW}/ngsi-ld/v1/entities`)
     assert.equal(res.status, 401)
     assert.match(res.headers.get('x-request-id') ?? '', /^[0-9a-f-]{36}$/)
     const mine = `ca-thu-${uid()}`
     assert.equal((await fetch(`${GW}/ngsi-ld/v1/entities`, { headers: { 'x-request-id': mine } })).headers.get('x-request-id'), mine)
+  })
+
+  test('TRACE-01b (nghịch) mã truy vết sai dạng (ký tự lạ, quá dài, gửi hai lần) bị cổng thay bằng UUID mới, không lọt vào nhật ký', async () => {
+    const id = (headers) => fetch(`${GW}/ngsi-ld/v1/entities`, { headers }).then((r) => r.headers.get('x-request-id'))
+    for (const bad of ['xau<script>', 'a'.repeat(129), 'hai tu', '{"a":1}']) assert.match(await id({ 'x-request-id': bad }), /^[0-9a-f-]{36}$/, bad)
+    const twice = new Headers([['x-request-id', 'mot'], ['x-request-id', 'hai']])
+    assert.match(await id(twice), /^[0-9a-f-]{36}$/)
+    assert.ok(read('infra/apisix/apisix.yaml').match(/^global_rules:/gm).length === 1, 'apisix.yaml chỉ có một khóa global_rules (khóa trùng sẽ đè nhau)')
   })
 
   test('TRACE-02 cấu hình: kho nhật ký chỉ mở trên 127.0.0.1, ảnh ghim phiên bản không dùng bản enterprise, socket Docker chỉ đọc, bộ gom che PII', () => {
@@ -36,7 +44,7 @@ describe('TRACE: nhật ký tập trung và mã truy vết (Z-11)', () => {
     assert.match(c, /timberio\/vector:\d+\.\d+\.\d+-alpine/)
     assert.match(c, /docker\.sock:\/var\/run\/docker\.sock:ro/)
     const v = read('infra/vector/vector.yaml')
-    for (const tag of ['[EMAIL]', '[SỐ THẺ]', '[CCCD]', '[SĐT]']) assert.ok(v.includes(tag), tag)
+    for (const tag of ['[EMAIL]', '[SỐ THẺ]', '[CCCD]', '[SĐT]', 'Bearer [TOKEN]', '[JWT]', '[VAULT TOKEN]', '[COOKIE]']) assert.ok(v.includes(tag), tag)
   })
 
   test('TRACE-03 một yêu cầu đi qua cổng tới workflow-bridge: tìm theo mã truy vết thấy nhật ký của cả hai dịch vụ', { skip: logsSkip, timeout: 60_000 }, async () => {
@@ -62,6 +70,20 @@ describe('TRACE: nhật ký tập trung và mã truy vết (Z-11)', () => {
       for (const bad of ['an.nguyen@congty.vn', '0912345678', 'bimat', token.slice(-20)]) assert.ok(!raw.includes(bad), `${r.service} lộ ${bad}`)
       assert.match(r.path, /\[EMAIL\]/)
     }
+  })
+
+  test('TRACE-05 nhật ký không lưu bí mật: token Bearer, JWT, token Vault lỡ nằm trong đường dẫn bị che ở cả cổng lẫn bridge', { skip: logsSkip, timeout: 60_000 }, async () => {
+    const id = `secret-${uid()}`
+    const token = await login('director1')
+    const vault = `hvs.${'A1b2C3d4'.repeat(4)}`
+    await call('director1', `/ngsi-ld/v1/entities/${encodeURIComponent(`${vault} Bearer ${token} ${token}`)}`, { 'x-request-id': id })
+    const rows = await until(async () => { const r = await logs(`request_id:"${id}"`); return r.length >= 2 ? r : null }, 'nhật ký của yêu cầu có bí mật', 30_000)
+    for (const r of rows) {
+      const raw = JSON.stringify(r)
+      for (const bad of [token.split('.')[1].slice(0, 20), token.slice(-20), vault]) assert.ok(!raw.includes(bad), `${r.service} lộ bí mật`)
+      assert.match(r.path, /\[VAULT TOKEN\] Bearer \[TOKEN\]/)
+    }
+    assert.match(rows.find((r) => r.service === 'apisix').path, /\[JWT\]/, 'JWT đứng riêng (không có chữ Bearer) cũng bị che')
   })
 })
 
