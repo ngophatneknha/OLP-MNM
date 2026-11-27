@@ -183,7 +183,7 @@ describe('D: Không gian Dữ liệu số — số liệu thực chứng', () =>
     assert.ok(existsSync(join(ROOT, 'infra/duckdb/lake.py')) && existsSync(join(ROOT, 'scripts/lake.sh')))
     assert.match(readFileSync(join(ROOT, 'services/workflow-bridge/ngsi.js'), 'utf8'), /\/ngsi-ld\/v1\/subscriptions/)
     const base = JSON.parse(readFileSync(join(ROOT, 'web/public/basemap-vn.json'), 'utf8'))
-    assert.ok(base.features.length >= 63)
+    assert.equal(base.features.filter((f) => !f.properties.archipelago).length, 34, 'nền bản đồ theo 34 tỉnh, thành sau sắp xếp năm 2025')
   })
 })
 

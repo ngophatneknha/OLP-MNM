@@ -119,9 +119,9 @@ curl -X POST "$API/ngsi-ld/v1/subscriptions" ... -d '{"type":"Subscription","ent
 
 `GET /ngsi-ld/v1/subscriptions/<id>` cho biết `timesSent`, `lastSuccess`, `lastFailure`, `lastErrorReason`. Máy đang chạy cần áp `infra/postgres/init/09-ngsi.sql`.
 
-Nền bản đồ là ranh giới 63 tỉnh, thành và quần đảo Hoàng Sa, Trường Sa (`web/public/basemap-vn.json`, 57 KB, dựng lại bằng `node scripts/basemap.mjs` từ Natural Earth 1:10m v5.1.2, public domain), nằm ngay trong ứng dụng nên không tải gì từ bên ngoài.
+Nền bản đồ là ranh giới 34 tỉnh, thành từ 01/7/2025 (Nghị quyết 202/2025/QH15) và quần đảo Hoàng Sa, Trường Sa (`web/public/basemap-vn.json`, 48 KB, dựng lại bằng `node scripts/basemap.mjs` từ Natural Earth 1:10m v5.1.2, public domain), nằm ngay trong ứng dụng nên không tải gì từ bên ngoài.
 
-Giới hạn (shortcut): NGSI-LD là tập con của chuẩn (một kiểu `Device`, chỉ ghi `value`, `q` gồm so sánh nối bằng `;`, gửi thông báo một lần không thử lại); nền bản đồ chỉ tới mức tỉnh, theo ranh giới trước khi sắp xếp đơn vị hành chính năm 2025; thêm cột vị trí vào CSDL đang chạy: `docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/07-geo.sql`.
+Giới hạn (shortcut): NGSI-LD là tập con của chuẩn (một kiểu `Device`, chỉ ghi `value`, `q` gồm so sánh nối bằng `;`, gửi thông báo một lần không thử lại); nền bản đồ chỉ tới mức tỉnh (Natural Earth còn vẽ 63 tỉnh cũ, `scripts/basemap.mjs` gộp lại theo bảng `MERGE`; tỉnh gộp nguyên vẹn nên ranh giới tỉnh mới đúng, chưa có ranh giới xã mới); thêm cột vị trí vào CSDL đang chạy: `docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/07-geo.sql`.
 
 ## SQL trên kho lạnh (DuckDB)
 

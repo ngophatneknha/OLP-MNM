@@ -41,8 +41,21 @@ test('nền bản đồ: điểm ở Hà Nội, TP.HCM, Đà Nẵng rơi vào đ
   assert.equal(regionAt(BASEMAP, 108.2022, 16.0544), 'Đà Nẵng')
   const names = BASEMAP.features.map((f) => f.properties.name)
   assert.ok(names.includes('Quần đảo Hoàng Sa (Đà Nẵng)') && names.includes('Quần đảo Trường Sa (Khánh Hòa)'))
-  assert.ok(names.length >= 63)
   assert.equal(regionAt(BASEMAP, 110, 14), '')
+})
+
+test('nền bản đồ theo 34 tỉnh, thành từ 01/7/2025: tỉnh cũ đã gộp nằm trong tỉnh mới, không còn tên tỉnh cũ', () => {
+  const provinces = BASEMAP.features.filter((f) => !f.properties.archipelago)
+  assert.equal(provinces.length, 34)
+  assert.equal(new Set(provinces.map((f) => f.properties.code)).size, 34)
+  assert.equal(regionAt(BASEMAP, 106.6519, 10.9804), 'Thành phố Hồ Chí Minh', 'Thủ Dầu Một (Bình Dương cũ)')
+  assert.equal(regionAt(BASEMAP, 107.0843, 10.3460), 'Thành phố Hồ Chí Minh', 'Vũng Tàu (Bà Rịa - Vũng Tàu cũ)')
+  assert.equal(regionAt(BASEMAP, 108.3380, 15.8801), 'Đà Nẵng', 'Hội An (Quảng Nam cũ)')
+  assert.equal(regionAt(BASEMAP, 109.2196, 13.7820), 'Gia Lai', 'Quy Nhơn (Bình Định cũ)')
+  assert.equal(regionAt(BASEMAP, 105.5967, 21.3089), 'Phú Thọ', 'Vĩnh Yên (Vĩnh Phúc cũ)')
+  assert.equal(regionAt(BASEMAP, 105.8542, 21.0285), 'Hà Nội', 'tỉnh, thành giữ nguyên')
+  const names = new Set(BASEMAP.features.map((f) => f.properties.name))
+  for (const gone of ['Bình Dương', 'Bà Rịa - Vũng Tàu', 'Quảng Nam', 'Kon Tum', 'Hà Giang', 'Yên Bái', 'Bắc Kạn', 'Hải Dương', 'Thái Bình', 'Nam Định', 'Bạc Liêu', 'Kiên Giang']) assert.ok(!names.has(gone), gone)
 })
 
 test('nền bản đồ tự chứa: tệp nhỏ, không có địa chỉ http nào để trình duyệt tải thêm', () => {
