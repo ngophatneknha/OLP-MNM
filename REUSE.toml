@@ -9,3 +9,10 @@ path = ["infra/keycloak/realm/**.json", "infra/hasura/**.json", "docs/images/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 DX-Lab Project Hub contributors"
 SPDX-License-Identifier = "Apache-2.0"
+
+# Nền bản đồ: dữ liệu Natural Earth (public domain) đã rút gọn bằng scripts/basemap.mjs.
+[[annotations]]
+path = ["web/public/basemap-vn.json"]
+precedence = "override"
+SPDX-FileCopyrightText = ["Natural Earth (public domain)", "2026 DX-Lab Project Hub contributors"]
+SPDX-License-Identifier = "LicenseRef-NaturalEarth-PD"

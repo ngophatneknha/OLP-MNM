@@ -23,7 +23,7 @@ test('UPG-01 nâng cấp từ lược đồ 1.8.2: dữ liệu cũ còn nguyên,
     sql(`INSERT INTO app (key, name, spec, owner_id, owner_name) VALUES ('cu', 'Quy trình cũ', '{"fields":[],"steps":[]}', 'u1', 'U'); UPDATE app SET status = 'published' WHERE key = 'cu'; INSERT INTO submission (app_key, data, submitter_id, submitter_name) VALUES ('cu', '{}', 'u1', 'U')`, db)
     assert.equal(sql('SELECT count(*) FROM submission', db), '1')
     const migrations = files('05', '99')
-    assert.deepEqual(migrations.map((f) => f.slice(0, 2)), ['05', '06', '07', '08'], 'thêm migration mới thì cập nhật ca này')
+    assert.deepEqual(migrations.map((f) => f.slice(0, 2)), ['05', '06', '07', '08', '09', '10'], 'thêm migration mới thì cập nhật ca này')
     for (const pass of [1, 2]) for (const f of migrations) assert.doesNotThrow(() => apply(db, f), `lần ${pass}: ${f}`)
     assert.equal(sql("SELECT org_id FROM submission WHERE app_key = 'cu'", db), 'default')
     assert.equal(sql("SELECT org_id FROM app WHERE key = 'cu'", db), 'default')

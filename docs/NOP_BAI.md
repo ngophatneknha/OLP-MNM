@@ -66,4 +66,4 @@ Mẫu trên giữ nguyên từng câu của đề; chỉ phần trong `[...]` c�
 - [ ] Trang [bản phát hành](https://github.com/ngophatneknha/OLP-MNM/releases/latest) có đúng một tệp `.tar.gz`, phiên bản khớp dòng đầu của [CHANGELOG](../CHANGELOG.md); lần chạy CI gần nhất của `main` xanh.
 - [ ] Giải nén bản phát hành ở thư mục trống, làm theo README trên máy sạch; chạy `node scripts/demo-platform.mjs` thấy cả bảy bước có dấu ✔.
 - [ ] Trên máy trình diễn, đăng nhập `manager1` và `director1` một lần để cài OTP; tập kịch bản demo ([KICH_BAN_DEMO.md](KICH_BAN_DEMO.md)) ít nhất hai lần, quay video dự phòng.
-- [ ] Sau khi gửi, không đẩy thêm lên `main` (mỗi lần đẩy sinh bản phát hành mới). Nói thẳng điều chưa làm: PKI phần mềm chưa HSM, lakehouse là JSONL chưa Parquet/Iceberg.
+- [ ] Sau khi gửi, không đẩy thêm lên `main` (mỗi lần đẩy sinh bản phát hành mới). Nói thẳng điều chưa làm: PKI phần mềm chưa HSM, chưa có WebSocket/MQTT và GitOps nhiều máy.

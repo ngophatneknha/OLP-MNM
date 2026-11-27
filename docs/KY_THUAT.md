@@ -105,7 +105,8 @@ Mọi yêu cầu đi qua APISIX (cổng 9080), nơi kiểm JWT, giới hạn t�
 | `/archive`, `/archive/verify`, `/lineage` | Kho lạnh, kiểm chứng sổ cái, phả hệ dữ liệu | giám đốc |
 | `/sensors` | Đăng ký cảm biến (giám đốc), xem trạng thái (trưởng phòng, giám đốc) | người dùng |
 | `/signatures/verify`, `/pki/ca` | Kiểm chứng chữ ký số của hồ sơ, tải chứng thư CA của tổ chức (300 lần/phút) | người dùng |
-| `/ngsi-ld/v1/entities` | Cảm biến theo chuẩn NGSI-LD, chỉ đọc (300 lần/phút) | trưởng phòng, giám đốc |
+| `/ngsi-ld/v1/entities` | Cảm biến theo chuẩn NGSI-LD: đọc (trưởng phòng, giám đốc), `POST` và `PATCH .../attrs` (giám đốc) (300 lần/phút) | trưởng phòng, giám đốc |
+| `/ngsi-ld/v1/subscriptions` | Thuê bao NGSI-LD: số đo thỏa `q` thì gửi `Notification` tới máy trong `NGSI_NOTIFY_ALLOW` | đọc: trưởng phòng, giám đốc; ghi: giám đốc |
 | `/orgs/users` | Giám đốc thêm, xem, khóa người dùng của tổ chức mình (300 lần/phút) | giám đốc |
 | `/telemetry/<mã>` | Thiết bị gửi số đo | cảm biến, bằng token thiết bị riêng |
 | `/auth/*` | Đăng nhập (Keycloak) | trình duyệt |

@@ -179,7 +179,12 @@ describe('D: Không gian Dữ liệu số — số liệu thực chứng', () =>
     assert.equal(sql("select count(*) from submission_event where created_at > now() + interval '1 minute'"), '0')
     assert.equal(sql('select count(*) from (select created_at, lag(created_at) over (partition by submission_id order by id) p from submission_event) t where created_at < p'), '0')
   })
-  test('D-06 [todo] bảng lakehouse Parquet/Iceberg có lược đồ phiên bản; NGSI-LD ghi/đăng ký thuê bao; bản đồ có nền (đã có: SQL DuckDB trên JSONL, NGSI-LD đọc, bản đồ SVG: LAKE-01, IOT-08)', { todo: 'chưa làm: Parquet/Iceberg, NGSI-LD ghi, nền bản đồ' }, () => assert.fail('chưa có'))
+  test('D-06 lakehouse Iceberg có lược đồ phiên bản (ca chạy thật LAKE-02 đến LAKE-04), NGSI-LD ghi và thuê bao (IOT-09 đến IOT-12), bản đồ có nền tự chứa', () => {
+    assert.ok(existsSync(join(ROOT, 'infra/duckdb/lake.py')) && existsSync(join(ROOT, 'scripts/lake.sh')))
+    assert.match(readFileSync(join(ROOT, 'services/workflow-bridge/ngsi.js'), 'utf8'), /\/ngsi-ld\/v1\/subscriptions/)
+    const base = JSON.parse(readFileSync(join(ROOT, 'web/public/basemap-vn.json'), 'utf8'))
+    assert.ok(base.features.length >= 63)
+  })
 })
 
 describe('H: Không gian Con người số — tài liệu và hộp việc', () => {
@@ -350,5 +355,10 @@ describe('Z: Nguyên lý Zero-Trust và vận hành (đề thi mục 4, nguyên 
   test('Z-08 sao lưu tự động theo lịch: dịch vụ backup (ca chạy thật OPS-BACKUP ở tests/ops.test.js)', () => assert.match(readFileSync(join(ROOT, 'docker-compose.optional.yml'), 'utf8'), /backup:[\s\S]*profiles: \["backup"\]/))
   test('Z-09 [todo] truyền thông thời gian thực bằng WebSocket và thiết bị bằng MQTT/OPC UA (hiện là SSE và HTTP: Z-03, IOT)', { todo: 'chưa làm: WebSocket, MQTT' }, () => assert.fail('chưa có'))
   test('Z-10 [todo] GitOps thật (bộ điều khiển như ArgoCD/Flux, nhiều máy, tự hoàn tác); đã có GitOps nhẹ cho một máy: scripts/gitops.sh (OPS-GITOPS)', { todo: 'chưa làm: ArgoCD/Flux' }, () => assert.fail('chưa có'))
-  test('Z-11 [todo] nhật ký truy vết phân tán (như Vector/Parseable) và trục sự kiện streaming (như Redpanda); hiện có nhật ký kiểm toán bất biến trong CSDL, SSE và số đo Prometheus', { todo: 'chưa làm: gom nhật ký tập trung, Kafka/Redpanda' }, () => assert.fail('chưa có'))
+  test('Z-11 nhật ký truy vết tập trung (Vector, VictoriaLogs, mã X-Request-Id) và trục sự kiện NATS JetStream theo mẫu outbox: ca chạy thật TRACE và STREAM ở tests/trace.test.js', () => {
+    const opt = readFileSync(join(ROOT, 'docker-compose.optional.yml'), 'utf8')
+    assert.match(opt, /victorialogs:[\s\S]*profiles: \["logs"\]/)
+    assert.match(opt, /nats:[\s\S]*profiles: \["stream"\]/)
+    assert.doesNotMatch(opt, /redpanda|parseable|grafana\/loki/i)
+  })
 })

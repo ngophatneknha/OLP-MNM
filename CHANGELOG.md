@@ -9,6 +9,19 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-11-27
+
+### Added
+- D-06 NGSI-LD ghi và thuê bao: `POST /ngsi-ld/v1/entities` tạo `Device` (giám đốc, trả token thiết bị một lần), `PATCH /ngsi-ld/v1/entities/{id}/attrs` ghi số đo đi chung đường với `/telemetry`, `POST/GET/DELETE /ngsi-ld/v1/subscriptions` gửi `Notification` khi số đo thỏa `q` (có `throttling`, trạng thái `timesSent`, `lastFailure`). Máy nhận phải nằm trong `NGSI_NOTIFY_ALLOW` (chặn SSRF), không theo chuyển hướng. Bảng mới `ngsi_subscription` (`infra/postgres/init/09-ngsi.sql`). Ca IOT-09 đến IOT-12. Tự viết trong bridge vì Orion-LD là AGPL-3.0.
+- D-06 nền bản đồ tự chứa: ranh giới 63 tỉnh, thành và quần đảo Hoàng Sa, Trường Sa (`web/public/basemap-vn.json`, 57 KB, Natural Earth 1:10m v5.1.2, public domain), dựng lại bằng `scripts/basemap.mjs`; bản đồ cảm biến vẽ nền cùng phép chiếu với điểm và ghi tên khu vực. Không tải ô bản đồ hay mã từ bên ngoài.
+- D-06 bảng Apache Iceberg của kho lạnh: `scripts/lake.sh sync|info|sql` nạp tệp JSONL vào bảng `cold.submission` (Parquet trong S3, danh mục trong PostgreSQL, phân vùng theo tổ chức); trường mới thêm cột và tăng phiên bản lược đồ; đọc lại ảnh chụp cũ; tệp hỏng hay trái kiểu bị bỏ qua có lý do. PyIceberg 0.10.0, PyArrow 21.0.0, SQLAlchemy 2.0.45, pg8000 1.31.2. Ca LAKE-02 đến LAKE-04.
+- Z-11 nhật ký tập trung có mã truy vết: APISIX gắn `X-Request-Id` (plugin `request-id`) và ghi nhật ký truy cập JSON; workflow-bridge ghi nhật ký truy cập cùng mã (che PII, không ghi chuỗi truy vấn); profile `logs` chạy Vector 0.61.0 (MPL-2.0, che PII) gửi vào VictoriaLogs 1.53.0 (Apache-2.0, chỉ mở trên 127.0.0.1). Ca TRACE-01 đến TRACE-04 (`tests/trace.test.js`).
+- Z-11 trục sự kiện streaming: profile `stream` chạy NATS 2.14.10 có JetStream (Apache-2.0); workflow-bridge phát mỗi dòng `submission_event` lên `dx.<tổ chức>.submission.<hành động>` theo mẫu outbox (mốc `stream_cursor`, `Nats-Msg-Id` chống trùng, có ack), bằng máy khách NATS tối giản không thêm gói npm. NATS tắt thì việc duyệt vẫn chạy, tin được phát bù. Ca STREAM-01 đến STREAM-03, kiểm thử đơn vị `stream.test.js` với máy chủ NATS giả.
+
+### Changed
+- `tests/hpdi.test.js`: D-06 và Z-11 không còn là `todo`; chỉ còn Z-07 (HSM), Z-09 (WebSocket, MQTT), Z-10 (ArgoCD/Flux).
+- CORS của route NGSI-LD cho phép thêm `PATCH`, `DELETE`.
+
 ## [2.5.0] - 2026-11-22
 
 ### Added

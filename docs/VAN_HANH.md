@@ -105,7 +105,23 @@ Có thể gửi mảng tới 100 số đo kèm `at` (ISO 8601, trong 7 ngày qua
 curl "$API/ngsi-ld/v1/entities?type=Device" -H "authorization: Bearer $TOKEN" -H "x-hasura-role: manager"
 ```
 
-Giới hạn (shortcut): NGSI-LD chỉ đọc (không có POST/PATCH thực thể hay đăng ký thuê bao); bản đồ chiếu phẳng, không có nền bản đồ; thêm cột vị trí vào CSDL đang chạy: `docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/07-geo.sql`.
+Ghi và theo dõi theo chuẩn (giám đốc):
+
+```bash
+# Tạo Device; thân phản hồi có deviceToken một lần (dùng cho /telemetry)
+curl -X POST "$API/ngsi-ld/v1/entities" -H "authorization: Bearer $TOKEN" -H "x-hasura-role: director" -H "content-type: application/ld+json" \
+  -d '{"id":"urn:ngsi-ld:Device:default:tu_dong_1","type":"Device","name":{"type":"Property","value":"Tủ đông 1"},"threshold":{"type":"Property","value":8,"unitCode":"CEL"},"direction":{"type":"Property","value":"above"},"repairApp":{"type":"Property","value":"sua_chua"},"location":{"type":"GeoProperty","value":{"type":"Point","coordinates":[105.85,21.03]}}}'
+# Cập nhật số đo
+curl -X PATCH "$API/ngsi-ld/v1/entities/urn:ngsi-ld:Device:default:tu_dong_1/attrs" ... -d '{"value":{"type":"Property","value":9.5}}'
+# Thuê bao: vượt 8 độ thì POST Notification tới máy của đối tác (phải có trong NGSI_NOTIFY_ALLOW, dạng máy:cổng)
+curl -X POST "$API/ngsi-ld/v1/subscriptions" ... -d '{"type":"Subscription","entities":[{"type":"Device"}],"q":"value>8","throttling":60,"notification":{"endpoint":{"uri":"https://doi-tac.example/ngsi"}}}'
+```
+
+`GET /ngsi-ld/v1/subscriptions/<id>` cho biết `timesSent`, `lastSuccess`, `lastFailure`, `lastErrorReason`. Máy đang chạy cần áp `infra/postgres/init/09-ngsi.sql`.
+
+Nền bản đồ là ranh giới 63 tỉnh, thành và quần đảo Hoàng Sa, Trường Sa (`web/public/basemap-vn.json`, 57 KB, dựng lại bằng `node scripts/basemap.mjs` từ Natural Earth 1:10m v5.1.2, public domain), nằm ngay trong ứng dụng nên không tải gì từ bên ngoài.
+
+Giới hạn (shortcut): NGSI-LD là tập con của chuẩn (một kiểu `Device`, chỉ ghi `value`, `q` gồm so sánh nối bằng `;`, gửi thông báo một lần không thử lại); nền bản đồ chỉ tới mức tỉnh, theo ranh giới trước khi sắp xếp đơn vị hành chính năm 2025; thêm cột vị trí vào CSDL đang chạy: `docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/07-geo.sql`.
 
 ## SQL trên kho lạnh (DuckDB)
 
@@ -116,7 +132,38 @@ sh scripts/cold-sql.sh "SELECT org, status, count(*) AS n FROM cold GROUP BY ALL
 sh scripts/cold-sql.sh "SELECT app_key, avg(date_diff('hour', created_at, finished_at)) AS gio FROM cold GROUP BY ALL"
 ```
 
-Bảng ảo `cold` có mọi cột của hồ sơ, thêm `org`, `object_key`, `events`. Tệp hỏng hoặc bị sửa bị bỏ qua và báo ở stderr (kiểm chứng sửa đổi dùng `GET /archive/verify`). Giới hạn (shortcut): tệp JSONL, chưa phải bảng Parquet/Iceberg; chạy bằng quyền vận hành (không theo token người dùng) nên chỉ người vận hành dùng.
+Bảng ảo `cold` có mọi cột của hồ sơ, thêm `org`, `object_key`, `events`. Tệp hỏng hoặc bị sửa bị bỏ qua và báo ở stderr (kiểm chứng sửa đổi dùng `GET /archive/verify`). Giới hạn (shortcut): đọc thẳng tệp JSONL, không có lược đồ phiên bản (dùng bảng Iceberg bên dưới); chạy bằng quyền vận hành (không theo token người dùng) nên chỉ người vận hành dùng.
+
+## Bảng Iceberg của kho lạnh
+
+Apache Iceberg là lớp "mục lục" đặt trên các tệp Parquet: biết bảng gồm tệp nào, lược đồ đang ở phiên bản mấy, và giữ ảnh chụp (snapshot) để đọc lại dữ liệu tại một thời điểm. `scripts/lake.sh` (cùng ảnh với `cold-sql.sh`, thêm PyIceberg) nạp các tệp JSONL của kho lạnh vào bảng `cold.submission`: tệp Parquet nằm trong `dxlab-cold/lake/`, danh mục nằm trong PostgreSQL (bảng `iceberg_tables`), phân vùng theo tổ chức.
+
+```bash
+sh scripts/lake.sh sync                     # nạp tệp mới; chạy lại không nhân đôi; in số tệp, cột mới, tệp bị bỏ qua
+sh scripts/lake.sh info                     # phiên bản lược đồ, ảnh chụp
+sh scripts/lake.sh sql "SELECT org, app_key, count(*) AS n, sum(data_so_tien) AS tong FROM lake GROUP BY ALL"
+sh scripts/lake.sh sql "SELECT count(*) FROM lake" <snapshot_id>   # đọc lại ảnh chụp cũ
+```
+
+Mỗi trường của hồ sơ thành cột `data_<mã>` (số là `double`, đúng/sai là `boolean`, còn lại là chuỗi); trường mới thì thêm cột và lược đồ lên phiên bản. Tệp có giá trị trái kiểu cột đã có, hoặc tệp hỏng, bị bỏ qua cả tệp và báo lý do. Giới hạn (shortcut): một tiến trình ghi tại một thời điểm, chưa gộp tệp nhỏ hay xóa ảnh chụp cũ; chạy bằng quyền vận hành.
+
+## Nhật ký tập trung và mã truy vết
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile logs up -d
+curl http://127.0.0.1:9428/select/logsql/query -d 'query=request_id:"<mã trong tiêu đề X-Request-Id của phản hồi>"'
+curl http://127.0.0.1:9428/select/logsql/query -d 'query=service:workflow-bridge AND status:500'
+```
+
+Cổng APISIX gắn mã `X-Request-Id` cho mọi yêu cầu (giữ mã do bên gọi gửi), chuyển xuống workflow-bridge và trả lại trong phản hồi; cả hai ghi nhật ký truy cập JSON một dòng có mã này, không ghi chuỗi truy vấn hay token. Vector đọc nhật ký mọi container của dự án qua Docker API, che email, số điện thoại, CCCD, số thẻ, rồi gửi vào VictoriaLogs (giữ `LOGS_RETENTION`, mặc định 14 ngày). Giao diện tìm kiếm: http://127.0.0.1:9428/select/vmui (chỉ mở trên máy chủ). Lưu ý bảo mật: Vector cần socket Docker (gắn chỉ đọc) và nhờ đó thấy mọi container trên máy, nên chỉ bật trên máy chủ do đội vận hành quản lý. Giới hạn (shortcut): một máy; truy vết bằng mã chung chứ chưa có span OpenTelemetry.
+
+## Trục sự kiện (NATS JetStream)
+
+```bash
+NATS_URL=nats://nats:4222 docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile stream up -d
+```
+
+Mỗi lần duyệt, từ chối hay xác nhận hồ sơ (bảng `submission_event`) được phát lên chủ đề `dx.<tổ chức>.submission.<approve|reject|done>` của stream `DX` (lưu đĩa, giữ 30 ngày). Mẫu outbox: bridge đọc bảng theo mốc `stream_cursor`, phát kèm `Nats-Msg-Id` (JetStream bỏ tin trùng), có xác nhận mới dời mốc; NATS tắt thì việc duyệt vẫn chạy và tin được phát bù khi NATS sống lại. Tin không chứa dữ liệu biểu mẫu hay tên người. Dịch vụ khác nghe bằng bất kỳ thư viện NATS nào với `NATS_TOKEN`, qua cổng `127.0.0.1:4222`. Máy đang chạy cần áp `infra/postgres/init/10-stream.sql`. Giới hạn (shortcut): một token cho cả hệ thống (chưa tách quyền theo tổ chức), chưa TLS tới NATS (cùng mạng nội bộ Docker); cần giao thức Kafka thì thay bộ phát, không đổi thiết kế outbox.
 
 ## Giám sát (Prometheus)
 

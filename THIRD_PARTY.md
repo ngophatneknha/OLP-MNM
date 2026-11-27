@@ -33,6 +33,14 @@ Các thành phần chạy dưới dạng **container độc lập, không sửa 
 | poppler-utils (`pdftotext`, `pdftoppm`; trạm đọc chữ, tùy chọn) | gói Debian của image `python:3.12-slim` | GPL-2.0-or-later | `COPYING` trong gitlab.freedesktop.org/poppler/poppler | ☑ |
 | Tesseract OCR (trạm đọc chữ, tùy chọn) | gói Debian của image `python:3.12-slim` | Apache-2.0 | `LICENSE` trong github.com/tesseract-ocr/tesseract (GitHub báo Apache-2.0) | ☑ |
 | DuckDB (SQL trên kho lạnh, tùy chọn; gói `duckdb` cài trong ảnh dựng từ `infra/duckdb`) | 1.1.3 | MIT | `LICENSE` trong github.com/duckdb/duckdb (GitHub báo MIT) | ☑ |
+| PyIceberg (bảng Apache Iceberg của kho lạnh, tùy chọn; gói `pyiceberg` trong ảnh `infra/duckdb`) | 0.10.0 | Apache-2.0 | `LICENSE` trong github.com/apache/iceberg-python, thẻ pyiceberg-0.10.0 | ☑ |
+| Apache Arrow (`pyarrow`, đọc ghi Parquet và S3 cho PyIceberg, tùy chọn) | 21.0.0 | Apache-2.0 | `LICENSE.txt` trong github.com/apache/arrow, thẻ apache-arrow-21.0.0 | ☑ |
+| SQLAlchemy (danh mục Iceberg trong PostgreSQL, tùy chọn) | 2.0.45 | MIT | `LICENSE` trong github.com/sqlalchemy/sqlalchemy, thẻ rel_2_0_45 | ☑ |
+| pg8000 (trình điều khiển PostgreSQL thuần Python cho danh mục Iceberg, tùy chọn; chọn thay psycopg2 vì psycopg2 là LGPL) | 1.31.2 | BSD-3-Clause | trường license trên pypi.org/project/pg8000 và `LICENSE` trong github.com/tlocke/pg8000 | ☑ |
+| VictoriaLogs (kho nhật ký tập trung, tùy chọn, profile `logs`; image `victoriametrics/victoria-logs`, bản cộng đồng) | 1.53.0 | Apache-2.0 | `LICENSE` trong github.com/VictoriaMetrics/VictoriaLogs, thẻ v1.53.0 | ☑ |
+| Vector (bộ gom nhật ký, tùy chọn, profile `logs`; image `timberio/vector`) | 0.61.0 | MPL-2.0 | `LICENSE` trong github.com/vectordotdev/vector, thẻ v0.61.0 | ☑ |
+| NATS Server có JetStream (trục sự kiện, tùy chọn, profile `stream`; image `nats`) | 2.14.10 | Apache-2.0 | `LICENSE` trong github.com/nats-io/nats-server, thẻ v2.14.10 | ☑ |
+| Natural Earth 1:10m (dữ liệu ranh giới cho nền bản đồ `web/public/basemap-vn.json`, đã rút gọn) | 5.1.2 | Public domain | `LICENSE.md` trong github.com/nvkelso/natural-earth-vector, thẻ v5.1.2 | ☑ |
 | Python (image `python:3.12-slim`, nền của ảnh DuckDB) | 3.12 | PSF-2.0 | `LICENSE` trong github.com/python/cpython | ☑ |
 | Node.js (image `node`) | 22.19.0 | MIT | `LICENSE` trong github.com/nodejs/node | ☑ |
 | nginx (image phục vụ tệp tĩnh) | 1.28.0 | BSD-2-Clause | `LICENSE` trong github.com/nginx/nginx | ☑ |
@@ -43,6 +51,8 @@ Ghi chú:
 - Hasura: chỉ dùng tính năng của bản cộng đồng; không bật hay cấu hình tính năng Enterprise nào.
 - Meilisearch: từ các bản 1.x gần đây, kho mã chứa thêm phần Enterprise Edition theo BUSL-1.1 (`LICENSE-EE`). Image `getmeili/meilisearch` dựng không kèm phần đó nên là MIT; dự án không dùng image `meilisearch-enterprise` và không dùng tính năng EE (chia shard, snapshot S3). Xác minh ngày 22/11/2026.
 - Mô hình nhúng cho tìm ngữ nghĩa (tùy chọn; profile `vector` tải bản int8 `onnx/model_quint8_avx2.onnx` có kiểm sha256, hoặc Meilisearch tự tải khi đặt `SEARCH_EMBEDDER`): `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (Apache-2.0, commit `e8f8c211`). Tùy chọn cho máy chủ mạnh: `Alibaba-NLP/gte-multilingual-base` (Apache-2.0, commit `9bbca17d`). Đã xác minh ngày 22/11/2026 qua trường `cardData.license` của API Hugging Face; mô hình không bị khóa (gated). Phải đối chiếu lại khi đổi mô hình hoặc mã commit. Không dùng mô hình theo điều khoản riêng như Gemma.
+- Bảng Iceberg, nhật ký tập trung, trục sự kiện (xác minh giấy phép ngày 27/11/2026): không dùng Redpanda (BSL), Parseable và Grafana Loki (AGPL-3.0), Orion-LD (AGPL-3.0) cho NGSI-LD; Kafka (Apache-2.0) cũng dùng được nhưng cần JVM khoảng 1 GB RAM nên chọn NATS. VictoriaLogs có thẻ `-enterprise` theo giấy phép thương mại: dự án chỉ dùng thẻ cộng đồng. Vector (MPL-2.0, copyleft theo từng tệp) chỉ chạy container riêng, không sửa mã, giống OpenBao.
+- Natural Earth: nền bản đồ gán quần đảo Hoàng Sa (Natural Earth vẽ trong đa giác của nước khác) và Trường Sa (vùng riêng `PGA`) cho Việt Nam, theo `scripts/basemap.mjs`; tệp kết quả không chứa lãnh thổ nước nào khác.
 - Các image còn chứa gói hệ điều hành nền (Alpine, Debian) với giấy phép riêng của chúng; dự án không sửa và không phân phối lại các gói đó.
 - Giấy phép kiểu MIT/BSD của curl, nginx, Node.js tương thích với Apache-2.0 vì các thành phần chỉ được chạy, không trộn mã.
 
