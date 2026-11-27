@@ -9,17 +9,22 @@
 #   Tìm kiếm toàn văn và hỏi đáp: ... --profile search up -d
 #   Sao lưu tự động theo lịch:   ... --profile backup up -d   (xem docs/VAN_HANH.md)
 #   SQL trên kho lạnh (DuckDB):   sh scripts/cold-sql.sh "SELECT ..."   (profile lakehouse)
+#   Bảng Iceberg của kho lạnh:    sh scripts/lake.sh sync | info | sql "SELECT ... FROM lake"
 #   Mô hình AI chạy tại chỗ:      ... --profile ai up -d
 # Hướng dẫn: docs/VAN_HANH.md, docs/TRI_TUE.md
 
 services:
   # SQL trực tiếp trên tệp JSONL của kho lạnh (DuckDB đọc S3): chạy một lần mỗi câu truy vấn, dùng scripts/cold-sql.sh.
+  # Cùng ảnh đó nạp kho lạnh vào bảng Apache Iceberg (tệp Parquet trong S3, danh mục trong PostgreSQL): scripts/lake.sh.
   lakehouse:
     build: ./infra/duckdb
     profiles: ["lakehouse"]
     environment:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     depends_on:
       seaweedfs:
         condition: service_healthy
