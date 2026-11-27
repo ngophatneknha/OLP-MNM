@@ -58,12 +58,13 @@ test('NATS: kết nối gửi token, phát tin kèm Nats-Msg-Id và nhận ack c
   } finally { nc.close(); srv.close() }
 })
 
-test('NATS (nghịch): không có stream nhận (503), JetStream báo lỗi, tạo stream đã có thì bỏ qua, kết nối đóng thì từ chối ngay', async () => {
+test('NATS (nghịch): không có stream nhận (503), JetStream báo lỗi, tạo stream đã có thì cập nhật cấu hình, lỗi khác thì ném, kết nối đóng thì từ chối ngay', async () => {
   let mode = 'noresp'
-  const { srv, url } = await fakeNats(() => {
+  const { srv, url, seen } = await fakeNats((m) => {
     if (mode === 'noresp') return ['NATS/1.0 503\r\n\r\n', '']
     if (mode === 'err') return [null, JSON.stringify({ error: { code: 400, err_code: 10060, description: 'bị từ chối' } })]
-    return [null, JSON.stringify({ error: { code: 400, err_code: 10058, description: 'stream name already in use' } })]
+    if (mode === 'exists') return [null, JSON.stringify(/\.CREATE\./.test(m.subject) ? { error: { code: 400, err_code: 10058, description: 'stream name already in use' } } : { config: {} })]
+    return [null, JSON.stringify({ error: { code: 500, err_code: 10049, description: 'hỏng đĩa' } })]
   })
   const nc = await natsConnect(url, '')
   try {
@@ -72,8 +73,22 @@ test('NATS (nghịch): không có stream nhận (503), JetStream báo lỗi, t�
     await assert.rejects(jsPublish(nc, 'dx.x.submission.done', {}, 'e:3'), /bị từ chối/)
     mode = 'exists'
     await ensureStream(nc)
+    assert.equal(seen.at(-1).subject, '$JS.API.STREAM.UPDATE.DX', 'stream đã có thì cập nhật cấu hình (cửa sổ chống trùng mới)')
+    assert.equal(JSON.parse(seen.at(-1).data).duplicate_window, 3600e9)
+    mode = 'broken'
+    await assert.rejects(ensureStream(nc), /hỏng đĩa/)
   } finally { nc.close(); srv.close() }
   await assert.rejects(jsPublish(nc, 'dx.x.submission.done', {}, 'e:4'), /đã đóng/)
+})
+
+test('NATS (nghịch): máy chủ đóng kết nối trước khi sẵn sàng hay im lặng thì kết nối báo lỗi, không treo', async () => {
+  const close = createServer((sock) => sock.end())
+  const mute = createServer(() => {})
+  for (const s of [close, mute]) await new Promise((ok) => s.listen(0, '127.0.0.1', ok))
+  try {
+    await assert.rejects(natsConnect(`nats://127.0.0.1:${close.address().port}`, ''), /đã đóng/)
+    await assert.rejects(natsConnect(`nats://127.0.0.1:${mute.address().port}`, ''), /quá thời gian/)
+  } finally { close.close(); mute.close() }
 })
 
 test('tin sự kiện: chủ đề theo tổ chức và hành động, không có PII; mã tổ chức hay hành động lạ thì không ghép chủ đề', () => {

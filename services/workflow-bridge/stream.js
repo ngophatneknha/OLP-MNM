@@ -3,21 +3,31 @@
 //
 // Trục sự kiện streaming (profile stream): mỗi dòng nhật ký duyệt submission_event được phát lên NATS JetStream, chủ đề
 // dx.<tổ chức>.submission.<hành động> (approve, reject, done), để dịch vụ khác (báo cáo, AI, hệ thống đối tác) nghe và phát lại được.
-// Mẫu outbox: không phát ngay trong lúc duyệt (NATS tắt thì việc duyệt vẫn chạy); vòng lặp đọc bảng submission_event chỉ thêm
-// theo mốc stream_cursor, phát kèm Nats-Msg-Id = mã sự kiện (JetStream tự bỏ tin trùng trong cửa sổ 2 phút), có xác nhận (ack) mới dời mốc.
+// Mẫu outbox: không phát ngay trong lúc duyệt (NATS tắt thì việc duyệt vẫn chạy). Dòng submission_event chính là lệnh duyệt
+// (cùng một INSERT, cùng giao dịch), nên đã duyệt là chắc chắn có sự kiện. Vòng lặp đọc các sự kiện CHƯA có dòng trong stream_published,
+// phát kèm Nats-Msg-Id = mã sự kiện, JetStream xác nhận (ack) thì đánh dấu đúng sự kiện đó. Đánh dấu từng dòng (không dùng một mốc
+// "id cuối") để giao dịch commit trễ, có id nhỏ hơn sự kiện đã phát, vẫn được phát. Mốc dưới last_id chỉ để truy vấn khỏi quét cả bảng:
+// mốc chỉ vượt qua sự kiện đã phát và sự kiện cũ hơn 1 giờ (giao dịch duyệt không kéo dài tới 1 giờ).
+// Giao hàng "ít nhất một lần": bridge chết giữa lúc phát và lúc đánh dấu thì tin được phát lại cùng Nats-Msg-Id; JetStream bỏ tin trùng
+// trong cửa sổ 1 giờ, ngoài cửa sổ đó bên nghe phải tự bỏ trùng theo event_id (khóa duy nhất của mọi tin).
+// Chạy nhiều bản bridge: chỉ bản giữ hợp đồng thuê (lease 30 giây, gia hạn mỗi vòng) trong stream_cursor được phát.
 // Tin chỉ có mã hồ sơ, bước, hành động, trạng thái và thời điểm: không có dữ liệu biểu mẫu, ghi chú hay tên người (không PII).
 // Máy khách NATS tối giản viết bằng node:net (giao thức chữ của NATS), để bridge vẫn không phụ thuộc thư viện ngoài.
-// shortcut: một tiến trình bridge phát; sự kiện đọc khi đã cũ hơn 2 giây để giao dịch commit trễ không bị bỏ sót; chưa có TLS tới NATS
+// shortcut: thứ tự tin trên NATS gần đúng theo id (tin commit trễ đến sau), bên nghe sắp lại theo event_id nếu cần; chưa có TLS tới NATS
 // (cùng mạng nội bộ Docker), chưa tách quyền theo tổ chức trên NATS (một token cho cả hệ thống).
 import { connect as tcp } from 'node:net'
 import { randomBytes } from 'node:crypto'
-import { sql } from './db.js'
+import { hostname } from 'node:os'
+import { sql, lit } from './db.js'
 
 const { NATS_URL = '', NATS_TOKEN = '' } = process.env
 export const STREAM = 'DX'
 const BATCH = 200
 const ACK_TIMEOUT_MS = 5000
-const WINDOW_NS = 120e9 // cửa sổ chống trùng của JetStream: 2 phút
+const WINDOW_NS = 3600e9 // cửa sổ chống trùng của JetStream: 1 giờ
+const LEASE_S = 30
+const SETTLE = "interval '1 hour'" // sự kiện cũ hơn mức này coi như mọi giao dịch có id nhỏ hơn đã xong
+export const OWNER = `${hostname()}:${process.pid}:${randomBytes(4).toString('hex')}`
 
 /** Kết nối NATS tối giản: PUB/HPUB, SUB, PING; chờ trả lời qua hộp thư (inbox) riêng. */
 export async function natsConnect(url = NATS_URL, token = NATS_TOKEN) {
@@ -29,7 +39,13 @@ export async function natsConnect(url = NATS_URL, token = NATS_TOKEN) {
   const inbox = `_INBOX.${randomBytes(8).toString('hex')}`
   let sid = 1
   let ready
-  const opened = new Promise((ok, fail) => { ready = ok; sock.once('error', fail); setTimeout(() => fail(new Error('NATS: quá thời gian kết nối')), ACK_TIMEOUT_MS).unref() })
+  // Máy chủ đóng kết nối trước PONG (đang khởi động, sai token) hay im lặng quá hạn thì báo lỗi, không treo vòng outbox.
+  const opened = new Promise((ok, fail) => {
+    const timer = setTimeout(() => { fail(new Error('NATS: quá thời gian kết nối')); sock.destroy() }, ACK_TIMEOUT_MS)
+    ready = () => { clearTimeout(timer); ok() }
+    sock.once('error', (err) => { clearTimeout(timer); fail(err) })
+    sock.once('close', () => { clearTimeout(timer); fail(new Error('NATS: kết nối đã đóng trước khi sẵn sàng')) })
+  })
   const waiting = new Map() // mã hộp thư con -> resolve
   let closed = false
   sock.on('error', () => {}) // lỗi mạng dẫn tới 'close'; xử lý ở đó để tiến trình bridge không sập
@@ -99,11 +115,13 @@ export async function jsPublish(nc, subject, data, msgId) {
   return ack
 }
 
-/** Tạo stream DX (chủ đề dx.>, lưu đĩa, giữ 30 ngày) nếu chưa có. */
+/** Tạo stream DX (chủ đề dx.>, lưu đĩa, giữ 30 ngày) nếu chưa có; đã có (10058) thì cập nhật cấu hình cho khớp. */
 export async function ensureStream(nc) {
   const cfg = { name: STREAM, subjects: ['dx.>'], storage: 'file', retention: 'limits', max_age: 30 * 24 * 3600 * 1e9, duplicate_window: WINDOW_NS, num_replicas: 1 }
-  const res = JSON.parse((await nc.request(`$JS.API.STREAM.CREATE.${STREAM}`, JSON.stringify(cfg))).data || '{}')
-  if (res.error && res.error.err_code !== 10058) throw new Error(`NATS: không tạo được stream: ${res.error.description}`) // 10058: đã có
+  const call = async (op) => JSON.parse((await nc.request(`$JS.API.STREAM.${op}.${STREAM}`, JSON.stringify(cfg))).data || '{}')
+  let res = await call('CREATE')
+  if (res.error?.err_code === 10058) res = await call('UPDATE')
+  if (res.error) throw new Error(`NATS: không tạo được stream: ${res.error.description}`)
 }
 
 const SAFE = /^[a-z0-9_-]+$/
@@ -117,24 +135,46 @@ export function toMessage([id, submission, no, app, step, action, status, org, a
   }
 }
 
+/** Giữ hoặc gia hạn hợp đồng thuê; trả mốc dưới last_id nếu bản bridge này được phát, null nếu bản khác đang giữ. */
+export async function lease(owner = OWNER) {
+  const row = (await sql(`UPDATE stream_cursor SET holder = ${lit(owner)}, lease_until = now() + interval '${LEASE_S} seconds'
+    WHERE name = 'submission_event' AND (holder IS NULL OR holder = ${lit(owner)} OR lease_until < now()) RETURNING last_id`))[0]
+  return row ? Number(row[0]) : null
+}
+
+/** Dời mốc dưới: không vượt sự kiện chưa phát nào đang thấy được, không vượt sự kiện mới hơn SETTLE; dọn dấu đã nằm dưới mốc. */
+async function advance(mark) {
+  const unpublished = `NOT EXISTS (SELECT 1 FROM stream_published p WHERE p.event_id = e.id)`
+  const next = Number((await sql(`UPDATE stream_cursor SET updated_at = now(), last_id = GREATEST(last_id, LEAST(
+      COALESCE((SELECT min(e.id) - 1 FROM submission_event e WHERE e.id > ${mark} AND ${unpublished}), 9223372036854775807),
+      COALESCE((SELECT max(e.id) FROM submission_event e WHERE e.id > ${mark} AND e.created_at < now() - ${SETTLE}), ${mark})))
+    WHERE name = 'submission_event' RETURNING last_id`))[0]?.[0] ?? mark)
+  if (next > mark) await sql(`DELETE FROM stream_published WHERE event_id <= ${next}`)
+}
+
 let conn = null
 let lastError = ''
-/** Một vòng outbox: phát các sự kiện sau mốc, dời mốc tới sự kiện cuối đã được ack. Trả số tin đã phát. */
+/** Một vòng outbox: phát các sự kiện chưa đánh dấu (trên mốc dưới), đánh dấu từng sự kiện đã được ack. Trả số sự kiện đã xử lý. */
 export async function relayOnce() {
   if (!NATS_URL) return 0
   try {
+    const mark = await lease()
+    if (mark === null) return 0 // bản bridge khác đang phát
     if (!conn || conn.closed) { conn = await natsConnect(); await ensureStream(conn) }
-    const cursor = Number((await sql("SELECT last_id FROM stream_cursor WHERE name = 'submission_event'"))[0]?.[0] ?? 0)
     const rows = await sql(`SELECT e.id, e.submission_id, s.no, s.app_key, e.step_key, e.action, s.status, s.org_id, e.created_at
       FROM submission_event e JOIN submission s ON s.id = e.submission_id
-      WHERE e.id > ${cursor} AND e.created_at < now() - interval '2 seconds' ORDER BY e.id LIMIT ${BATCH}`)
-    let last = cursor
-    for (const row of rows) {
-      const m = toMessage(row)
-      if (m) await jsPublish(conn, m.subject, m.data, m.msgId)
-      last = Number(row[0])
+      WHERE e.id > ${mark} AND NOT EXISTS (SELECT 1 FROM stream_published p WHERE p.event_id = e.id) ORDER BY e.id LIMIT ${BATCH}`)
+    const done = []
+    try {
+      for (const row of rows) {
+        const m = toMessage(row) // mã tổ chức, hành động lạ: không phát nhưng vẫn đánh dấu, khỏi thử lại mãi
+        if (m) await jsPublish(conn, m.subject, m.data, m.msgId)
+        done.push(Number(row[0]))
+      }
+    } finally {
+      if (done.length) await sql(`INSERT INTO stream_published (event_id) SELECT unnest(ARRAY[${done.join(',')}]::bigint[]) ON CONFLICT DO NOTHING`)
     }
-    if (last > cursor) await sql(`INSERT INTO stream_cursor (name, last_id) VALUES ('submission_event', ${last}) ON CONFLICT (name) DO UPDATE SET last_id = ${last}, updated_at = now()`)
+    await advance(mark)
     lastError = ''
     return rows.length
   } catch (err) {

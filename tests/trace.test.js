@@ -8,6 +8,7 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { spawn } from 'node:child_process'
 import { join } from 'node:path'
 import { ROOT, GW, ROLE, login, until, uid, run } from './lib.js'
 
@@ -125,5 +126,33 @@ describe('STREAM: trục sự kiện NATS JetStream theo mẫu outbox (Z-11)', {
     }, 'tin của hồ sơ duyệt lúc NATS tắt được phát bù', 90_000)
     nc.close()
     await assert.rejects(natsConnect(NATS, 'sai-token').then((c) => c.request('$JS.API.INFO', '')), /NATS|ECONNRESET|đóng/)
+  })
+
+  test('STREAM-04 giao dịch commit trễ (id nhỏ hơn sự kiện đã phát) vẫn được phát, không bị bỏ sót', { timeout: 120_000 }, async () => {
+    const { publishApp, submit, waitStatus, sql } = await import('./lib.js')
+    const late = []
+    nc = await natsConnect(NATS, TOKEN)
+    nc.subscribe('dx.default.submission.>', (m) => late.push(JSON.parse(m.data)))
+    const app = await publishApp(ONE_STEP)
+    const slow = (await submit('staff1', app, { so_tien: 1 })).data.insert_submission_one.id
+    await waitStatus('manager1', slow, { current_step: 'truong_phong' })
+    // Giao dịch giữ 12 giây: lấy id sự kiện trước, commit sau một lần duyệt khác đã được phát.
+    const held = spawn('docker', [...compose, 'exec', '-T', 'postgres', 'psql', '-U', 'dxlab', '-d', 'dxlab', '-v', 'ON_ERROR_STOP=1', '-c',
+      `BEGIN; INSERT INTO submission_event (submission_id, step_key, action, actor_id, actor_name) VALUES ('${slow}', 'truong_phong', 'approve', 'ca-thu-stream-04', 'Ca thử'); SELECT pg_sleep(12); COMMIT;`], { cwd: ROOT, stdio: 'ignore' })
+    const finished = new Promise((ok) => held.on('exit', ok))
+    await new Promise((ok) => setTimeout(ok, 1500))
+    const fast = await approved(2_000)
+    const first = await until(() => late.find((m) => m.submission_id === fast), 'tin của lần duyệt nhanh', 30_000)
+    assert.equal(await finished, 0, 'giao dịch giữ chậm phải commit được')
+    const slowMsg = await until(() => late.find((m) => m.submission_id === slow), 'tin của giao dịch commit trễ', 30_000)
+    assert.ok(slowMsg.event_id < first.event_id, `sự kiện commit trễ có id nhỏ hơn (${slowMsg.event_id} < ${first.event_id})`)
+    assert.ok(Number(sql("SELECT last_id FROM stream_cursor WHERE name = 'submission_event'")) <= Math.max(slowMsg.event_id, first.event_id))
+    nc.close()
+  })
+
+  test('STREAM-05 chỉ một bản bridge phát: hợp đồng thuê đang có người giữ thì bản khác không lấy được', async () => {
+    const { sql } = await import('./lib.js')
+    assert.equal(sql("SELECT holder IS NOT NULL AND lease_until > now() FROM stream_cursor WHERE name = 'submission_event'"), 't')
+    assert.match(sql("UPDATE stream_cursor SET holder = 'ban-khac', lease_until = now() + interval '30 seconds' WHERE name = 'submission_event' AND (holder IS NULL OR holder = 'ban-khac' OR lease_until < now()) RETURNING 1"), /UPDATE 0/)
   })
 })

@@ -170,7 +170,14 @@ Cổng APISIX gắn mã `X-Request-Id` cho mọi yêu cầu (giữ mã do bên g
 NATS_URL=nats://nats:4222 docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile stream up -d
 ```
 
-Mỗi lần duyệt, từ chối hay xác nhận hồ sơ (bảng `submission_event`) được phát lên chủ đề `dx.<tổ chức>.submission.<approve|reject|done>` của stream `DX` (lưu đĩa, giữ 30 ngày). Mẫu outbox: bridge đọc bảng theo mốc `stream_cursor`, phát kèm `Nats-Msg-Id` (JetStream bỏ tin trùng), có xác nhận mới dời mốc; NATS tắt thì việc duyệt vẫn chạy và tin được phát bù khi NATS sống lại. Tin không chứa dữ liệu biểu mẫu hay tên người. Dịch vụ khác nghe bằng bất kỳ thư viện NATS nào với `NATS_TOKEN`, qua cổng `127.0.0.1:4222`. Máy đang chạy cần áp `infra/postgres/init/10-stream.sql`. Giới hạn (shortcut): một token cho cả hệ thống (chưa tách quyền theo tổ chức), chưa TLS tới NATS (cùng mạng nội bộ Docker); cần giao thức Kafka thì thay bộ phát, không đổi thiết kế outbox.
+Mỗi lần duyệt, từ chối hay xác nhận hồ sơ (bảng `submission_event`) được phát lên chủ đề `dx.<tổ chức>.submission.<approve|reject|done>` của stream `DX` (lưu đĩa, giữ 30 ngày). Mẫu outbox:
+
+- Dòng `submission_event` chính là lệnh duyệt (cùng một lệnh ghi, cùng giao dịch), nên đã duyệt là chắc chắn có sự kiện cần phát.
+- Bridge đọc các sự kiện chưa có dòng trong `stream_published`, phát kèm `Nats-Msg-Id` = `submission_event:<id>`, JetStream xác nhận (ack) thì đánh dấu đúng sự kiện đó. Đánh dấu từng dòng, không dùng một mốc "id cuối": giao dịch commit trễ có id nhỏ hơn sự kiện đã phát vẫn được phát (ca STREAM-04).
+- Giao hàng ít nhất một lần: bridge chết giữa lúc phát và lúc đánh dấu thì tin được phát lại cùng mã. JetStream bỏ tin trùng trong cửa sổ 1 giờ; ngoài cửa sổ đó, **bên nghe phải tự bỏ trùng theo `event_id`**. Thứ tự gần đúng theo `event_id`, bên nghe cần thứ tự chặt thì sắp lại theo trường này.
+- Chạy nhiều bản bridge thì chỉ bản giữ hợp đồng thuê (lease 30 giây trong `stream_cursor`) được phát; bản đó chết thì bản khác nhận sau tối đa 30 giây.
+- NATS tắt thì việc duyệt vẫn chạy và tin được phát bù khi NATS sống lại.
+ Tin không chứa dữ liệu biểu mẫu hay tên người. Dịch vụ khác nghe bằng bất kỳ thư viện NATS nào với `NATS_TOKEN`, qua cổng `127.0.0.1:4222`. Máy đang chạy cần áp `infra/postgres/init/10-stream.sql`. Giới hạn (shortcut): một token cho cả hệ thống (chưa tách quyền theo tổ chức), chưa TLS tới NATS (cùng mạng nội bộ Docker); cần giao thức Kafka thì thay bộ phát, không đổi thiết kế outbox.
 
 ## Giám sát (Prometheus)
 
