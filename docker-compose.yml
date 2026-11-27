@@ -130,6 +130,8 @@ services:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       CLAMAV_HOST: clamav
+      # Máy được nhận thông báo thuê bao NGSI-LD, dạng "máy:cổng,máy-khác" (trống là cấm gửi). Chặn bridge bị lợi dụng gọi vào mạng nội bộ.
+      NGSI_NOTIFY_ALLOW: ${NGSI_NOTIFY_ALLOW:-}
       # Tìm kiếm và hỏi đáp (tùy chọn): chỉ hoạt động khi bật profile search ở docker-compose.optional.yml.
       MEILI_URL: http://meilisearch:7700
       EXTRACTOR_URL: http://extractor:8000
