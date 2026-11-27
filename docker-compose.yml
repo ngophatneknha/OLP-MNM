@@ -132,6 +132,9 @@ services:
       CLAMAV_HOST: clamav
       # Máy được nhận thông báo thuê bao NGSI-LD, dạng "máy:cổng,máy-khác" (trống là cấm gửi). Chặn bridge bị lợi dụng gọi vào mạng nội bộ.
       NGSI_NOTIFY_ALLOW: ${NGSI_NOTIFY_ALLOW:-}
+      # Tên máy được phép trỏ vào địa chỉ nội bộ; còn lại địa chỉ nội bộ, link-local và metadata đám mây đều bị chặn lúc gửi.
+      NGSI_NOTIFY_PRIVATE: ${NGSI_NOTIFY_PRIVATE:-}
+      NGSI_MAX_SUBSCRIPTIONS: ${NGSI_MAX_SUBSCRIPTIONS:-50}
       # Trục sự kiện (tùy chọn, profile stream ở docker-compose.optional.yml): đặt NATS_URL=nats://nats:4222; trống là tắt.
       NATS_URL: ${NATS_URL:-}
       NATS_TOKEN: ${NATS_TOKEN:-change-me-nats-token}

@@ -9,10 +9,21 @@
 //  - POST   /ngsi-ld/v1/subscriptions                    đăng ký thuê bao (giám đốc): số đo thỏa q thì POST Notification tới endpoint
 //  - GET    /ngsi-ld/v1/subscriptions[/<id>]             xem thuê bao của tổ chức, kèm trạng thái gửi (trưởng phòng, giám đốc)
 //  - DELETE /ngsi-ld/v1/subscriptions/<id>               hủy thuê bao (giám đốc)
-// Kiểu Device theo Smart Data Models. Endpoint nhận thông báo phải nằm trong NGSI_NOTIFY_ALLOW (chặn bị lợi dụng gọi vào mạng nội bộ).
+// Kiểu Device theo Smart Data Models. Ghi (tạo, cập nhật, thuê bao) cần token Keycloak đã qua cổng APISIX và vai trò giám đốc.
+// Chống SSRF (bridge bị lợi dụng gọi vào mạng nội bộ) khi gửi thông báo, ba lớp:
+//  1. lúc đăng ký: máy:cổng của endpoint phải nằm trong NGSI_NOTIFY_ALLOW, không kèm tài khoản, chỉ http(s);
+//  2. lúc gửi: phân giải DNS rồi kiểm MỌI địa chỉ, chặn loopback, mạng riêng, link-local (gồm 169.254.169.254 của dịch vụ metadata
+//     trên máy ảo đám mây), CGNAT, multicast, IPv6 nội bộ; kết nối đúng địa chỉ vừa kiểm (chống DNS rebinding: tên đổi địa chỉ
+//     giữa lúc kiểm và lúc kết nối). Máy nội bộ chỉ được nhận khi tên có trong NGSI_NOTIFY_PRIVATE (máy nhận thử ngsi-sink);
+//  3. không theo chuyển hướng (3xx ghi thành lỗi), quá 5 giây thì hủy, không đọc thân phản hồi.
+// Mỗi tổ chức tối đa NGSI_MAX_SUBSCRIPTIONS thuê bao (mặc định 50); q tối đa 200 ký tự, không dùng eval.
 // shortcut: tập con của chuẩn: một kiểu Device, chỉ ghi được thuộc tính value, q chỉ gồm so sánh số/đúng-sai nối bằng ";" (và),
 // gửi thông báo một lần không thử lại, chưa có DELETE thực thể, truy vấn thời gian (temporal) hay đăng ký nguồn (registration).
 import { randomUUID } from 'node:crypto'
+import { lookup as dnsLookup } from 'node:dns'
+import { BlockList, isIP } from 'node:net'
+import http from 'node:http'
+import https from 'node:https'
 import { HttpError } from './files.js'
 import { claimsOf, rolesOf, orgOf } from './cold.js'
 import { listSensors, createSensor, recordReadings, readJson, onReadings } from './sensors.js'
@@ -22,6 +33,7 @@ const CORE = 'https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld'
 const CONTEXT = [CORE, { '@vocab': 'https://dxlab.example/ns#' }]
 const LINK = `<${CORE}>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"`
 const NOTIFY_TIMEOUT_MS = 5000
+const MAX_SUBS = Number(process.env.NGSI_MAX_SUBSCRIPTIONS) || 50
 
 export const entityId = (org, key) => `urn:ngsi-ld:Device:${org}:${key}`
 
@@ -97,6 +109,49 @@ export function checkEndpoint(uri, allow = allowList()) {
   return u.href
 }
 
+// Dải địa chỉ không được nhận thông báo (RFC 6890 và các dải dùng riêng).
+const BLOCKED = new BlockList()
+for (const [net, bits] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.0.0.0', 24],
+  ['192.0.2.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['198.51.100.0', 24], ['203.0.113.0', 24], ['224.0.0.0', 4], ['240.0.0.0', 4]]) BLOCKED.addSubnet(net, bits, 'ipv4')
+// IPv4 dạng ánh xạ IPv6 (::ffff:a.b.c.d) được BlockList so với các dải IPv4 ở trên, nên không chặn cả dải ::ffff:0:0/96 (sẽ chặn nhầm mọi IPv4).
+for (const [net, bits] of [['::', 127], ['64:ff9b::', 96], ['100::', 64], ['2001:db8::', 32], ['2002::', 16], ['fc00::', 7], ['fe80::', 10], ['ff00::', 8]]) BLOCKED.addSubnet(net, bits, 'ipv6')
+/** Địa chỉ IP thuộc dải nội bộ, đặc biệt hay metadata đám mây? */
+export const blockedIp = (ip) => { const v = isIP(ip); return v === 0 || BLOCKED.check(ip, v === 4 ? 'ipv4' : 'ipv6') }
+
+/**
+ * Hàm lookup cho http.request: phân giải tên, từ chối nếu có BẤT KỲ địa chỉ nào bị chặn (trừ tên trong danh sách nội bộ được phép),
+ * và trả đúng các địa chỉ đã kiểm để socket kết nối vào đó, không phân giải lần hai.
+ */
+export function safeLookup(privateHosts = allowList(process.env.NGSI_NOTIFY_PRIVATE), resolve = dnsLookup) {
+  return (host, opts, cb) => {
+    resolve(host, { all: true }, (err, addrs) => {
+      if (err) return cb(err)
+      const bad = addrs.find((a) => blockedIp(a.address))
+      if (bad && !privateHosts.has(host.toLowerCase())) return cb(Object.assign(new Error(`địa chỉ nội bộ bị chặn (${bad.address})`), { code: 'EBLOCKED' }))
+      const ok = opts?.family ? addrs.filter((a) => a.family === opts.family) : addrs
+      if (!ok.length) return cb(Object.assign(new Error('không có địa chỉ phù hợp'), { code: 'ENOTFOUND' }))
+      return opts?.all ? cb(null, ok) : cb(null, ok[0].address, ok[0].family)
+    })
+  }
+}
+
+/** POST JSON tới url qua safeLookup; không theo chuyển hướng, bỏ thân phản hồi. Trả mã trạng thái HTTP. */
+export function postJson(url, body, headers, { privateHosts = allowList(process.env.NGSI_NOTIFY_PRIVATE), resolve = dnsLookup } = {}) {
+  return new Promise((ok, fail) => {
+    const u = new URL(url)
+    const literal = u.hostname.replace(/^\[|\]$/g, '')
+    // Tên là địa chỉ IP thì Node kết nối thẳng, không gọi lookup: kiểm ở đây.
+    if (isIP(literal) && blockedIp(literal) && !privateHosts.has(literal)) return fail(Object.assign(new Error(`địa chỉ nội bộ bị chặn (${literal})`), { code: 'EBLOCKED' }))
+    const req = (u.protocol === 'https:' ? https : http).request(u, { method: 'POST', headers: { ...headers, 'content-length': Buffer.byteLength(body) }, lookup: safeLookup(privateHosts, resolve), timeout: NOTIFY_TIMEOUT_MS, agent: false }, (res) => {
+      res.resume()
+      ok(res.statusCode)
+    })
+    req.on('timeout', () => req.destroy(Object.assign(new Error('quá thời gian chờ'), { code: 'ETIMEDOUT' })))
+    req.on('error', fail)
+    req.end(body)
+  })
+}
+
 const SUB_COLS = 'id, entity_id, watched, q, endpoint, throttling, created_at, times_sent, last_notification, last_success, last_failure, last_error'
 const iso = (t) => (t ? new Date(t).toISOString() : undefined)
 const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null))
@@ -138,21 +193,21 @@ async function createSubscription(req, org) {
   if (throttling !== null && !(Number.isInteger(throttling) && throttling >= 0 && throttling <= 86400)) throw new HttpError(400, 'throttling là số giây nguyên từ 0 đến 86400')
   const endpoint = checkEndpoint(b.notification?.endpoint?.uri)
   if ((await sql(`SELECT 1 FROM ngsi_subscription WHERE id = ${lit(id)}`)).length) throw new HttpError(409, 'Thuê bao đã tồn tại')
+  if (Number((await sql(`SELECT count(*) FROM ngsi_subscription WHERE org_id = ${lit(org)}`))[0][0]) >= MAX_SUBS) throw new HttpError(403, `Tổ chức đã có đủ ${MAX_SUBS} thuê bao, hãy hủy bớt (NGSI_MAX_SUBSCRIPTIONS)`)
   await sql(`INSERT INTO ngsi_subscription (id, org_id, entity_id, watched, q, endpoint, throttling, owner_id)
     VALUES (${lit(id)}, ${lit(org)}, ${entity === undefined ? 'NULL' : lit(entity)}, ARRAY[${watched.map(lit).join(',')}]::text[], ${b.q ? lit(b.q) : 'NULL'}, ${lit(endpoint)}, ${throttling ?? 'NULL'}, ${lit(claimsOf(req).sub ?? '')})`)
   return id
 }
 
-/** Gửi một Notification (dạng normalized) tới endpoint; lỗi mạng hay mã khác 2xx được ghi lại làm lastFailure, không ném ra. */
-export async function deliver(sub, entity, fetchImpl = fetch) {
+/** Gửi một Notification (dạng normalized) tới endpoint; lỗi mạng, địa chỉ bị chặn hay mã khác 2xx trả lý do (ghi làm lastFailure), không ném ra. */
+export async function deliver(sub, entity, post = postJson) {
   const { '@context': _ctx, ...data } = entity
   const body = { id: `urn:ngsi-ld:Notification:${randomUUID()}`, type: 'Notification', subscriptionId: sub.id, notifiedAt: new Date().toISOString(), data: [data] }
   try {
-    // redirect: 'manual' để máy nhận không chuyển hướng được bridge sang địa chỉ ngoài danh sách cho phép.
-    const res = await fetchImpl(sub.endpoint, { method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/json', link: LINK }, body: JSON.stringify(body), signal: AbortSignal.timeout(NOTIFY_TIMEOUT_MS) })
-    return res.status >= 200 && res.status < 300 ? null : `HTTP ${res.status}`
+    const status = await post(sub.endpoint, JSON.stringify(body), { 'content-type': 'application/json', link: LINK })
+    return status >= 200 && status < 300 ? null : `HTTP ${status}` // 3xx cũng là lỗi: không theo chuyển hướng
   } catch (err) {
-    return String(err?.name === 'TimeoutError' ? 'quá thời gian chờ' : err?.cause?.code ?? err?.message ?? err).slice(0, 200)
+    return String(err?.code === 'EBLOCKED' || err?.code === 'ETIMEDOUT' ? err.message : err?.code ?? err?.message ?? err).slice(0, 200)
   }
 }
 

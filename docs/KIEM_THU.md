@@ -116,7 +116,7 @@ Giới hạn nói thẳng: kho lạnh gốc là tệp JSONL, bảng Iceberg nạ
 | IOT-08 | Vị trí lat/lon hợp lệ; thực thể NGSI-LD `Device` có `GeoProperty`, `observedAt`; chỉ trưởng phòng/giám đốc cùng tổ chức đọc được | `GET /ngsi-ld/v1/entities` |
 | IOT-09 | Tạo `Device` bằng NGSI-LD `POST /entities`: chỉ giám đốc; sai kiểu, id không phải URN, tạo hộ tổ chức khác, trùng bị từ chối; trả `Location` và token thiết bị một lần | |
 | IOT-10 | `PATCH /entities/{id}/attrs` ghi số đo bất biến như `/telemetry`; trưởng phòng, thuộc tính khác `value`, thực thể lạ, tổ chức khác bị từ chối | |
-| IOT-11 | Thuê bao `POST /subscriptions`: chỉ giám đốc; endpoint ngoài `NGSI_NOTIFY_ALLOW` (ví dụ `postgres:5432`), `q` sai, Device tổ chức khác bị từ chối; tổ chức B không thấy, không xóa được | chặn SSRF |
+| IOT-11 | Thuê bao `POST /subscriptions`: chỉ giám đốc; endpoint ngoài `NGSI_NOTIFY_ALLOW` (ví dụ `postgres:5432`), `q` sai, Device tổ chức khác bị từ chối; tổ chức B không thấy, không xóa được | chặn SSRF lúc đăng ký; lúc gửi, địa chỉ nội bộ, 169.254.169.254, DNS rebinding, IP viết thẳng, chuyển hướng 3xx có ca kiểm thử đơn vị trong `services/workflow-bridge/ngsi.test.js` |
 | IOT-12 | Số đo không thỏa `q` thì không gửi; thỏa thì máy nhận được đúng một `Notification`; máy nhận trả 500 thì thuê bao ghi `lastFailure`; hủy thì ngừng gửi | máy nhận thử `ngsi-sink` |
 | IOT-06 | Hồ sơ sửa chữa đi hết quy trình (trưởng phòng duyệt, kỹ thuật viên xác nhận); vượt ngưỡng lại thì mở hồ sơ mới | luồng thật qua Flowable |
 | IOT-07 | Nhiều số đo vượt ngưỡng đến cùng lúc chỉ mở một hồ sơ (khóa theo cảm biến) | 8 yêu cầu song song |

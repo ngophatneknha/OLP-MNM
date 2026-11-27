@@ -119,6 +119,13 @@ curl -X POST "$API/ngsi-ld/v1/subscriptions" ... -d '{"type":"Subscription","ent
 
 `GET /ngsi-ld/v1/subscriptions/<id>` cho biết `timesSent`, `lastSuccess`, `lastFailure`, `lastErrorReason`. Máy đang chạy cần áp `infra/postgres/init/09-ngsi.sql`.
 
+An toàn khi gửi thông báo (chống SSRF, tức bridge bị lợi dụng gọi vào mạng nội bộ):
+
+- Ghi thực thể và thuê bao cần token Keycloak (APISIX kiểm) và vai trò giám đốc; đọc cần trưởng phòng hoặc giám đốc, chỉ trong tổ chức của mình. Thuê bao lưu trong bảng `ngsi_subscription`, mỗi tổ chức tối đa `NGSI_MAX_SUBSCRIPTIONS` (mặc định 50).
+- Lúc đăng ký: endpoint phải là `http(s)`, không kèm tài khoản, `máy:cổng` có trong `NGSI_NOTIFY_ALLOW`. `q` tối đa 200 ký tự, phân tích bằng biểu thức chính quy, không dùng `eval`.
+- Lúc gửi: bridge phân giải DNS và kiểm mọi địa chỉ trả về; địa chỉ loopback, mạng riêng (10/8, 172.16/12, 192.168/16), link-local 169.254/16 (gồm 169.254.169.254, dịch vụ metadata của máy ảo đám mây), CGNAT, multicast, IPv6 nội bộ đều bị chặn, kể cả khi tên có trong `NGSI_NOTIFY_ALLOW`. Socket kết nối đúng địa chỉ vừa kiểm, nên tên miền đổi địa chỉ ngay sau khi kiểm (DNS rebinding) không lọt. Chỉ tên trong `NGSI_NOTIFY_PRIVATE` được trỏ vào nội bộ (`.env.example` đặt `ngsi-sink` cho máy nhận thử; triển khai thật để trống).
+- Không theo chuyển hướng (3xx ghi thành lỗi), quá 5 giây thì hủy, không đọc thân phản hồi.
+
 Nền bản đồ là ranh giới 34 tỉnh, thành từ 01/7/2025 (Nghị quyết 202/2025/QH15) và quần đảo Hoàng Sa, Trường Sa (`web/public/basemap-vn.json`, 48 KB, dựng lại bằng `node scripts/basemap.mjs` từ Natural Earth 1:10m v5.1.2, public domain), nằm ngay trong ứng dụng nên không tải gì từ bên ngoài.
 
 Giới hạn (shortcut): NGSI-LD là tập con của chuẩn (một kiểu `Device`, chỉ ghi `value`, `q` gồm so sánh nối bằng `;`, gửi thông báo một lần không thử lại); nền bản đồ chỉ tới mức tỉnh (Natural Earth còn vẽ 63 tỉnh cũ, `scripts/basemap.mjs` gộp lại theo bảng `MERGE`; tỉnh gộp nguyên vẹn nên ranh giới tỉnh mới đúng, chưa có ranh giới xã mới); thêm cột vị trí vào CSDL đang chạy: `docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/07-geo.sql`.

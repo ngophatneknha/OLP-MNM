@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { toEntity, entityId, fromEntity, parseQ, checkEndpoint, allowList, deliver } from './ngsi.js'
+import { createServer } from 'node:http'
+import { toEntity, entityId, fromEntity, parseQ, checkEndpoint, allowList, deliver, blockedIp, safeLookup, postJson } from './ngsi.js'
 
 const S = { key: 'lanh_1', name: 'Tủ lạnh', unit: '°C', threshold: 8, direction: 'above', last_value: 12, last_at: '2026-11-16T01:00:00Z', lat: 10.8, lon: 106.7, alarm: true }
 
@@ -61,16 +62,49 @@ test('NGSI-LD endpoint: chỉ máy:cổng trong NGSI_NOTIFY_ALLOW; danh sách r�
   assert.throws(() => checkEndpoint('http://ngsi-sink:4000/', allowList('')), { status: 400 })
 })
 
-test('NGSI-LD gửi thông báo: thân Notification đúng chuẩn, không chuyển hướng; lỗi mạng và mã 5xx trả lý do thay vì ném', async () => {
+test('NGSI-LD gửi thông báo: thân Notification đúng chuẩn; mã khác 2xx (kể cả chuyển hướng 3xx) và lỗi mạng trả lý do thay vì ném', async () => {
   let seen
-  const ok = await deliver({ id: 'urn:ngsi-ld:Subscription:a', endpoint: 'http://x/' }, toEntity('default', S), async (url, init) => { seen = init; return { status: 204 } })
+  const ok = await deliver({ id: 'urn:ngsi-ld:Subscription:a', endpoint: 'http://x/' }, toEntity('default', S), async (url, body, headers) => { seen = { url, body, headers }; return 204 })
   assert.equal(ok, null)
   const body = JSON.parse(seen.body)
   assert.equal(body.type, 'Notification')
   assert.equal(body.subscriptionId, 'urn:ngsi-ld:Subscription:a')
   assert.equal(body.data[0].id, 'urn:ngsi-ld:Device:default:lanh_1')
   assert.equal(body.data[0]['@context'], undefined)
-  assert.equal(seen.redirect, 'manual')
-  assert.equal(await deliver({ id: 'a', endpoint: 'http://x/' }, toEntity('default', S), async () => ({ status: 302 })), 'HTTP 302')
-  assert.match(await deliver({ id: 'a', endpoint: 'http://x/' }, toEntity('default', S), async () => { throw Object.assign(new Error('x'), { cause: { code: 'ECONNREFUSED' } }) }), /ECONNREFUSED/)
+  assert.match(seen.headers.link, /ngsi-ld-core-context/)
+  assert.equal(await deliver({ id: 'a', endpoint: 'http://x/' }, toEntity('default', S), async () => 302), 'HTTP 302')
+  assert.match(await deliver({ id: 'a', endpoint: 'http://x/' }, toEntity('default', S), async () => { throw Object.assign(new Error('x'), { code: 'ECONNREFUSED' }) }), /ECONNREFUSED/)
+})
+
+test('NGSI-LD chống SSRF: dải nội bộ, link-local, metadata đám mây và IPv6 nội bộ bị chặn; địa chỉ công khai thì không', () => {
+  for (const ip of ['127.0.0.1', '10.1.2.3', '172.20.0.5', '192.168.1.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '224.0.0.1', '::1', '::', 'fd00::1', 'fe80::1', '::ffff:127.0.0.1', '::ffff:a9fe:a9fe', 'không phải ip']) assert.equal(blockedIp(ip), true, ip)
+  for (const ip of ['8.8.8.8', '1.1.1.1', '2001:4860:4860::8888']) assert.equal(blockedIp(ip), false, ip)
+})
+
+// Bộ phân giải DNS giả: trả các địa chỉ cho trước, để thử tên miền trỏ vào mạng nội bộ mà không cần DNS thật.
+const fakeDns = (map) => (host, _o, cb) => (map[host] ? cb(null, map[host].map((address) => ({ address, family: address.includes(':') ? 6 : 4 }))) : cb(Object.assign(new Error('không có'), { code: 'ENOTFOUND' })))
+
+test('NGSI-LD chống SSRF (nghịch): tên trỏ vào metadata, tên trả lẫn địa chỉ công khai và nội bộ (DNS rebinding), IP nội bộ viết thẳng đều bị từ chối', async () => {
+  const dns = fakeDns({ 'meta.example': ['169.254.169.254'], 'rebind.example': ['93.184.216.34', '10.0.0.7'], 'pub.example': ['93.184.216.34'] })
+  const look = (host, privateHosts = new Set()) => new Promise((ok) => safeLookup(privateHosts, dns)(host, { all: true }, (err, addrs) => ok(err ? err.code : addrs.map((a) => a.address))))
+  assert.equal(await look('meta.example'), 'EBLOCKED')
+  assert.equal(await look('rebind.example'), 'EBLOCKED')
+  assert.deepEqual(await look('pub.example'), ['93.184.216.34'])
+  assert.deepEqual(await look('meta.example', new Set(['meta.example'])), ['169.254.169.254'], 'chỉ tên ghi rõ trong NGSI_NOTIFY_PRIVATE mới được trỏ vào nội bộ')
+  for (const url of ['http://169.254.169.254/latest/meta-data/', 'http://127.0.0.1:5432/', 'http://[::1]:8080/']) await assert.rejects(postJson(url, '{}', {}, { privateHosts: new Set() }), { code: 'EBLOCKED' }, url)
+  await assert.rejects(postJson('http://meta.example/', '{}', {}, { privateHosts: new Set(), resolve: dns }), { code: 'EBLOCKED' })
+})
+
+test('NGSI-LD gửi thật qua HTTP: máy nội bộ được phép thì nhận được; trả 302 thì không đi theo chuyển hướng', async () => {
+  const hits = []
+  const srv = createServer((req, res) => { hits.push(req.url); if (req.url === '/move') res.writeHead(302, { location: 'http://169.254.169.254/' }).end(); else res.writeHead(204).end() })
+  await new Promise((ok) => srv.listen(0, '127.0.0.1', ok))
+  const base = `http://localhost:${srv.address().port}`
+  try {
+    const opts = { privateHosts: new Set(['localhost']), resolve: fakeDns({ localhost: ['127.0.0.1'] }) }
+    assert.equal(await postJson(`${base}/notify`, '{}', { 'content-type': 'application/json' }, opts), 204)
+    assert.equal(await postJson(`${base}/move`, '{}', {}, opts), 302)
+    assert.deepEqual(hits, ['/notify', '/move'])
+    await assert.rejects(postJson(`${base}/notify`, '{}', {}, { ...opts, privateHosts: new Set() }), { code: 'EBLOCKED' })
+  } finally { srv.close() }
 })
