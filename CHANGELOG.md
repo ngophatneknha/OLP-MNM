@@ -21,6 +21,10 @@ SPDX-License-Identifier: Apache-2.0
 ### Changed
 - `tests/hpdi.test.js`: D-06 và Z-11 không còn là `todo`; chỉ còn Z-07 (HSM), Z-09 (WebSocket, MQTT), Z-10 (ArgoCD/Flux).
 - CORS của route NGSI-LD cho phép thêm `PATCH`, `DELETE`.
+- `scripts/gitops.sh apply` nay áp migration (`scripts/migrate.sh` mới) và tạo lại dịch vụ gắn tệp cấu hình vừa đổi; chạy lại khi kho không đổi chỉ `up -d`. Hướng dẫn nâng cấp từ 2.5.0 ở `docs/VAN_HANH.md`.
+
+### Fixed
+- Máy đang chạy bản cũ nâng cấp bằng `gitops.sh apply` không nhận bảng SQL mới (PostgreSQL chỉ chạy tệp khởi tạo trên volume trống) và cổng API, Keycloak, bridge vẫn đọc tệp cấu hình cũ: nay tự áp `05-*.sql` trở đi và tạo lại các dịch vụ đó. Ca OPS-MIGRATE.
 
 ## [2.5.0] - 2026-11-22
 

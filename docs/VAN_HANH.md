@@ -39,11 +39,26 @@ Cấu hình hạ tầng (compose, Hasura, cổng API, Keycloak) là mã trong kh
 
 ```bash
 sh scripts/gitops.sh check        # kiểm cấu hình trong kho hợp lệ, không đổi gì
-sh scripts/gitops.sh apply        # lấy bản mới (chỉ tiến), kiểm, rồi `up -d --build` và nạp lại metadata Hasura
+sh scripts/gitops.sh apply        # lấy bản mới (chỉ tiến), kiểm, dựng lại, áp migration, nạp lại metadata Hasura
 sh scripts/gitops.sh watch 300    # lặp lại apply mỗi 300 giây
+sh scripts/migrate.sh             # chỉ áp lại tệp SQL 05-* trở đi lên CSDL đang chạy
 ```
 
+Khi có bản mới, `apply` làm theo thứ tự: `up -d --build`, `scripts/migrate.sh`, tạo lại các dịch vụ gắn tệp cấu hình vừa đổi trong kho (cổng API, Keycloak, workflow-bridge...), rồi nạp lại metadata Hasura. Mã bản đã áp ghi ở `.git/gitops-applied`; chạy lại khi kho không đổi chỉ còn `up -d`.
+
+Vì sao cần hai bước thêm:
+- PostgreSQL chỉ chạy `infra/postgres/init/*.sql` khi volume còn trống, nên máy đã có dữ liệu không tự nhận bảng mới. `migrate.sh` áp lại các tệp từ `05-` trở đi; mọi tệp này viết để chạy lại nhiều lần không hỏng dữ liệu (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`). Tệp `00-` đến `04-` là lược đồ gốc, không áp lại. Một tệp lỗi thì dừng ngay, báo tên tệp, các tệp sau chưa áp.
+- Docker gắn tệp cấu hình đơn lẻ theo inode: `git merge` thay tệp bằng tệp mới nên container đang chạy vẫn đọc bản cũ cho tới khi được tạo lại.
+
 Giới hạn: không phải ArgoCD/Flux (một máy, không tự hoàn tác); nhánh cục bộ lệch khỏi `origin` thì `apply` dừng thay vì ghi đè.
+
+### Nâng cấp từ 2.5.0 lên 2.6.0
+
+1. Sao lưu trước (`sh scripts/backup.sh`, xem mục Sao lưu và khôi phục ở đầu tài liệu).
+2. Chạy `sh scripts/gitops.sh apply` (hoặc `git pull`, `docker compose up -d --build`, `sh scripts/migrate.sh`, `docker compose up -d --force-recreate apisix keycloak workflow-bridge hasura-init`). Bảng mới: `ngsi_subscription` (09), `stream_cursor`, `stream_published` (10).
+3. Biến mới trong `.env` đều có giá trị mặc định an toàn nên thiếu cũng chạy: không có `NGSI_NOTIFY_ALLOW` thì không gửi thông báo thuê bao NGSI-LD; không có `NATS_URL` thì không phát sự kiện. Muốn bật thì chép từ `.env.example` các dòng `NGSI_NOTIFY_ALLOW`, `NGSI_NOTIFY_PRIVATE` (để trống khi triển khai thật), `NGSI_MAX_SUBSCRIPTIONS`, `NATS_URL`, `NATS_TOKEN` (đổi khỏi `change-me`), `LAKE_SNAPSHOT_DAYS`.
+
+Đã thử trên máy chạy 2.5.0 có dữ liệu: số dòng hồ sơ, sự kiện, cảm biến, ứng dụng, tổ chức giữ nguyên sau nâng cấp; bộ kiểm thử chính đạt sau khi thêm biến, trừ hai ca cần mạng ra ngoài (ca `OPS-MIGRATE` trong `tests/ops.test.js` kiểm phần migration).
 
 ## TLS tại biên (Caddy)
 
