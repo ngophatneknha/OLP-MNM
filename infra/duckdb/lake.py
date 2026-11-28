@@ -65,6 +65,12 @@ def lock():
     return con
 
 
+def record(con, operation, **kw):
+    """Ghi một dòng dòng đời vào bảng lake_event (chỉ thêm, infra/postgres/init/11-audit.sql) để tra một hồ sơ nằm ở ảnh chụp nào."""
+    cols = ["operation"] + list(kw)
+    con.run(f"INSERT INTO lake_event ({', '.join(cols)}) VALUES ({', '.join(':' + c for c in cols)})", operation=operation, **kw)
+
+
 def fs_s3():
     return pafs.S3FileSystem(endpoint_override=ENDPOINT, scheme="http", access_key=S3["s3.access-key-id"], secret_key=S3["s3.secret-access-key"], region="us-east-1")
 
@@ -185,6 +191,7 @@ def sync():
                     cols[n].append(r.get(n))
         arrow = pa.table({f.name: pa.array(cols[f.name], type=ARROW[type(f.field_type)]) for f in fields})
         tbl.append(arrow, snapshot_properties={"dxlab.object_key": key})
+        record(held, "load", object_key=key, snapshot_id=str(tbl.current_snapshot().snapshot_id), rows=len(rows))
         report["loaded_files"] += 1
         report["rows"] += len(rows)
     report["schema_id"] = tbl.schema().schema_id
@@ -239,6 +246,7 @@ def expire(days=None):
     if old:
         tbl.maintenance.expire_snapshots().by_ids(old).commit()
         tbl = cat.load_table(TABLE)
+        record(held, "expire", rows=len(old), snapshot_id=str(current) if current else None)
     return {"expired_snapshots": len(old), "kept_snapshots": len(tbl.metadata.snapshots), "removed_files": purge(tbl), "older_than": cutoff.isoformat()}
 
 
@@ -252,6 +260,7 @@ def compact():
     before = count(tbl)
     tbl.overwrite(tbl.scan().to_arrow(), snapshot_properties={"dxlab.operation": "compact"})
     tbl = cat.load_table(TABLE)
+    record(held, "compact", snapshot_id=str(tbl.current_snapshot().snapshot_id), rows=int(tbl.current_snapshot().summary.additional_properties.get("total-records", 0)) if tbl.current_snapshot().summary else None)
     return {"files_before": before, "files_after": count(tbl), "snapshot_id": str(tbl.current_snapshot().snapshot_id)}
 
 
@@ -272,6 +281,8 @@ def forget(submission_id):
     if old:
         tbl.maintenance.expire_snapshots().by_ids(old).commit()
         tbl = cat.load_table(TABLE)
+    record(held, "forget", subject_sha256=digest(submission_id), rows=found,
+           snapshot_id=str(tbl.current_snapshot().snapshot_id) if tbl.current_snapshot() else None)
     return {"deleted_rows": found, "expired_snapshots": len(old), "removed_files": purge(tbl)}
 
 

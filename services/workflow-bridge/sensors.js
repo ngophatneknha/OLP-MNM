@@ -10,9 +10,9 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { HttpError } from './files.js'
 import { claimsOf, rolesOf, orgOf } from './cold.js'
 import { notify } from './events.js'
-import { sql, lit } from './db.js'
+import { sql, lit, adminHeaders } from './db.js'
 
-const { HASURA_URL, HASURA_ADMIN_SECRET } = process.env
+const { HASURA_URL } = process.env
 const KEY = /^[a-z][a-z0-9_]{1,30}$/
 const MAX_READINGS = 100
 const REQUIRED_FIELDS = ['thiet_bi', 'cam_bien', 'gia_tri', 'mo_ta']
@@ -79,7 +79,7 @@ export async function listSensors(org) {
 async function openRepair(sensor, value) {
   const res = await fetch(`${HASURA_URL}/v1/graphql`, {
     method: 'POST',
-    headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    headers: adminHeaders(),
     body: JSON.stringify({
       query: 'mutation($o: submission_insert_input!) { insert_submission_one(object: $o) { id } }',
       variables: { o: {

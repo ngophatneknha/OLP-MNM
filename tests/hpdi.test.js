@@ -360,9 +360,12 @@ describe('Z: Nguyên lý Zero-Trust và vận hành (đề thi mục 4, nguyên 
   test('Z-08 sao lưu tự động theo lịch: dịch vụ backup (ca chạy thật OPS-BACKUP ở tests/ops.test.js)', () => assert.match(readFileSync(join(ROOT, 'docker-compose.optional.yml'), 'utf8'), /backup:[\s\S]*profiles: \["backup"\]/))
   test('Z-09 [todo] truyền thông thời gian thực bằng WebSocket và thiết bị bằng MQTT/OPC UA (hiện là SSE và HTTP: Z-03, IOT)', { todo: 'chưa làm: WebSocket, MQTT' }, () => assert.fail('chưa có'))
   test('Z-10 [todo] GitOps thật (bộ điều khiển như ArgoCD/Flux, nhiều máy, tự hoàn tác); đã có GitOps nhẹ cho một máy: scripts/gitops.sh (OPS-GITOPS)', { todo: 'chưa làm: ArgoCD/Flux' }, () => assert.fail('chưa có'))
-  test('Z-11 nhật ký truy vết tập trung (Vector, VictoriaLogs, mã X-Request-Id) và trục sự kiện NATS JetStream theo mẫu outbox: ca chạy thật TRACE và STREAM ở tests/trace.test.js', () => {
+  test('Z-11 nhật ký tập trung (Vector, VictoriaLogs), truy vết phân tán OpenTelemetry (Jaeger), nhật ký thay đổi dữ liệu có chuỗi băm, dòng đời hồ sơ và trục sự kiện NATS JetStream: ca chạy thật TRACE, STREAM (tests/trace.test.js), AUDIT, LINEAGE (tests/audit.test.js)', () => {
     const opt = readFileSync(join(ROOT, 'docker-compose.optional.yml'), 'utf8')
     assert.match(opt, /victorialogs:[\s\S]*profiles: \["logs"\]/)
+    assert.match(opt, /jaeger:[\s\S]*profiles: \["logs"\]/)
+    assert.match(readFileSync(join(ROOT, 'infra/postgres/init/11-audit.sql'), 'utf8'), /CREATE TABLE IF NOT EXISTS audit_log/)
+    assert.ok(existsSync(join(ROOT, 'services/workflow-bridge/trace.js')))
     assert.match(opt, /nats:[\s\S]*profiles: \["stream"\]/)
     assert.doesNotMatch(opt, /redpanda|parseable|grafana\/loki/i)
   })

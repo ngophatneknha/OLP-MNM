@@ -11,6 +11,7 @@
 #   SQL trên kho lạnh (DuckDB):   sh scripts/cold-sql.sh "SELECT ..."   (profile lakehouse)
 #   Bảng Iceberg của kho lạnh:    sh scripts/lake.sh sync | info | sql "SELECT ... FROM lake"
 #   Gom nhật ký tập trung:      ... --profile logs up -d    (Vector -> VictoriaLogs, tìm theo request_id)
+#   Truy vết OpenTelemetry:     OTEL_SAMPLER=always_on OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318 ... --profile logs up -d
 #   Trục sự kiện NATS:          NATS_URL=nats://nats:4222 ... --profile stream up -d   (xem docs/VAN_HANH.md)
 #   Mô hình AI chạy tại chỗ:      ... --profile ai up -d
 # Hướng dẫn: docs/VAN_HANH.md, docs/TRI_TUE.md
@@ -219,6 +220,22 @@ services:
     depends_on:
       - victorialogs
 
+  # Truy vết phân tán OpenTelemetry (profile logs): Jaeger v2 nhận span từ APISIX và workflow-bridge (OTLP/HTTP), lưu bằng Badger.
+  # Bật bằng OTEL_SAMPLER=always_on và OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318 trong .env (xem docs/VAN_HANH.md).
+  # Giao diện chỉ mở trên 127.0.0.1 của máy chủ, không qua cổng API: muốn xem từ xa thì dùng đường hầm SSH.
+  jaeger:
+    image: jaegertracing/jaeger:2.22.0 # Apache-2.0
+    profiles: ["logs"]
+    restart: unless-stopped
+    command: ["--config", "/etc/jaeger/config.yaml"]
+    environment:
+      TRACE_RETENTION: ${TRACE_RETENTION:-168h}
+    volumes:
+      - ./infra/jaeger/config.yaml:/etc/jaeger/config.yaml:ro
+      - jaegerdata:/tmp # Jaeger chạy bằng người dùng không phải root: gắn volume vào /tmp (quyền 1777 được chép sang volume mới)
+    ports:
+      - "127.0.0.1:16686:16686"
+
   # Trục sự kiện streaming (profile stream): NATS JetStream lưu tin trên đĩa, phát lại được. workflow-bridge phát sự kiện duyệt
   # hồ sơ theo mẫu outbox khi đặt NATS_URL=nats://nats:4222. Cổng chỉ mở trên 127.0.0.1 của máy chủ, cần token.
   nats:
@@ -238,6 +255,7 @@ services:
 
 volumes:
   vlogsdata:
+  jaegerdata:
   natsdata:
   baodata:
   meilidata:

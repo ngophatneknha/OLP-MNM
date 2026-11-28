@@ -137,6 +137,8 @@ services:
       NGSI_MAX_SUBSCRIPTIONS: ${NGSI_MAX_SUBSCRIPTIONS:-50}
       # Trục sự kiện (tùy chọn, profile stream ở docker-compose.optional.yml): đặt NATS_URL=nats://nats:4222; trống là tắt.
       NATS_URL: ${NATS_URL:-}
+      # Truy vết OpenTelemetry (profile logs): http://jaeger:4318; trống là không gửi span (mã truy vết vẫn ghi vào nhật ký, audit_log).
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       NATS_TOKEN: ${NATS_TOKEN:-change-me-nats-token}
       # Tìm kiếm và hỏi đáp (tùy chọn): chỉ hoạt động khi bật profile search ở docker-compose.optional.yml.
       MEILI_URL: http://meilisearch:7700
@@ -210,6 +212,8 @@ services:
     # Chế độ standalone khai báo trong config.yaml; không đặt APISIX_STAND_ALONE vì entrypoint sẽ ghi đè tệp cấu hình.
     environment:
       APP_ORIGIN: ${APP_ORIGIN}
+      OTEL_SAMPLER: ${OTEL_SAMPLER:-always_off}
+      OTEL_COLLECTOR: ${OTEL_COLLECTOR:-jaeger:4318}
     volumes:
       - ./infra/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
       - ./infra/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro

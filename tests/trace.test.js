@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
 // SPDX-License-Identifier: Apache-2.0
 //
-// Z-11: nhật ký truy vết tập trung (Vector -> VictoriaLogs, mã X-Request-Id) và trục sự kiện streaming (NATS JetStream).
-// Mã ca: TRACE-xx (nhật ký), STREAM-xx (sự kiện). Thành phần tùy chọn, ca chạy thật chỉ chạy khi đã bật:
-//   docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile logs --profile stream up -d
-//   LOGS_OPTIONAL=1 STREAM_OPTIONAL=1 node --test tests/trace.test.js
+// Z-11: nhật ký tập trung (Vector -> VictoriaLogs, mã X-Request-Id), truy vết phân tán OpenTelemetry (Jaeger) và trục sự kiện
+// streaming (NATS JetStream). Mã ca: TRACE-xx (nhật ký, truy vết), STREAM-xx (sự kiện). Thành phần tùy chọn, ca chạy thật chỉ chạy khi đã bật:
+//   OTEL_SAMPLER=always_on OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318 NATS_URL=nats://nats:4222 \
+//     docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile logs --profile stream up -d
+//   LOGS_OPTIONAL=1 OTEL_OPTIONAL=1 STREAM_OPTIONAL=1 node --test tests/trace.test.js
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -84,6 +85,77 @@ describe('TRACE: nhật ký tập trung và mã truy vết (Z-11)', () => {
       assert.match(r.path, /\[VAULT TOKEN\] Bearer \[TOKEN\]/)
     }
     assert.match(rows.find((r) => r.service === 'apisix').path, /\[JWT\]/, 'JWT đứng riêng (không có chữ Bearer) cũng bị che')
+  })
+})
+
+// Truy vết phân tán OpenTelemetry: cổng APISIX và workflow-bridge gửi span về Jaeger (profile logs), cần OTEL_SAMPLER=always_on và
+// OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318 khi bật. Giao diện và API của Jaeger chỉ mở trên 127.0.0.1:16686.
+const JAEGER = process.env.JAEGER_URL ?? 'http://127.0.0.1:16686'
+const otelSkip = process.env.LOGS_OPTIONAL && process.env.OTEL_OPTIONAL ? false : 'đặt LOGS_OPTIONAL=1 OTEL_OPTIONAL=1 sau khi bật profile logs với OTEL_SAMPLER=always_on, OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318'
+async function traceSpans(traceId) {
+  const r = await fetch(`${JAEGER}/api/v3/traces/${traceId}`)
+  if (!r.ok) return []
+  const j = await r.json()
+  return (j.result?.resourceSpans ?? []).flatMap((rs) => rs.scopeSpans.flatMap((ss) => ss.spans.map((sp) => ({
+    ...sp, service: rs.resource.attributes.find((a) => a.key === 'service.name')?.value.stringValue,
+    attrs: Object.fromEntries((sp.attributes ?? []).map((a) => [a.key, Object.values(a.value)[0]])),
+  }))))
+}
+
+describe('TRACE-OTEL: truy vết phân tán OpenTelemetry với Jaeger (Z-11)', () => {
+  test('TRACE-06 cấu hình: APISIX nạp plugin opentelemetry với mã ngẫu nhiên và lấy mẫu theo biến môi trường (mặc định tắt); Jaeger ghim phiên bản, giao diện chỉ mở 127.0.0.1, không mở cổng nhận span ra ngoài, bỏ chuỗi truy vấn trước khi lưu', () => {
+    const conf = read('infra/apisix/config.yaml')
+    assert.match(conf, /^plugins:[\s\S]*?- opentelemetry/m)
+    assert.match(conf, /trace_id_source: random/)
+    assert.match(conf, /"trace_id":"\$opentelemetry_trace_id"/)
+    assert.match(read('infra/apisix/apisix.yaml'), /opentelemetry:\s+sampler:\s+name: \$\{\{OTEL_SAMPLER:=always_off\}\}/)
+    const c = read('docker-compose.optional.yml')
+    const jaeger = c.slice(c.indexOf('  jaeger:'), c.indexOf('\n\n', c.indexOf('  jaeger:')))
+    assert.match(jaeger, /image: jaegertracing\/jaeger:\d+\.\d+\.\d+ /)
+    assert.deepEqual(jaeger.match(/"[\d.:]+"/g), ['"127.0.0.1:16686:16686"'], 'chỉ giao diện, chỉ trên 127.0.0.1; cổng OTLP 4318 không công bố')
+    const j = read('infra/jaeger/config.yaml')
+    assert.match(j, /key: http\.target\s+pattern: \^\(\?P<url_path>\[\^\?#\]\*\)\s+action: extract\s+- key: http\.target\s+action: delete/)
+    assert.match(read('.env.example'), /^OTEL_SAMPLER=always_off$/m)
+  })
+
+  test('TRACE-07 một yêu cầu qua cổng thành một chuỗi span: APISIX -> workflow-bridge -> câu SQL -> Hasura, cùng trace_id với nhật ký của hai dịch vụ; chuỗi truy vấn có PII không vào Jaeger', { skip: otelSkip, timeout: 90_000 }, async () => {
+    const id = `otel-${uid()}`
+    const res = await call('director1', '/ngsi-ld/v1/entities?type=Device&ghi_chu=0912345678', { 'x-request-id': id })
+    assert.equal(res.status, 200)
+    const traceId = res.headers.get('traceparent')?.split('-')[1]
+    assert.match(traceId ?? '', /^[0-9a-f]{32}$/, 'phản hồi mang traceparent để bên gọi mở đúng chuỗi')
+    const spans = await until(async () => {
+      const sp = await traceSpans(traceId)
+      return sp.some((x) => x.service === 'apisix') && sp.some((x) => x.service === 'workflow-bridge' && x.kind === 3) ? sp : null
+    }, 'span của cổng và bridge trong Jaeger', 45_000)
+    const gw = spans.find((x) => x.service === 'apisix')
+    const server = spans.find((x) => x.service === 'workflow-bridge' && x.kind === 2)
+    assert.equal(gw.kind, 2)
+    assert.equal(server.parentSpanId, gw.spanId, 'span của bridge là con của span ở cổng')
+    const sqlSpan = spans.find((x) => x.name.startsWith('SQL ') && x.parentSpanId === server.spanId)
+    assert.ok(sqlSpan, 'có span cho câu SQL')
+    assert.ok(spans.some((x) => x.kind === 3 && x.attrs['server.address'] === 'hasura' && x.parentSpanId === sqlSpan.spanId), 'câu SQL đi qua Hasura')
+    assert.equal(gw.attrs.url_path, '/ngsi-ld/v1/entities')
+    assert.ok(!('http.target' in gw.attrs))
+    assert.ok(!JSON.stringify(spans).includes('0912345678'), 'chuỗi truy vấn không vào Jaeger')
+    assert.ok(!JSON.stringify(spans).includes((await login('director1')).slice(-20)), 'token không vào Jaeger')
+    const rows = await until(async () => { const r = await logs(`trace_id:"${traceId}"`); return new Set(r.map((x) => x.service)).size >= 2 ? r : null }, 'nhật ký hai dịch vụ cùng trace_id', 30_000)
+    assert.ok(rows.every((r) => r.request_id === id), 'trace_id và request_id ghép được với nhau')
+  })
+
+  test('TRACE-08 (nghịch) traceparent sai dạng do bên gọi gửi bị bỏ, cổng mở chuỗi mới; mã trạng thái phía sau được ghi vào span', { skip: otelSkip, timeout: 60_000 }, async () => {
+    for (const bad of ['00-00000000000000000000000000000000-0000000000000000-01', 'rac', `00-${'G'.repeat(32)}-${'1'.repeat(16)}-01`]) {
+      const r = await call('director1', '/ngsi-ld/v1/entities?type=Device', { traceparent: bad })
+      const t = r.headers.get('traceparent')?.split('-')[1]
+      assert.match(t ?? '', /^[0-9a-f]{32}$/, bad)
+      assert.notEqual(t, '0'.repeat(32))
+    }
+    const r = await call('director1', `/ngsi-ld/v1/entities/${encodeURIComponent('urn:ngsi-ld:Device:default:khong_co')}`)
+    assert.equal(r.status, 404)
+    const t = r.headers.get('traceparent').split('-')[1]
+    const spans = await until(async () => { const sp = await traceSpans(t); return sp.some((x) => x.service === 'workflow-bridge') ? sp : null }, 'chuỗi của yêu cầu 404', 45_000)
+    const server = spans.find((x) => x.service === 'workflow-bridge' && x.kind === 2)
+    assert.equal(Number(server.attrs['http.status_code'] ?? server.attrs['http.response.status_code']), 404) // Jaeger đổi tên thuộc tính theo quy ước cũ
   })
 })
 

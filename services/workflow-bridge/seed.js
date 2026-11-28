@@ -129,7 +129,7 @@ if (existing.length > 0 && !force) {
   const ids = created.map((id) => `'${id}'`).join(',')
   const run = await fetch(`${HASURA}`.replace('/v1/graphql', '/v2/query'), {
     method: 'POST',
-    headers: { 'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    headers: { 'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET, 'content-type': 'application/json', 'x-hasura-dx-actor': 'seed.js' },
     // Nhật ký bất biến chặn UPDATE; riêng dữ liệu mẫu do chính lệnh này tạo ra mới được dàn lại thời gian, trong một giao dịch
     // (trigger được bật lại trước khi giao dịch kết thúc, nên không có khoảng hở cho dữ liệu thật).
     body: JSON.stringify({ type: 'run_sql', args: { source: 'default', sql: `
@@ -146,7 +146,7 @@ if (existing.length > 0 && !force) {
   if (!run.ok) throw new Error(`Không dàn được thời gian dữ liệu mẫu: ${await run.text()}`)
   await fetch(`${HASURA}`.replace('/v1/graphql', '/v2/query'), {
     method: 'POST',
-    headers: { 'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    headers: { 'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET, 'content-type': 'application/json', 'x-hasura-dx-actor': 'seed.js' },
     body: JSON.stringify({ type: 'run_sql', args: { source: 'default', sql: `
       UPDATE submission s SET created_at = s.created_at, finished_at = (SELECT max(created_at) FROM submission_event WHERE submission_id = s.id)
       WHERE id IN (${ids}) AND status <> 'running';` } }),

@@ -6,7 +6,7 @@
 //   LAKE_OPTIONAL=1 node --test tests/lakehouse.test.js
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { GW, ROLE, login, publishApp, submit, act, waitStatus, run, uid } from './lib.js'
+import { GW, ROLE, login, publishApp, submit, act, waitStatus, run, uid, sql, until } from './lib.js'
 
 const ONE_STEP = { fields: [{ key: 'so_tien', label: 'Số tiền', type: 'number', required: true }], steps: [{ key: 'truong_phong', name: 'Trưởng phòng duyệt', role: 'manager' }] }
 const archive = async (user) => fetch(`${GW}/archive?days=0`, { method: 'POST', headers: { authorization: `Bearer ${await login(user)}`, 'x-hasura-role': ROLE[user] } })
@@ -133,7 +133,7 @@ test('LAKE-06 hạn giữ ảnh chụp và gộp tệp: expire giữ ảnh hiệ
 
 test('LAKE-07 hai lệnh ghi cùng lúc: lệnh sau dừng ngay vì khóa pg_advisory_lock, không ghi chồng', LAKE, async () => {
   const { spawn } = await import('node:child_process')
-  const { ROOT, sql } = await import('./lib.js')
+  const { ROOT } = await import('./lib.js')
   // Giữ khóa bằng psql trong 15 giây (cùng khóa lake.py dùng), rồi chạy sync.
   const held = spawn('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'dxlab', '-d', 'dxlab', '-c', "SELECT pg_advisory_lock(hashtext('dxlab-lake')), pg_sleep(15)"], { cwd: ROOT, stdio: 'ignore' })
   try {
@@ -141,4 +141,25 @@ test('LAKE-07 hai lệnh ghi cùng lúc: lệnh sau dừng ngay vì khóa pg_adv
     assert.equal(sql("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND objid = hashtext('dxlab-lake')::oid"), '1')
     assert.throws(() => run('sh', ['scripts/lake.sh', 'sync'], { stdio: ['ignore', 'pipe', 'pipe'] }), /pg_advisory_lock/)
   } finally { held.kill(); await new Promise((ok) => held.on('exit', ok)) }
+  // Dừng tiến trình psql ở máy kiểm thử không dừng phiên trên máy chủ CSDL: chờ pg_sleep hết và khóa được trả, để ca sau ghi được.
+  await until(() => sql("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND objid = hashtext('dxlab-lake')::oid") === '0', 'khóa dxlab-lake được trả', 30_000)
+})
+
+test('LAKE-08 dòng đời hồ sơ đi tới bảng Iceberg: lineage chỉ đúng tệp kho lạnh, ảnh chụp đã nạp; sau forget thì ghi đã xóa theo yêu cầu (chỉ lưu mã băm)', LAKE, async () => {
+  const { id } = await approvedAndArchived(ONE_STEP, { so_tien: 8_800 })
+  const lineage = async () => (await fetch(`${GW}/lineage/submission/${id}`, { headers: { authorization: `Bearer ${await login('director1')}` } })).json()
+  assert.deepEqual((await lineage()).lake, [], 'chưa nạp thì chưa có ảnh chụp')
+  lake('sync')
+  const l = await lineage()
+  const load = l.lake.find((x) => x.operation === 'load')
+  assert.ok(load, JSON.stringify(l.lake))
+  assert.ok(lake('info').snapshots.some((s) => s.snapshot_id === load.snapshot_id), 'đúng ảnh chụp có trong bảng')
+  assert.ok(l.timeline.some((t) => t.what === `nạp vào bảng Iceberg, ảnh chụp ${load.snapshot_id}`))
+  assert.equal(l.forgotten, false)
+  lake('forget', id)
+  const f = await lineage()
+  assert.equal(f.forgotten, true)
+  assert.ok(f.timeline.at(-1).what.startsWith('xóa khỏi bảng Iceberg'))
+  assert.equal(sql(`SELECT count(*) FROM lake_event WHERE subject_sha256 = encode(sha256('${id}'::bytea), 'hex')`), '1')
+  assert.equal(sql(`SELECT count(*) FROM lake_event WHERE object_key LIKE '%${id}%' OR subject_sha256 = '${id}'`), '0', 'không lưu mã hồ sơ dạng rõ')
 })

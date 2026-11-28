@@ -82,7 +82,7 @@ routes:
       nodes:
         "workflow-bridge:3000": 1
   - id: data
-    uris: ["/archive", "/archive/*", "/lineage", "/ingest", "/sensors"]
+    uris: ["/archive", "/archive/*", "/lineage", "/lineage/*", "/audit", "/audit/*", "/ingest", "/sensors"]
     plugins:
       cors:
         allow_origins: "${{APP_ORIGIN}}"
@@ -213,12 +213,18 @@ global_rules:
       prometheus:
         prefer_name: true
   # Mỗi yêu cầu qua cổng mang một mã X-Request-Id, chuyển xuống dịch vụ phía sau và trả lại trong phản hồi; nhật ký của cổng và của
-  # workflow-bridge cùng ghi mã này để ghép hành trình một yêu cầu (log correlation, chưa phải distributed tracing có span).
+  # workflow-bridge cùng ghi mã này và trace_id để ghép hành trình một yêu cầu với chuỗi span trong Jaeger.
   # Mã do bên gọi gửi chỉ được giữ khi đúng dạng [A-Za-z0-9._:-]{1,128}; sai dạng (ký tự lạ, quá dài, gửi hai lần) thì cổng thay bằng
   # UUID mới, để không ai chèn ký tự điều khiển hay chuỗi rất dài vào nhật ký. Mã vẫn do bên gọi chọn được: chỉ dùng để ghép nhật ký,
   # không dùng để xác thực hay phân quyền. serverless-pre-function (ưu tiên 10000) chạy sau request-id (12015) trong cùng pha rewrite.
   - id: trace
     plugins:
+      # Truy vết phân tán OpenTelemetry: mỗi yêu cầu một span SERVER, gửi traceparent (W3C) xuống Hasura, workflow-bridge;
+      # bridge tạo span con cho từng lần gọi Hasura, Flowable, SeaweedFS, câu SQL (services/workflow-bridge/trace.js).
+      # OTEL_SAMPLER: always_off (mặc định, không gửi span), always_on, hoặc parent_base (theo bên gọi).
+      opentelemetry:
+        sampler:
+          name: ${{OTEL_SAMPLER:=always_off}}
       request-id:
         header_name: X-Request-Id
         include_in_response: true

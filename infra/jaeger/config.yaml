@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2026 DX-Lab Project Hub contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Jaeger v2 (Apache-2.0) cho profile logs: nhận span OpenTelemetry (OTLP/HTTP, cổng 4318 trong mạng nội bộ) từ APISIX và
+# workflow-bridge, lưu trên đĩa bằng Badger, giữ TRACE_RETENTION (mặc định 168h = 7 ngày). Giao diện 16686 chỉ mở trên 127.0.0.1.
+# Trước khi lưu: bỏ chuỗi truy vấn khỏi đường dẫn mà APISIX ghi (http.target có thể chứa từ khóa tìm kiếm, mã, PII),
+# chỉ giữ phần đường dẫn; bỏ User-Agent.
+service:
+  extensions: [jaeger_storage, jaeger_query, healthcheckv2]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/scrub, batch]
+      exporters: [jaeger_storage_exporter]
+  telemetry:
+    logs:
+      level: warn
+    metrics:
+      level: none
+
+extensions:
+  healthcheckv2:
+    use_v2: true
+    http:
+      endpoint: 0.0.0.0:13133
+  jaeger_query:
+    storage:
+      traces: badger_store
+    http:
+      endpoint: 0.0.0.0:16686
+  jaeger_storage:
+    backends:
+      badger_store:
+        badger:
+          directories:
+            keys: /tmp/badger/keys
+            values: /tmp/badger/values
+          ephemeral: false
+          ttl:
+            spans: ${env:TRACE_RETENTION:-168h}
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 200
+  attributes/scrub:
+    actions:
+      - key: http.target
+        pattern: ^(?P<url_path>[^?#]*)
+        action: extract
+      - key: http.target
+        action: delete
+      - key: http.user_agent
+        action: delete
+  batch:
+
+exporters:
+  jaeger_storage_exporter:
+    trace_storage: badger_store
