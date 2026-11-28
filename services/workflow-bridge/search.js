@@ -10,13 +10,14 @@
 // (Meilisearch tự nhúng) hoặc profile vector (Qdrant + dịch vụ nhúng riêng, xem vector.js và docs/TRI_TUE.md).
 // shortcut: chỉ mục dùng Meilisearch; OCR chỉ đọc 10 trang đầu, chất lượng phụ thuộc ảnh gốc.
 
+import { adminHeaders } from './db.js'
 import { s3fetch } from './s3.js'
 import { createHash } from 'node:crypto'
 import { aiConfigured, complete } from './ai.js'
 import { HttpError, asUser } from './files.js'
 import { vectorOn, upsert, vectorPage, fuse } from './vector.js'
 
-const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, HASURA_ADMIN_SECRET, EXTRACTOR_URL, SEARCH_SEMANTIC_RATIO } = process.env
+const { MEILI_URL, MEILI_MASTER_KEY, HASURA_URL, EXTRACTOR_URL, SEARCH_SEMANTIC_RATIO } = process.env
 // Bật profile vector (Qdrant + dịch vụ nhúng) thì Meilisearch chỉ còn lo từ khóa, không tự nhúng nữa.
 const VECTOR = vectorOn()
 const SEARCH_EMBEDDER = VECTOR ? '' : process.env.SEARCH_EMBEDDER
@@ -47,7 +48,7 @@ const meili = async (method, path, body) => {
 const admin = async (query) => {
   const res = await fetch(`${HASURA_URL}/v1/graphql`, {
     method: 'POST',
-    headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    headers: adminHeaders(),
     body: JSON.stringify({ query }),
     signal: AbortSignal.timeout(15_000),
   })

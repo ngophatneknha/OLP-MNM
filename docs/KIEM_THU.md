@@ -98,7 +98,14 @@ Kết quả rà soát 1.2.1: cài sạch từ bản phát hành 1.2.0 giải né
 | ING-01 | Nạp CSV nhiều dòng: dòng đúng được nhận, dòng sai bị từ chối kèm số dòng, rào chắn của CSDL vẫn nguyên | `POST /ingest?app=<mã>` bằng token nhân viên |
 | ING-02 | Nạp JSON; ứng dụng lạ 404; quá 500 dòng 413; không token 401 | như trên |
 
-Giới hạn nói thẳng: kho lạnh là tệp JSONL, chưa phải bảng Parquet/Iceberg; bản sao trong cơ sở dữ liệu nóng được giữ nguyên (chưa xóa sau khi xuất); sổ cái chống sửa ở tầng CSDL và băm chuỗi, nhưng chưa có neo bên ngoài (ví dụ ký thời gian) để chống người nắm cả CSDL lẫn kho S3 viết lại toàn bộ chuỗi.
+| LAKE-02 | Nạp kho lạnh vào bảng Apache Iceberg `cold.submission` (`scripts/lake.sh sync`): đủ cột, trường dữ liệu thành cột có kiểu, phân vùng theo tổ chức, mỗi lần nạp là một ảnh chụp | PyIceberg, tệp Parquet trong S3, danh mục trong PostgreSQL |
+| LAKE-03 | Lược đồ có phiên bản: trường mới thêm cột, `schema-id` tăng, phiên bản cũ vẫn giữ, hàng cũ có cột mới là null; đọc lại ảnh chụp cũ không thấy hồ sơ mới | du hành thời gian theo `snapshot_id` |
+| LAKE-04 | Nạp lại không nhân đôi; tệp hỏng và tệp trái kiểu cột bị bỏ qua có lý do, bảng không hỏng | ca nghịch |
+| LAKE-05 | Quyền xóa dữ liệu cá nhân: `forget` bỏ hồ sơ khỏi bảng và mọi ảnh chụp cũ, không còn tệp Parquet nào chứa mã hồ sơ, nạp lại không đưa về | Luật 91/2025/QH15 |
+| LAKE-06 | `expire` giữ ảnh chụp hiện tại, `compact` giảm số tệp mà không đổi dữ liệu; mã hồ sơ sai dạng bị từ chối | |
+| LAKE-07 | Hai lệnh ghi cùng lúc: lệnh sau dừng ngay vì `pg_advisory_lock` | ca nghịch |
+
+Giới hạn nói thẳng: kho lạnh gốc là tệp JSONL, bảng Iceberg nạp lại từ đó (một tiến trình ghi, chưa gộp tệp nhỏ); bản sao trong cơ sở dữ liệu nóng được giữ nguyên (chưa xóa sau khi xuất); sổ cái chống sửa ở tầng CSDL và băm chuỗi, nhưng chưa có neo bên ngoài (ví dụ ký thời gian) để chống người nắm cả CSDL lẫn kho S3 viết lại toàn bộ chuỗi.
 
 ## Cảm biến IT/OT (phiên bản 1.8.2)
 
@@ -110,6 +117,10 @@ Giới hạn nói thẳng: kho lạnh là tệp JSONL, chưa phải bảng Parqu
 | IOT-04 | Không token, sai token và cảm biến không tồn tại cùng bị 401; số đo sai, quá cũ, ở tương lai, quá 100 bị 400 | như trên |
 | IOT-05 | Số đo bất biến ở tầng CSDL; "bản sao số" `GET /sensors` phản ánh trạng thái hiện tại; nhân viên bị 403 | trigger `forbid_change` |
 | IOT-08 | Vị trí lat/lon hợp lệ; thực thể NGSI-LD `Device` có `GeoProperty`, `observedAt`; chỉ trưởng phòng/giám đốc cùng tổ chức đọc được | `GET /ngsi-ld/v1/entities` |
+| IOT-09 | Tạo `Device` bằng NGSI-LD `POST /entities`: chỉ giám đốc; sai kiểu, id không phải URN, tạo hộ tổ chức khác, trùng bị từ chối; trả `Location` và token thiết bị một lần | |
+| IOT-10 | `PATCH /entities/{id}/attrs` ghi số đo bất biến như `/telemetry`; trưởng phòng, thuộc tính khác `value`, thực thể lạ, tổ chức khác bị từ chối | |
+| IOT-11 | Thuê bao `POST /subscriptions`: chỉ giám đốc; endpoint ngoài `NGSI_NOTIFY_ALLOW` (ví dụ `postgres:5432`), `q` sai, Device tổ chức khác bị từ chối; tổ chức B không thấy, không xóa được | chặn SSRF lúc đăng ký; lúc gửi, địa chỉ nội bộ, 169.254.169.254, DNS rebinding, IP viết thẳng, chuyển hướng 3xx có ca kiểm thử đơn vị trong `services/workflow-bridge/ngsi.test.js` |
+| IOT-12 | Số đo không thỏa `q` thì không gửi; thỏa thì máy nhận được đúng một `Notification`; máy nhận trả 500 thì thuê bao ghi `lastFailure`; hủy thì ngừng gửi | máy nhận thử `ngsi-sink` |
 | IOT-06 | Hồ sơ sửa chữa đi hết quy trình (trưởng phòng duyệt, kỹ thuật viên xác nhận); vượt ngưỡng lại thì mở hồ sơ mới | luồng thật qua Flowable |
 | IOT-07 | Nhiều số đo vượt ngưỡng đến cùng lúc chỉ mở một hồ sơ (khóa theo cảm biến) | 8 yêu cầu song song |
 
@@ -190,11 +201,9 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 
 | Mã | Thiếu | Ghi chú |
 |---|---|---|
-| D-06 | Bảng lakehouse Parquet/Iceberg có lược đồ phiên bản; NGSI-LD ghi và thuê bao; bản đồ có nền (tile) [D] | Đã có: SQL DuckDB trên tệp JSONL (LAKE-01), NGSI-LD chỉ đọc và bản đồ SVG tối giản (IOT-08), phả hệ, nạp hàng loạt (LIN, ING) |
 | Z-07 | HSM giữ khóa, thu hồi chứng thư (CRL/OCSP), ký ở trình duyệt | Chữ ký số PKI phần mềm đã có (PKI-01 đến PKI-07); khóa nằm trong CSDL (mã hóa), ký phía máy chủ |
 | Z-09 | WebSocket cho thời gian thực, MQTT/OPC UA cho thiết bị | Hiện là SSE (Z-03) và HTTP (IOT) |
 | Z-10 | GitOps thật (ArgoCD/Flux: nhiều máy, tự hoàn tác) | Đã có GitOps nhẹ cho một máy: `scripts/gitops.sh check/apply/watch` (OPS-GITOPS) |
-| Z-11 | Gom nhật ký truy vết phân tán; trục sự kiện streaming | Hiện có nhật ký kiểm toán bất biến trong CSDL, SSE và Prometheus |
 
 ## Zero-Trust: các ca đã làm (nguyên lý iv của đề)
 
@@ -204,6 +213,7 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | Z-02 | **Coraza + OWASP CRS** trước cổng API (profile `waf`, cổng 9081): SQL injection, XSS, đi ngược thư mục bị 403, yêu cầu sạch đi tiếp | Mặc định người dùng vẫn đi thẳng cổng 9080; bật WAF là dùng 9081. Chưa chỉnh luật riêng cho GraphQL, có thể cần loại trừ khi gặp báo nhầm |
 | Z-03 | **Thời gian thực** bằng SSE qua cổng API: không token bị 401, có token nhận nhịp ngay khi ứng dụng xuất bản và khi có hồ sơ mới; mọi màn hình dùng chung một kênh (`web/src/live.js`, có kiểm thử đơn vị) | Là SSE, không phải WebSocket (đề tham chiếu Centrifugo). Kênh chỉ đẩy nhịp rỗng, dữ liệu vẫn qua GraphQL kiểm quyền; một tiến trình bridge giữ danh sách kết nối |
 | OPS-08 | **Tài nguyên**: bản lõi dùng dưới 5 GiB RAM khi nhàn rỗi, đo thật bằng `docker stats` (`scripts/measure.sh` in từng dịch vụ) | Đo trên máy phát triển: khoảng 3 GiB cho 9 dịch vụ lõi, trong đó ClamAV gần 1 GiB và Keycloak 650 MiB; thành phần tùy chọn tách profile để máy yếu bỏ qua |
+| Z-11 | **Nhật ký tập trung, truy vết phân tán, nhật ký thay đổi dữ liệu và trục sự kiện**: cổng gắn mã `X-Request-Id`, APISIX và workflow-bridge ghi nhật ký JSON cùng mã và `trace_id`; Vector che PII rồi gửi vào VictoriaLogs; APISIX và bridge gửi span OpenTelemetry về Jaeger (profile `logs`); `audit_log` chỉ thêm, có chuỗi băm ghi ai sửa dữ liệu, cột nào, lúc nào; API dòng đời một hồ sơ; sự kiện duyệt hồ sơ phát lên NATS JetStream theo mẫu outbox, có ack và chống trùng (profile `stream`) | TRACE-01 đến TRACE-05 (mã sai dạng bị thay, che token Bearer, JWT, Vault), TRACE-06 đến TRACE-08 (truy vết OpenTelemetry: chuỗi span APISIX, bridge, SQL, Hasura trong Jaeger, chuỗi truy vấn có PII không vào Jaeger, traceparent giả bị bỏ), STREAM-01 đến STREAM-05 (giao dịch commit trễ không bị bỏ sót, một bản bridge phát) (`tests/trace.test.js`); AUDIT-01 đến AUDIT-04 (ai sửa gì lúc nào, cột nhạy cảm không bị chép, sửa lén bị phát hiện, chỉ giám đốc cùng tổ chức xem), LINEAGE-01, LINEAGE-02 (dòng đời một hồ sơ) (`tests/audit.test.js`), LAKE-08. Hasura bản cộng đồng không xuất span; Keycloak, Flowable chưa gửi span riêng; một máy; NATS một token cho cả hệ thống. Không dùng Redpanda (source-available, không được OSI công nhận), Parseable, Loki (AGPL) |
 | Z-04 | **Ẩn thông tin cá nhân** (email, số điện thoại, CCCD, số thẻ) trước khi gửi tới máy chủ AI; kiểm bằng máy chủ AI giả ghi lại nội dung nhận được | Nhận dạng theo mẫu, chưa nhận được họ tên và địa chỉ |
 
 ## Đối chiếu lần cuối với Đề thi (phiên bản 2.0.0)
@@ -215,9 +225,9 @@ Giới hạn nói thẳng: mã ứng dụng (`app.key`) vẫn duy nhất toàn h
 | Nguyên lý (iv): Zero-Trust, MFA, kiểm dịch mã độc tại biên | Đạt | T1-SSO-10, T1-OBJ-08, Z-01, Z-02, Z-04 |
 | Nguyên lý (iv): cấu hình hạ tầng bằng mã, tự phục hồi tức thì | Đạt | `docker-compose.yml`, OPS-06, OPS-07 |
 | Lớp 1 tham chiếu: truyền phát trạng thái thời gian thực | Đạt bằng SSE (không dùng WebSocket) | Z-03 |
-| Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh | Đạt ở mức tệp JSONL bất biến trong S3 (chưa phải bảng lakehouse Parquet/Iceberg) | COLD-01 đến COLD-04 |
+| Nguyên lý (i): tự động đẩy dữ liệu lịch sử xuống kho lạnh | Đạt: tệp JSONL bất biến trong S3, nạp tiếp vào bảng Apache Iceberg (Parquet, lược đồ có phiên bản) | COLD-01 đến COLD-04, LAKE-02 đến LAKE-07 |
 | Nguyên lý (ii): hội tụ IT/OT, dữ liệu cảm biến | Đạt ở mức HTTP: cảm biến gửi số đo bằng token riêng, vượt ngưỡng tự mở hồ sơ sửa chữa qua quy trình của người | IOT-01 đến IOT-07 |
-| Lớp dữ liệu [D]: SQL trên kho lạnh, NGSI-LD, bản đồ | Đạt ở mức tối thiểu: DuckDB đọc JSONL trong S3, NGSI-LD chỉ đọc, bản đồ SVG không nền | LAKE-01, IOT-08 |
+| Lớp dữ liệu [D]: SQL trên kho lạnh, NGSI-LD, bản đồ | Đạt: DuckDB trên JSONL và trên bảng Iceberg; NGSI-LD đọc, ghi và thuê bao (tập con của chuẩn); bản đồ có nền tỉnh, thành tự chứa | LAKE-01 đến LAKE-07, IOT-08 đến IOT-12 |
 | Lớp trí tuệ [I]: đọc PDF, OCR, tìm ngữ nghĩa | Đạt: trạm poppler + Tesseract; tìm ngữ nghĩa tùy chọn qua Meilisearch lai | I-SEARCH-06, I-SEARCH-07 |
 | Vận hành: sao lưu theo lịch, GitOps nhẹ | Đạt: dịch vụ `backup`, `scripts/gitops.sh` (một máy, chưa ArgoCD/Flux) | OPS-BACKUP, OPS-GITOPS |
 | Nhiều tổ chức: quản trị người dùng, BI riêng, đường nâng cấp | Đạt; còn `app.key` duy nhất toàn hệ thống | ORG-12 đến ORG-16, UPG-01 |

@@ -110,6 +110,61 @@ export async function lineage() {
   return { edges }
 }
 
+const rowsJson = async (query) => JSON.parse((await sql(`SELECT coalesce(json_agg(t), '[]')::text FROM (${query}) t`))[0][0])
+const JAEGER_UI = process.env.JAEGER_UI_URL ?? 'http://127.0.0.1:16686'
+
+/** Dòng đời một hồ sơ: ai tạo, ai sửa cột nào (audit_log), ai duyệt và có chữ ký số không, đã phát lên NATS chưa, tệp đính kèm,
+ *  xuống kho lạnh ở tệp nào (mã băm, sổ cái), nạp vào ảnh chụp Iceberg nào hay đã bị xóa theo yêu cầu, và các mã truy vết (Jaeger).
+ *  Chỉ trong tổ chức của người hỏi; hồ sơ của tổ chức khác trả 404 như không tồn tại. */
+export async function submissionLineage(id, org) {
+  if (!UUID.test(id)) throw new HttpError(400, 'Mã hồ sơ không hợp lệ')
+  const sub = (await rowsJson(`SELECT id, no, app_key, app_version, status, current_step, submitter_id, created_at, finished_at FROM submission WHERE id = ${lit(id)} AND org_id = ${lit(org)}`))[0]
+  if (!sub) throw new HttpError(404, 'Không tìm thấy hồ sơ')
+  const events = await rowsJson(`SELECT e.id, e.step_key, e.action, e.actor_id, e.created_at,
+      EXISTS (SELECT 1 FROM event_signature g WHERE g.event_id = e.id) AS signed,
+      (SELECT p.published_at FROM stream_published p WHERE p.event_id = e.id) AS published_at
+    FROM submission_event e WHERE e.submission_id = ${lit(id)} ORDER BY e.created_at, e.id`)
+  const attachments = await rowsJson(`SELECT id, object_key, size, content_type, uploader_id, created_at FROM attachment WHERE submission_id = ${lit(id)} ORDER BY created_at`)
+  const changes = await rowsJson(`SELECT l.id, l.at, l.table_name, l.row_key, l.op, l.actor_id, l.actor_role, l.via, l.changes, l.trace_id
+    FROM audit_log l WHERE (l.table_name = 'submission' AND l.row_key = ${lit(id)})
+       OR (l.table_name IN ('attachment', 'ai_opinion') AND l.changes -> 'submission_id' ->> 'new' = ${lit(id)})
+       OR (l.table_name = 'attachment' AND l.row_key IN (SELECT a.id::text FROM attachment a WHERE a.submission_id = ${lit(id)}))
+       OR (l.table_name = 'ai_opinion' AND l.row_key IN (SELECT o.id::text FROM ai_opinion o WHERE o.submission_id = ${lit(id)}))
+    ORDER BY l.id`)
+  const archive = (await rowsJson(`SELECT a.id, a.object_key, a.object_sha256, a.entry_hash, a.created_at FROM cold_item c JOIN cold_archive a ON a.id = c.archive_id WHERE c.submission_id = ${lit(id)}`))[0] ?? null
+  const forgotten = await rowsJson(`SELECT at, rows, snapshot_id FROM lake_event WHERE operation = 'forget' AND subject_sha256 = ${lit(sha(id))} ORDER BY id`)
+  const lake = archive ? await rowsJson(`SELECT l.operation, l.at, l.snapshot_id, l.rows FROM lake_event l
+    WHERE l.id >= coalesce((SELECT min(x.id) FROM lake_event x WHERE x.operation = 'load' AND x.object_key = ${lit(archive.object_key)}), 9223372036854775807)
+      AND (l.object_key = ${lit(archive.object_key)} OR l.operation IN ('compact', 'expire'))
+    ORDER BY l.id`) : []
+  const timeline = [
+    // Hồ sơ tạo trước khi có audit_log (bản cũ) thì lấy thời điểm và người gửi từ chính hồ sơ.
+    ...(changes.some((c) => c.table_name === 'submission' && c.op === 'INSERT') ? [] : [{ at: sub.created_at, what: 'tạo hồ sơ', actor_id: sub.submitter_id }]),
+    ...changes.map((c) => ({ at: c.at, what: `${c.op} ${c.table_name}`, actor_id: c.actor_id, actor_role: c.actor_role, via: c.via, columns: Object.keys(c.changes), trace_id: c.trace_id })),
+    ...events.map((e) => ({ at: e.created_at, what: `${e.action} bước ${e.step_key}`, actor_id: e.actor_id, signed: e.signed })),
+    ...events.filter((e) => e.published_at).map((e) => ({ at: e.published_at, what: `phát lên NATS dx.${org}.submission.${e.action}` })),
+    ...(archive ? [{ at: archive.created_at, what: `chuyển xuống kho lạnh ${archive.object_key}`, sha256: archive.object_sha256 }] : []),
+    ...lake.map((l) => ({ at: l.at, what: l.operation === 'load' ? `nạp vào bảng Iceberg, ảnh chụp ${l.snapshot_id}` : l.operation === 'compact' ? `gộp tệp Iceberg, nay ở ảnh chụp ${l.snapshot_id}` : `xóa ${l.rows} ảnh chụp Iceberg quá hạn` })),
+    ...forgotten.map((f) => ({ at: f.at, what: 'xóa khỏi bảng Iceberg và mọi ảnh chụp cũ theo yêu cầu (Luật Bảo vệ dữ liệu cá nhân)' })),
+  ].sort((a, b) => new Date(a.at) - new Date(b.at))
+  const traces = [...new Set(changes.map((c) => c.trace_id).filter(Boolean))]
+  return { submission: sub, timeline, events, changes, attachments, archive, lake, forgotten: forgotten.length > 0, traces: traces.map((t) => ({ trace_id: t, jaeger: `${JAEGER_UI}/trace/${t}` })) }
+}
+
+/** Lịch sử thay đổi của một dòng bất kỳ (bảng có trigger audit), trong tổ chức của người hỏi. */
+export async function rowHistory(table, key, org) {
+  if (!/^[a-z_]{1,40}$/.test(table) || typeof key !== 'string' || !key || key.length > 200) throw new HttpError(400, 'Thiếu hoặc sai bảng, khóa')
+  return rowsJson(`SELECT id, at, op, actor_id, actor_role, via, changes, trace_id FROM audit_log
+    WHERE table_name = ${lit(table)} AND row_key = ${lit(key)} AND org_id = ${lit(org)} ORDER BY id`)
+}
+
+/** Kiểm chuỗi băm của audit_log: các dòng bị sửa, bị xóa hay bị chèn (chuỗi chung cho mọi tổ chức). */
+export async function auditVerify() {
+  const broken = await rowsJson('SELECT id, problem FROM audit_broken()')
+  const [[rows]] = await sql('SELECT count(*) FROM audit_log')
+  return { ok: broken.length === 0, rows: Number(rows), broken }
+}
+
 const json = (res, status, body) => res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(body))
 
 export async function handleCold(req, res) {
@@ -125,6 +180,9 @@ export async function handleCold(req, res) {
         .map(([id, key, rows, objectSha, hash, at]) => ({ id, object_key: key, rows: Number(rows), object_sha256: objectSha, entry_hash: hash, created_at: at })))
     }
     if (req.method === 'GET' && path === '/lineage') return json(res, 200, await lineage())
+    if (req.method === 'GET' && path.startsWith('/lineage/submission/')) return json(res, 200, await submissionLineage(decodeURIComponent(path.slice(20)), org))
+    if (req.method === 'GET' && path === '/audit') return json(res, 200, await rowHistory(url.searchParams.get('table'), url.searchParams.get('key'), org))
+    if (req.method === 'GET' && path === '/audit/verify') return json(res, 200, await auditVerify())
     throw new HttpError(404, 'Không tìm thấy')
   } catch (err) {
     if (!(err instanceof HttpError)) console.error(err)

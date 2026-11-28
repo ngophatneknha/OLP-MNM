@@ -20,14 +20,17 @@ import { validateSpec, toBpmn, toViewSql, simulate } from './compile.js'
 import { generateApp } from './ai.js'
 import { handleFiles } from './files.js'
 import { handleEvents, notify } from './events.js'
-import { handleCold, archiveAll } from './cold.js'
+import { handleCold, archiveAll, claimsOf } from './cold.js'
+import { serveTraced, setActor, current, withSpan, parseTraceparent } from './trace.js'
 import { handleIngest } from './ingest.js'
 import { handleSensors } from './sensors.js'
 import { handleFill } from './fill.js'
 import { handlePki, signEvent } from './pki.js'
 import { handleNgsi } from './ngsi.js'
 import { handleOrgs } from './orgs.js'
-import { sql, lit } from './db.js'
+import { sql, lit, adminHeaders } from './db.js'
+import { maskPii } from './pii.js'
+import { startRelay } from './stream.js'
 import { handleSearch, syncIndex } from './search.js'
 import { opine, ensureAutonomy, ensureAllAutonomy } from './probation.js'
 
@@ -52,7 +55,7 @@ async function flowable(method, path, body) {
 async function hasuraPost(path, body) {
   const res = await fetch(HASURA_URL + path, {
     method: 'POST',
-    headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    headers: adminHeaders(),
     body: JSON.stringify(body),
   })
   const json = await res.json()
@@ -154,6 +157,24 @@ setInterval(sweepPendingApps, 10000)
 let autonomyReady = false
 setInterval(async () => { if (!autonomyReady) autonomyReady = await ensureAllAutonomy().then(() => true, () => false) }, 10000)
 
+// Nhật ký truy cập JSON một dòng, có mã X-Request-Id do cổng APISIX gắn và trace_id của OpenTelemetry (trace.js), để ghép với nhật ký của
+// cổng (profile logs: Vector, VictoriaLogs) và mở đúng chuỗi truy vết trong Jaeger.
+// Chỉ ghi phương thức, đường dẫn (bỏ chuỗi truy vấn, đã che PII), mã trạng thái và thời gian; không ghi thân yêu cầu hay token.
+const REQUEST_ID = /^[\w.:-]{1,128}$/
+const safeDecode = (p) => { try { return decodeURIComponent(p) } catch { return p } }
+function accessLog(req, res) {
+  if (req.url === '/' && !req.headers['x-request-id']) return // kiểm tra sức khỏe của Docker mỗi 15 giây: không ghi cho khỏi ngập
+  const start = process.hrtime.bigint()
+  res.on('finish', () => {
+    const id = req.headers['x-request-id']
+    console.log(JSON.stringify({
+      ts: new Date().toISOString(), svc: 'workflow-bridge', method: req.method, path: maskPii(safeDecode(req.url.split('?')[0]).slice(0, 300)), status: res.statusCode,
+      ms: Number(process.hrtime.bigint() - start) / 1e6, request_id: typeof id === 'string' && REQUEST_ID.test(id) ? id : undefined,
+      trace_id: parseTraceparent(String(res.getHeader('traceparent') ?? ''))?.traceId,
+    }))
+  })
+}
+
 const handlers = { app_publish: publishApp, submission_start: startSubmission, submission_act: actOnSubmission, app_change_check: checkChange }
 
 // Chỉ mục tìm kiếm tự đuổi kịp dữ liệu; chưa bật Meilisearch thì bỏ qua lặng lẽ.
@@ -174,12 +195,16 @@ setInterval(async () => {
   }
 }, 10000)
 
-// Mỗi ngày đẩy hồ sơ đã kết thúc quá ARCHIVE_AFTER_DAYS (mặc định 90) xuống kho lạnh.
-setInterval(() => archiveAll().catch((err) => console.error('Xuất kho lạnh:', err.message)), 24 * 3600 * 1000).unref()
+// Trục sự kiện NATS (profile stream): chỉ chạy khi đặt NATS_URL.
+startRelay()
 
-createServer(async (req, res) => {
+// Mỗi ngày đẩy hồ sơ đã kết thúc quá ARCHIVE_AFTER_DAYS (mặc định 90) xuống kho lạnh.
+setInterval(() => withSpan('archive daily', { root: true }, archiveAll).catch((err) => console.error('Xuất kho lạnh:', err.message)), 24 * 3600 * 1000).unref()
+
+async function route(req, res) {
+  accessLog(req, res)
   if (req.url.startsWith('/events')) return handleEvents(req, res)
-  if (req.url.startsWith('/archive') || req.url.startsWith('/lineage')) return handleCold(req, res)
+  if (req.url.startsWith('/archive') || req.url.startsWith('/lineage') || req.url.startsWith('/audit')) return handleCold(req, res)
   if (req.url.startsWith('/ingest')) return handleIngest(req, res)
   if (req.url.startsWith('/orgs/')) return handleOrgs(req, res)
   if (req.url.startsWith('/ngsi-ld/')) return handleNgsi(req, res)
@@ -209,6 +234,10 @@ createServer(async (req, res) => {
         return
       }
     } else {
+      // Sự kiện Hasura mang phiên của người vừa bấm: thay đổi do bridge làm tiếp được ghi tên người đó trong audit_log.
+      const session = payload.event?.session_variables ?? {}
+      setActor(session['x-hasura-user-id'], session['x-hasura-role'])
+      if (current()?.span) current().span.name = `event ${payload.trigger?.name}`
       await handlers[payload.trigger.name](payload.event.data.new)
       notify() // hồ sơ, nhật ký hay ứng dụng vừa đổi: báo các trình duyệt đang mở tải lại
     }
@@ -217,4 +246,7 @@ createServer(async (req, res) => {
     console.error(err)
     res.writeHead(500).end(String(err))
   }
-}).listen(3000, () => console.log('workflow-bridge lắng nghe cổng 3000'))
+}
+
+// Mỗi yêu cầu chạy trong một span truy vết (trace.js); mọi câu SQL ghi người làm và mã truy vết vào audit_log (db.js).
+createServer((req, res) => serveTraced(req, res, claimsOf(req), () => route(req, res))).listen(3000, () => console.log('workflow-bridge lắng nghe cổng 3000'))

@@ -177,13 +177,14 @@ node --test --test-reporter=spec tests/*.test.js           # đối chiếu đ�
 (cd web && npm ci) && node --test services/workflow-bridge/*.test.js web/src/*.test.js   # đơn vị, không cần hệ thống chạy
 ```
 
-Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kho lạnh (`cold`), cảm biến (`iot`), đa tổ chức và nâng cấp (`tenant`, `upgrade`), chữ ký số (`pki`), vận hành và khôi phục (`ops`, `recovery`, `restore`), tìm kiếm (`search`), tiêu chí PoF và điều khoản ngoài bảng điểm (`pof`, `luat`). Bảng đối chiếu từng ca và kết quả: [docs/KIEM_THU.md](docs/KIEM_THU.md).
+Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kho lạnh (`cold`), cảm biến (`iot`), đa tổ chức và nâng cấp (`tenant`, `upgrade`), chữ ký số (`pki`), vận hành và khôi phục (`ops`, `recovery`, `restore`), nhật ký tập trung và trục sự kiện (`trace`), tìm kiếm (`search`), tiêu chí PoF và điều khoản ngoài bảng điểm (`pof`, `luat`). Bảng đối chiếu từng ca và kết quả: [docs/KIEM_THU.md](docs/KIEM_THU.md).
 
 ## Còn thiếu gì (nói thẳng)
 
 Các mục dưới đây khai báo là `todo` trong báo cáo kiểm thử, không tô hồng:
 
-- Kho lạnh là tệp JSONL (truy vấn được bằng SQL qua DuckDB), chưa phải bảng lakehouse Parquet/Iceberg; NGSI-LD chỉ đọc; bản đồ cảm biến là SVG tối giản, chưa có nền bản đồ.
+- Bảng Iceberg của kho lạnh (`scripts/lake.sh`): một lệnh ghi tại một thời điểm (khóa `pg_advisory_lock`), `forget` chỉ xóa trong bảng Iceberg, tệp JSONL gốc của kho lạnh xử lý riêng; NGSI-LD là tập con của chuẩn (một kiểu `Device`, chỉ ghi được `value`, `q` đơn giản); nền bản đồ chỉ tới mức tỉnh, chưa có đường phố.
+- Gom nhật ký, truy vết OpenTelemetry và trục sự kiện (profile `logs`, `stream`) chạy một máy: Hasura bản cộng đồng không xuất span, Keycloak và Flowable chưa gửi span riêng; chuỗi băm của `audit_log` không tự phát hiện việc xóa dòng cuối hay tắt trigger từ trước; NATS dùng một token cho cả hệ thống.
 - Tìm ngữ nghĩa là tùy chọn (profile `vector`, mặc định tắt, mô hình nhỏ MiniLM); OCR chỉ 10 trang đầu.
 - Chữ ký số là PKI phần mềm (chứng thư X.509 do CA của từng tổ chức cấp, ký phía máy chủ, khóa mã hóa trong CSDL): **chưa có HSM, CRL/OCSP** và chưa phải chữ ký số có giá trị pháp lý theo luật.
 - Thời gian thực dùng SSE (chưa WebSocket); thiết bị gọi HTTP (chưa MQTT/OPC UA).

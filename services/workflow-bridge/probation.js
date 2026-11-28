@@ -6,14 +6,15 @@
 // Ở nấc 4, AI tự duyệt nếu ý kiến là duyệt; từ chối thì không bao giờ tự làm, hồ sơ luôn trở về cho người.
 // AI lỗi hoặc không cấu hình: bỏ qua, luồng của người không bị ảnh hưởng.
 
+import { adminHeaders } from './db.js'
 import { chat, aiConfigured } from './ai.js'
 
-const { HASURA_URL, HASURA_ADMIN_SECRET } = process.env
+const { HASURA_URL } = process.env
 
 async function admin(query, variables) {
   const res = await fetch(`${HASURA_URL}/v1/graphql`, {
     method: 'POST',
-    headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    headers: adminHeaders(),
     body: JSON.stringify({ query, variables }),
   })
   const json = await res.json()

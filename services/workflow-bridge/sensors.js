@@ -10,9 +10,9 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { HttpError } from './files.js'
 import { claimsOf, rolesOf, orgOf } from './cold.js'
 import { notify } from './events.js'
-import { sql, lit } from './db.js'
+import { sql, lit, adminHeaders } from './db.js'
 
-const { HASURA_URL, HASURA_ADMIN_SECRET } = process.env
+const { HASURA_URL } = process.env
 const KEY = /^[a-z][a-z0-9_]{1,30}$/
 const MAX_READINGS = 100
 const REQUIRED_FIELDS = ['thiet_bi', 'cam_bien', 'gia_tri', 'mo_ta']
@@ -28,7 +28,7 @@ export function tokenMatches(token, storedHash) {
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
-async function readJson(req, max = 256 * 1024) {
+export async function readJson(req, max = 256 * 1024) {
   let body = ''
   for await (const chunk of req) {
     body += chunk
@@ -38,10 +38,12 @@ async function readJson(req, max = 256 * 1024) {
 }
 
 async function register(req) {
-  const claims = claimsOf(req)
   if (!rolesOf(req).includes('director')) throw new HttpError(403, 'Chỉ giám đốc đăng ký cảm biến')
-  const org = orgOf(req)
-  const b = await readJson(req)
+  return createSensor(claimsOf(req), orgOf(req), await readJson(req))
+}
+
+/** Kiểm và lưu một cảm biến mới của tổ chức org; trả token thiết bị (một lần). Dùng chung cho POST /sensors và NGSI-LD POST /entities. */
+export async function createSensor(claims, org, b) {
   const threshold = Number(b.threshold)
   if (!KEY.test(b.key ?? '')) throw new HttpError(400, 'Mã cảm biến: chữ thường không dấu, số, gạch dưới, 2 đến 31 ký tự')
   if (typeof b.name !== 'string' || !b.name.trim() || b.name.length > 120) throw new HttpError(400, 'Thiếu tên cảm biến')
@@ -77,7 +79,7 @@ export async function listSensors(org) {
 async function openRepair(sensor, value) {
   const res = await fetch(`${HASURA_URL}/v1/graphql`, {
     method: 'POST',
-    headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+    headers: adminHeaders(),
     body: JSON.stringify({
       query: 'mutation($o: submission_insert_input!) { insert_submission_one(object: $o) { id } }',
       variables: { o: {
@@ -103,12 +105,22 @@ export async function withLock(key, fn) {
 
 async function telemetry(req, key) {
   if (!KEY.test(key)) throw new HttpError(404, 'Không tìm thấy cảm biến')
-  const row = (await sql(`SELECT token_hash, name, unit, threshold, direction, repair_app, owner_id, open_submission_id FROM sensor WHERE key = ${lit(key)}`))[0]
+  const row = (await sql(`SELECT token_hash FROM sensor WHERE key = ${lit(key)}`))[0]
   // Cùng một phản hồi cho "không có cảm biến" và "sai token": không để dò ra mã cảm biến nào tồn tại.
   if (!row || !tokenMatches(req.headers['x-sensor-token'], row[0])) throw new HttpError(401, 'Sai mã cảm biến hoặc token')
-  const sensor = { key, name: row[1], unit: row[2], threshold: Number(row[3]), direction: row[4], repair_app: row[5], owner_id: row[6] }
   const body = await readJson(req)
-  const items = Array.isArray(body) ? body : [body]
+  return recordReadings(key, Array.isArray(body) ? body : [body])
+}
+
+// Bên nghe số đo mới (ví dụ thuê bao NGSI-LD). Đăng ký từ ngoài để sensors.js không phụ thuộc ngược vào ngsi.js.
+const listeners = []
+export const onReadings = (fn) => listeners.push(fn)
+
+/** Ghi các số đo của một cảm biến đã xác thực, mở hồ sơ sửa chữa khi vượt ngưỡng, rồi báo cho bên nghe (không chờ). */
+export async function recordReadings(key, items) {
+  const row = (await sql(`SELECT name, unit, threshold, direction, repair_app, owner_id, org_id FROM sensor WHERE key = ${lit(key)}`))[0]
+  if (!row) throw new HttpError(404, 'Không tìm thấy cảm biến')
+  const sensor = { key, name: row[0], unit: row[1], threshold: Number(row[2]), direction: row[3], repair_app: row[4], owner_id: row[5], org: row[6] }
   if (!items.length || items.length > MAX_READINGS) throw new HttpError(400, `Gửi từ 1 đến ${MAX_READINGS} số đo mỗi lần`)
   const now = Date.now()
   const readings = items.map((r) => {
@@ -134,6 +146,7 @@ async function telemetry(req, key) {
     })
   }
   notify()
+  for (const fn of listeners) Promise.resolve().then(() => fn(sensor.org, key)).catch((err) => console.error(err))
   return { accepted: readings.length, alarm: Boolean(bad), request }
 }
 

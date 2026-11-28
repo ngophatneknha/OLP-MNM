@@ -6,9 +6,40 @@ deployment:
   role_data_plane:
     config_provider: yaml
 
+# Chỉ nạp plugin thật sự dùng (danh sách này thay cho danh sách mặc định; opentelemetry mặc định bị tắt nên phải khai báo).
+plugins:
+  - request-id
+  - opentelemetry
+  - cors
+  - openid-connect
+  - limit-count
+  - proxy-rewrite
+  - serverless-pre-function
+  - prometheus
+
 # Số đo cho Prometheus (docker-compose.optional.yml, profile monitoring). Cổng 9091 chỉ nằm trong mạng nội bộ, không công bố ra máy chủ.
 plugin_attr:
   prometheus:
     export_addr:
       ip: 0.0.0.0
       port: 9091
+  # Truy vết OpenTelemetry: span gửi tới Jaeger (profile logs) bằng OTLP/HTTP. Có lấy mẫu hay không do OTEL_SAMPLER quyết định
+  # (apisix.yaml, global_rules "trace"); mặc định always_off nên máy không bật Jaeger không gửi gì.
+  # set_ngx_var để nhật ký truy cập ghi được trace_id.
+  opentelemetry:
+    # Mặc định của APISIX lấy X-Request-Id làm trace_id, nhưng mã đó là UUID có gạch nối (và bên gọi tự chọn được) nên không hợp lệ
+    # với OpenTelemetry: dùng mã ngẫu nhiên 128 bit; X-Request-Id vẫn ghi riêng trong nhật ký.
+    trace_id_source: random
+    resource:
+      service.name: apisix
+    collector:
+      address: ${{OTEL_COLLECTOR:=jaeger:4318}}
+      request_timeout: 3
+    set_ngx_var: true
+
+# Nhật ký truy cập dạng JSON một dòng (để bộ gom nhật ký Vector đọc thẳng, profile logs), có request_id và trace_id của OpenTelemetry.
+# Không ghi chuỗi truy vấn hay tiêu đề xác thực: chỉ phương thức, đường dẫn, mã trạng thái, thời gian.
+nginx_config:
+  http:
+    access_log_format: '{"ts":"$time_iso8601","svc":"apisix","method":"$request_method","path":"$uri","status":$status,"ms":$request_time,"request_id":"$http_x_request_id","trace_id":"$opentelemetry_trace_id"}'
+    access_log_format_escape: json

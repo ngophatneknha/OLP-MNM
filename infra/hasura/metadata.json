@@ -1978,6 +1978,25 @@
                   }
                 }
               ]
+            },
+            {
+              "table": {
+                "schema": "public",
+                "name": "audit_log"
+              },
+              "select_permissions": [
+                {
+                  "role": "director",
+                  "permission": {
+                    "columns": "*",
+                    "filter": {
+                      "org_id": {
+                        "_eq": "X-Hasura-Org-Id"
+                      }
+                    }
+                  }
+                }
+              ]
             }
           ]
         }

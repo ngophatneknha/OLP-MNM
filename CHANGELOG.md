@@ -9,6 +9,28 @@ SPDX-License-Identifier: Apache-2.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-11-27
+
+### Added
+- D-06 NGSI-LD ghi và thuê bao: `POST /ngsi-ld/v1/entities` tạo `Device` (giám đốc, trả token thiết bị một lần), `PATCH /ngsi-ld/v1/entities/{id}/attrs` ghi số đo đi chung đường với `/telemetry`, `POST/GET/DELETE /ngsi-ld/v1/subscriptions` gửi `Notification` khi số đo thỏa `q` (có `throttling`, trạng thái `timesSent`, `lastFailure`). Chống SSRF: máy nhận phải nằm trong `NGSI_NOTIFY_ALLOW`; lúc gửi, bridge phân giải DNS rồi chặn địa chỉ nội bộ, link-local, 169.254.169.254 (metadata đám mây), IPv6 nội bộ và kết nối đúng địa chỉ đã kiểm (chống DNS rebinding), trừ tên trong `NGSI_NOTIFY_PRIVATE`; không theo chuyển hướng, quá 5 giây thì hủy. Mỗi tổ chức tối đa `NGSI_MAX_SUBSCRIPTIONS` thuê bao (mặc định 50). Bảng mới `ngsi_subscription` (`infra/postgres/init/09-ngsi.sql`). Ca IOT-09 đến IOT-12. Tự viết trong bridge vì Orion-LD là AGPL-3.0.
+- D-06 nền bản đồ tự chứa: ranh giới 34 tỉnh, thành sau sắp xếp đơn vị hành chính từ 01/7/2025 (Nghị quyết 202/2025/QH15, gộp đa giác 63 tỉnh cũ) và quần đảo Hoàng Sa, Trường Sa (`web/public/basemap-vn.json`, 48 KB, Natural Earth 1:10m v5.1.2, public domain), dựng lại bằng `scripts/basemap.mjs`; bản đồ cảm biến vẽ nền cùng phép chiếu với điểm và ghi tên khu vực. Không tải ô bản đồ hay mã từ bên ngoài.
+- D-06 bảng Apache Iceberg của kho lạnh: `scripts/lake.sh sync|info|sql` nạp tệp JSONL vào bảng `cold.submission` (Parquet trong S3, danh mục trong PostgreSQL, phân vùng theo tổ chức); trường mới thêm cột và tăng phiên bản lược đồ; đọc lại ảnh chụp cũ; tệp hỏng hay trái kiểu bị bỏ qua có lý do. `expire` xóa ảnh chụp quá hạn `LAKE_SNAPSHOT_DAYS` (mặc định 30 ngày) và tệp không còn dùng; `compact` gộp tệp nhỏ; `forget <mã hồ sơ>` xóa hẳn một hồ sơ khỏi bảng và mọi ảnh chụp cũ theo Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15; lệnh ghi giữ khóa `pg_advisory_lock`. PyIceberg 0.10.0, PyArrow 21.0.0, SQLAlchemy 2.0.45, pg8000 1.31.2. Ca LAKE-02 đến LAKE-07.
+- Z-11 nhật ký tập trung có mã truy vết: APISIX gắn `X-Request-Id` (plugin `request-id`) và ghi nhật ký truy cập JSON; mã do bên gọi gửi sai dạng thì cổng thay bằng UUID mới; workflow-bridge ghi nhật ký truy cập cùng mã (che PII, không ghi chuỗi truy vấn); profile `logs` chạy Vector 0.61.0 (MPL-2.0, che token Bearer, JWT, token Vault, cookie và PII) gửi vào VictoriaLogs 1.53.0 (Apache-2.0, chỉ mở trên 127.0.0.1). Đây là ghép nhật ký theo mã (log correlation), chưa phải truy vết phân tán OpenTelemetry. Ca TRACE-01 đến TRACE-05 (`tests/trace.test.js`).
+- Z-11 truy vết phân tán OpenTelemetry: APISIX (plugin `opentelemetry`, mã ngẫu nhiên, lấy mẫu theo `OTEL_SAMPLER`, mặc định tắt) mở chuỗi truy vết và gửi `traceparent` W3C xuống; workflow-bridge (`trace.js`, tự viết, không thêm gói npm) nối tiếp với span cho yêu cầu, từng câu SQL và từng lần gọi Hasura, Flowable, SeaweedFS, rồi gửi OTLP/HTTP JSON; Jaeger 2.22.0 (Apache-2.0, profile `logs`, lưu Badger `TRACE_RETENTION` mặc định 7 ngày, giao diện chỉ 127.0.0.1:16686) bỏ chuỗi truy vấn và User-Agent trước khi lưu. Phản hồi mang `traceparent`, nhật ký truy cập của cổng và bridge mang `trace_id`. Ca TRACE-06 đến TRACE-08, kiểm thử đơn vị `trace.test.js` với máy nhận OTLP giả.
+- Z-11 nhật ký thay đổi dữ liệu `audit_log` (`infra/postgres/init/11-audit.sql`): trigger trên 11 bảng còn sửa được ghi ai sửa (từ token, hoặc người bấm mà bridge làm thay qua `dx.actor` và tiêu đề `x-hasura-dx-*`), vai trò, cột nào đổi từ gì sang gì, `trace_id`; cột nhạy cảm (dữ liệu hồ sơ, tên người, nội dung tự do, khóa) chỉ ghi "đã đổi"; chỉ thêm và nối chuỗi băm SHA-256, `GET /audit/verify` chỉ ra dòng bị sửa lén. `GET /audit?table=&key=` xem lịch sử một dòng, Hasura cho giám đốc đọc `audit_log` của tổ chức mình. Ca AUDIT-01 đến AUDIT-04.
+- Z-11 dòng đời một hồ sơ `GET /lineage/submission/{id}`: tạo, sửa, duyệt (có chữ ký số), phát NATS, xuống kho lạnh ở tệp nào (mã băm), nạp vào ảnh chụp Iceberg nào hay đã xóa theo yêu cầu, và các `trace_id`. `lake.sh` ghi bảng `lake_event` (chỉ thêm; `forget` chỉ lưu mã băm). Ca LINEAGE-01, LINEAGE-02, LAKE-08.
+- Z-11 trục sự kiện streaming: profile `stream` chạy NATS 2.14.10 có JetStream (Apache-2.0); workflow-bridge phát mỗi dòng `submission_event` lên `dx.<tổ chức>.submission.<hành động>` theo mẫu outbox: đánh dấu từng sự kiện đã được ack trong `stream_published` (giao dịch commit trễ không bị bỏ sót), `Nats-Msg-Id` chống trùng trong cửa sổ 1 giờ, bên nghe bỏ trùng theo `event_id`, hợp đồng thuê để chỉ một bản bridge phát; máy khách NATS tối giản không thêm gói npm, báo lỗi ngay khi máy chủ đóng kết nối lúc khởi động. NATS tắt thì việc duyệt vẫn chạy, tin được phát bù. Ca STREAM-01 đến STREAM-05, kiểm thử đơn vị `stream.test.js` với máy chủ NATS giả.
+
+### Changed
+- `tests/hpdi.test.js`: D-06 và Z-11 không còn là `todo`; chỉ còn Z-07 (HSM), Z-09 (WebSocket, MQTT), Z-10 (ArgoCD/Flux).
+- CORS của route NGSI-LD cho phép thêm `PATCH`, `DELETE`.
+- APISIX chỉ nạp các plugin thật sự dùng (khai báo `plugins` trong `infra/apisix/config.yaml`), thêm `opentelemetry`.
+- Lệnh GraphQL quản trị của workflow-bridge dùng chung `adminHeaders()` (mang người làm và mã truy vết cho `audit_log`).
+- `scripts/gitops.sh apply` nay áp migration (`scripts/migrate.sh` mới) và tạo lại dịch vụ gắn tệp cấu hình vừa đổi; chạy lại khi kho không đổi chỉ `up -d`. Hướng dẫn nâng cấp từ 2.5.0 ở `docs/VAN_HANH.md`.
+
+### Fixed
+- Máy đang chạy bản cũ nâng cấp bằng `gitops.sh apply` không nhận bảng SQL mới (PostgreSQL chỉ chạy tệp khởi tạo trên volume trống) và cổng API, Keycloak, bridge vẫn đọc tệp cấu hình cũ: nay tự áp `05-*.sql` trở đi và tạo lại các dịch vụ đó. Ca OPS-MIGRATE.
+
 ## [2.5.0] - 2026-11-22
 
 ### Added

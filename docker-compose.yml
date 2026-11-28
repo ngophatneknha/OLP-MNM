@@ -130,6 +130,16 @@ services:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       CLAMAV_HOST: clamav
+      # Máy được nhận thông báo thuê bao NGSI-LD, dạng "máy:cổng,máy-khác" (trống là cấm gửi). Chặn bridge bị lợi dụng gọi vào mạng nội bộ.
+      NGSI_NOTIFY_ALLOW: ${NGSI_NOTIFY_ALLOW:-}
+      # Tên máy được phép trỏ vào địa chỉ nội bộ; còn lại địa chỉ nội bộ, link-local và metadata đám mây đều bị chặn lúc gửi.
+      NGSI_NOTIFY_PRIVATE: ${NGSI_NOTIFY_PRIVATE:-}
+      NGSI_MAX_SUBSCRIPTIONS: ${NGSI_MAX_SUBSCRIPTIONS:-50}
+      # Trục sự kiện (tùy chọn, profile stream ở docker-compose.optional.yml): đặt NATS_URL=nats://nats:4222; trống là tắt.
+      NATS_URL: ${NATS_URL:-}
+      # Truy vết OpenTelemetry (profile logs): http://jaeger:4318; trống là không gửi span (mã truy vết vẫn ghi vào nhật ký, audit_log).
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      NATS_TOKEN: ${NATS_TOKEN:-change-me-nats-token}
       # Tìm kiếm và hỏi đáp (tùy chọn): chỉ hoạt động khi bật profile search ở docker-compose.optional.yml.
       MEILI_URL: http://meilisearch:7700
       EXTRACTOR_URL: http://extractor:8000
@@ -202,6 +212,8 @@ services:
     # Chế độ standalone khai báo trong config.yaml; không đặt APISIX_STAND_ALONE vì entrypoint sẽ ghi đè tệp cấu hình.
     environment:
       APP_ORIGIN: ${APP_ORIGIN}
+      OTEL_SAMPLER: ${OTEL_SAMPLER:-always_off}
+      OTEL_COLLECTOR: ${OTEL_COLLECTOR:-jaeger:4318}
     volumes:
       - ./infra/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
       - ./infra/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro

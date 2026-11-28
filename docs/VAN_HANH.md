@@ -39,11 +39,26 @@ Cấu hình hạ tầng (compose, Hasura, cổng API, Keycloak) là mã trong kh
 
 ```bash
 sh scripts/gitops.sh check        # kiểm cấu hình trong kho hợp lệ, không đổi gì
-sh scripts/gitops.sh apply        # lấy bản mới (chỉ tiến), kiểm, rồi `up -d --build` và nạp lại metadata Hasura
+sh scripts/gitops.sh apply        # lấy bản mới (chỉ tiến), kiểm, dựng lại, áp migration, nạp lại metadata Hasura
 sh scripts/gitops.sh watch 300    # lặp lại apply mỗi 300 giây
+sh scripts/migrate.sh             # chỉ áp lại tệp SQL 05-* trở đi lên CSDL đang chạy
 ```
 
+Khi có bản mới, `apply` làm theo thứ tự: `up -d --build`, `scripts/migrate.sh`, tạo lại các dịch vụ gắn tệp cấu hình vừa đổi trong kho (cổng API, Keycloak, workflow-bridge...), rồi nạp lại metadata Hasura. Mã bản đã áp ghi ở `.git/gitops-applied`; chạy lại khi kho không đổi chỉ còn `up -d`.
+
+Vì sao cần hai bước thêm:
+- PostgreSQL chỉ chạy `infra/postgres/init/*.sql` khi volume còn trống, nên máy đã có dữ liệu không tự nhận bảng mới. `migrate.sh` áp lại các tệp từ `05-` trở đi; mọi tệp này viết để chạy lại nhiều lần không hỏng dữ liệu (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`). Tệp `00-` đến `04-` là lược đồ gốc, không áp lại. Một tệp lỗi thì dừng ngay, báo tên tệp, các tệp sau chưa áp.
+- Docker gắn tệp cấu hình đơn lẻ theo inode: `git merge` thay tệp bằng tệp mới nên container đang chạy vẫn đọc bản cũ cho tới khi được tạo lại.
+
 Giới hạn: không phải ArgoCD/Flux (một máy, không tự hoàn tác); nhánh cục bộ lệch khỏi `origin` thì `apply` dừng thay vì ghi đè.
+
+### Nâng cấp từ 2.5.0 lên 2.6.0
+
+1. Sao lưu trước (`sh scripts/backup.sh`, xem mục Sao lưu và khôi phục ở đầu tài liệu).
+2. Chạy `sh scripts/gitops.sh apply` (hoặc `git pull`, `docker compose up -d --build`, `sh scripts/migrate.sh`, `docker compose up -d --force-recreate apisix keycloak workflow-bridge hasura-init`). Bảng mới: `ngsi_subscription` (09), `stream_cursor`, `stream_published` (10), `audit_log`, `lake_event` (11). Dữ liệu cũ không có lịch sử trong `audit_log`: lịch sử bắt đầu từ lúc nâng cấp. Ảnh `lakehouse` cần dựng lại (`--build`) để `lake.sh` ghi `lake_event`.
+3. Biến mới trong `.env` đều có giá trị mặc định an toàn nên thiếu cũng chạy: không có `NGSI_NOTIFY_ALLOW` thì không gửi thông báo thuê bao NGSI-LD; không có `NATS_URL` thì không phát sự kiện. Muốn bật thì chép từ `.env.example` các dòng `NGSI_NOTIFY_ALLOW`, `NGSI_NOTIFY_PRIVATE` (để trống khi triển khai thật), `NGSI_MAX_SUBSCRIPTIONS`, `NATS_URL`, `NATS_TOKEN` (đổi khỏi `change-me`), `LAKE_SNAPSHOT_DAYS`, `OTEL_SAMPLER`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `TRACE_RETENTION`.
+
+Đã thử trên máy chạy 2.5.0 có dữ liệu: số dòng hồ sơ, sự kiện, cảm biến, ứng dụng, tổ chức giữ nguyên sau nâng cấp; bộ kiểm thử chính đạt sau khi thêm biến, trừ hai ca cần mạng ra ngoài (ca `OPS-MIGRATE` trong `tests/ops.test.js` kiểm phần migration).
 
 ## TLS tại biên (Caddy)
 
@@ -105,7 +120,30 @@ Có thể gửi mảng tới 100 số đo kèm `at` (ISO 8601, trong 7 ngày qua
 curl "$API/ngsi-ld/v1/entities?type=Device" -H "authorization: Bearer $TOKEN" -H "x-hasura-role: manager"
 ```
 
-Giới hạn (shortcut): NGSI-LD chỉ đọc (không có POST/PATCH thực thể hay đăng ký thuê bao); bản đồ chiếu phẳng, không có nền bản đồ; thêm cột vị trí vào CSDL đang chạy: `docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/07-geo.sql`.
+Ghi và theo dõi theo chuẩn (giám đốc):
+
+```bash
+# Tạo Device; thân phản hồi có deviceToken một lần (dùng cho /telemetry)
+curl -X POST "$API/ngsi-ld/v1/entities" -H "authorization: Bearer $TOKEN" -H "x-hasura-role: director" -H "content-type: application/ld+json" \
+  -d '{"id":"urn:ngsi-ld:Device:default:tu_dong_1","type":"Device","name":{"type":"Property","value":"Tủ đông 1"},"threshold":{"type":"Property","value":8,"unitCode":"CEL"},"direction":{"type":"Property","value":"above"},"repairApp":{"type":"Property","value":"sua_chua"},"location":{"type":"GeoProperty","value":{"type":"Point","coordinates":[105.85,21.03]}}}'
+# Cập nhật số đo
+curl -X PATCH "$API/ngsi-ld/v1/entities/urn:ngsi-ld:Device:default:tu_dong_1/attrs" ... -d '{"value":{"type":"Property","value":9.5}}'
+# Thuê bao: vượt 8 độ thì POST Notification tới máy của đối tác (phải có trong NGSI_NOTIFY_ALLOW, dạng máy:cổng)
+curl -X POST "$API/ngsi-ld/v1/subscriptions" ... -d '{"type":"Subscription","entities":[{"type":"Device"}],"q":"value>8","throttling":60,"notification":{"endpoint":{"uri":"https://doi-tac.example/ngsi"}}}'
+```
+
+`GET /ngsi-ld/v1/subscriptions/<id>` cho biết `timesSent`, `lastSuccess`, `lastFailure`, `lastErrorReason`. Máy đang chạy cần áp `infra/postgres/init/09-ngsi.sql`.
+
+An toàn khi gửi thông báo (chống SSRF, tức bridge bị lợi dụng gọi vào mạng nội bộ):
+
+- Ghi thực thể và thuê bao cần token Keycloak (APISIX kiểm) và vai trò giám đốc; đọc cần trưởng phòng hoặc giám đốc, chỉ trong tổ chức của mình. Thuê bao lưu trong bảng `ngsi_subscription`, mỗi tổ chức tối đa `NGSI_MAX_SUBSCRIPTIONS` (mặc định 50).
+- Lúc đăng ký: endpoint phải là `http(s)`, không kèm tài khoản, `máy:cổng` có trong `NGSI_NOTIFY_ALLOW`. `q` tối đa 200 ký tự, phân tích bằng biểu thức chính quy, không dùng `eval`.
+- Lúc gửi: bridge phân giải DNS và kiểm mọi địa chỉ trả về; địa chỉ loopback, mạng riêng (10/8, 172.16/12, 192.168/16), link-local 169.254/16 (gồm 169.254.169.254, dịch vụ metadata của máy ảo đám mây), CGNAT, multicast, IPv6 nội bộ đều bị chặn, kể cả khi tên có trong `NGSI_NOTIFY_ALLOW`. Socket kết nối đúng địa chỉ vừa kiểm, nên tên miền đổi địa chỉ ngay sau khi kiểm (DNS rebinding) không lọt. Chỉ tên trong `NGSI_NOTIFY_PRIVATE` được trỏ vào nội bộ (`.env.example` đặt `ngsi-sink` cho máy nhận thử; triển khai thật để trống).
+- Không theo chuyển hướng (3xx ghi thành lỗi), quá 5 giây thì hủy, không đọc thân phản hồi.
+
+Nền bản đồ là ranh giới 34 tỉnh, thành từ 01/7/2025 (Nghị quyết 202/2025/QH15) và quần đảo Hoàng Sa, Trường Sa (`web/public/basemap-vn.json`, 48 KB, dựng lại bằng `node scripts/basemap.mjs` từ Natural Earth 1:10m v5.1.2, public domain), nằm ngay trong ứng dụng nên không tải gì từ bên ngoài.
+
+Giới hạn (shortcut): NGSI-LD là tập con của chuẩn (một kiểu `Device`, chỉ ghi `value`, `q` gồm so sánh nối bằng `;`, gửi thông báo một lần không thử lại); nền bản đồ chỉ tới mức tỉnh (Natural Earth còn vẽ 63 tỉnh cũ, `scripts/basemap.mjs` gộp lại theo bảng `MERGE`; tỉnh gộp nguyên vẹn nên ranh giới tỉnh mới đúng, chưa có ranh giới xã mới); thêm cột vị trí vào CSDL đang chạy: `docker compose exec -T postgres psql -U dxlab -d dxlab < infra/postgres/init/07-geo.sql`.
 
 ## SQL trên kho lạnh (DuckDB)
 
@@ -116,7 +154,106 @@ sh scripts/cold-sql.sh "SELECT org, status, count(*) AS n FROM cold GROUP BY ALL
 sh scripts/cold-sql.sh "SELECT app_key, avg(date_diff('hour', created_at, finished_at)) AS gio FROM cold GROUP BY ALL"
 ```
 
-Bảng ảo `cold` có mọi cột của hồ sơ, thêm `org`, `object_key`, `events`. Tệp hỏng hoặc bị sửa bị bỏ qua và báo ở stderr (kiểm chứng sửa đổi dùng `GET /archive/verify`). Giới hạn (shortcut): tệp JSONL, chưa phải bảng Parquet/Iceberg; chạy bằng quyền vận hành (không theo token người dùng) nên chỉ người vận hành dùng.
+Bảng ảo `cold` có mọi cột của hồ sơ, thêm `org`, `object_key`, `events`. Tệp hỏng hoặc bị sửa bị bỏ qua và báo ở stderr (kiểm chứng sửa đổi dùng `GET /archive/verify`). Giới hạn (shortcut): đọc thẳng tệp JSONL, không có lược đồ phiên bản (dùng bảng Iceberg bên dưới); chạy bằng quyền vận hành (không theo token người dùng) nên chỉ người vận hành dùng.
+
+## Bảng Iceberg của kho lạnh
+
+Apache Iceberg là lớp "mục lục" đặt trên các tệp Parquet: biết bảng gồm tệp nào, lược đồ đang ở phiên bản mấy, và giữ ảnh chụp (snapshot) để đọc lại dữ liệu tại một thời điểm. `scripts/lake.sh` (cùng ảnh với `cold-sql.sh`, thêm PyIceberg) nạp các tệp JSONL của kho lạnh vào bảng `cold.submission`: tệp Parquet nằm trong `dxlab-cold/lake/`, danh mục nằm trong PostgreSQL (bảng `iceberg_tables`), phân vùng theo tổ chức.
+
+```bash
+sh scripts/lake.sh sync                     # nạp tệp mới; chạy lại không nhân đôi; in số tệp, cột mới, tệp bị bỏ qua
+sh scripts/lake.sh info                     # phiên bản lược đồ, ảnh chụp
+sh scripts/lake.sh sql "SELECT org, app_key, count(*) AS n, sum(data_so_tien) AS tong FROM lake GROUP BY ALL"
+sh scripts/lake.sh sql "SELECT count(*) FROM lake" <snapshot_id>   # đọc lại ảnh chụp cũ
+sh scripts/lake.sh expire                   # xóa ảnh chụp cũ hơn LAKE_SNAPSHOT_DAYS (mặc định 30) ngày và tệp không còn dùng
+sh scripts/lake.sh compact                  # gộp tệp Parquet nhỏ
+sh scripts/lake.sh forget <mã hồ sơ>        # xóa hẳn một hồ sơ theo yêu cầu của chủ thể dữ liệu
+```
+
+Mỗi trường của hồ sơ thành cột `data_<mã>`. Kiểu suy từ giá trị JSON, không đoán từ nội dung chuỗi: số là `double`, đúng/sai là `boolean`, còn lại là chuỗi; nên `"8"` (chuỗi) và `8` (số) là hai kiểu khác nhau. Trường mới thì thêm cột và lược đồ lên phiên bản. Tệp có giá trị trái kiểu cột đã có, hoặc tệp hỏng, bị bỏ qua cả tệp và báo lý do; sửa nguồn rồi `sync` lại. Nạp lại không nhân đôi vì tệp đã nạp được nhận ra qua cột `object_key`.
+
+Lệnh ghi (`sync`, `expire`, `compact`, `forget`) giữ khóa `pg_try_advisory_lock` trong PostgreSQL: chạy hai lệnh ghi cùng lúc thì lệnh sau dừng ngay với thông báo, không ghi chồng (ca LAKE-07).
+
+Hạn giữ dữ liệu và quyền xóa (Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15, hiệu lực 01/01/2026):
+
+- Ảnh chụp cho phép du hành thời gian nhưng vẫn giữ dữ liệu cũ, kể cả hồ sơ đã sửa hay đã xóa. Vì vậy ảnh chụp chỉ giữ `LAKE_SNAPSHOT_DAYS` ngày: chạy `sh scripts/lake.sh expire` định kỳ (ví dụ cron hằng ngày). `expire` không bao giờ xóa ảnh chụp hiện tại.
+- Khi chủ thể dữ liệu yêu cầu xóa: `sh scripts/lake.sh forget <mã hồ sơ>` bỏ hàng khỏi bảng, xóa MỌI ảnh chụp cũ (vì ảnh cũ còn chứa hàng đó) và xóa mọi tệp Parquet, manifest, metadata không còn dùng; ghi dấu băm SHA-256 của mã vào thuộc tính bảng để lần `sync` sau không nạp lại hồ sơ đó từ tệp JSONL (ca LAKE-05). Đổi lại, các ảnh chụp cũ không đọc lại được nữa.
+- Giới hạn (shortcut): `forget` chỉ xóa trong bảng Iceberg. Tệp JSONL gốc của kho lạnh là dữ liệu chỉ thêm có sổ cái băm, phải xử lý theo quy trình của kho lạnh (và bản sao lưu) riêng; `compact` ghi lại cả bảng nên chỉ hợp bảng vừa và nhỏ; chạy bằng quyền vận hành, không theo token người dùng.
+
+## Nhật ký tập trung và mã truy vết
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile logs up -d
+curl http://127.0.0.1:9428/select/logsql/query -d 'query=request_id:"<mã trong tiêu đề X-Request-Id của phản hồi>"'
+curl http://127.0.0.1:9428/select/logsql/query -d 'query=service:workflow-bridge AND status:500'
+```
+
+Cổng APISIX gắn mã `X-Request-Id` cho mọi yêu cầu, chuyển xuống workflow-bridge và trả lại trong phản hồi; cả hai ghi nhật ký truy cập JSON một dòng có mã này và `trace_id` của OpenTelemetry (mục dưới), không ghi chuỗi truy vấn hay token. Mã do bên gọi gửi chỉ được giữ khi đúng dạng `[A-Za-z0-9._:-]{1,128}`; sai dạng (ký tự lạ, quá dài, gửi hai lần) thì cổng thay bằng UUID mới. Bên gọi vẫn tự chọn được mã, nên mã chỉ dùng để ghép nhật ký, không dùng để xác thực.
+
+Vector đọc nhật ký mọi container của dự án qua Docker API, che token Bearer, JWT, token Vault/OpenBao, cookie, tham số kiểu `password=`, rồi email, số điện thoại, CCCD, số thẻ, sau đó gửi vào VictoriaLogs (giữ `LOGS_RETENTION`, mặc định 14 ngày). Giao diện tìm kiếm: http://127.0.0.1:9428/select/vmui.
+
+Bảo mật của phần nhật ký:
+
+- VictoriaLogs không có đăng nhập, nên chỉ mở trên `127.0.0.1:9428`; NATS chỉ mở `127.0.0.1:4222` (có token); PostgreSQL không mở cổng nào ra máy chủ. Kiểm trên máy chủ: `ss -tlnp | grep -E ':(9428|4222|5432)'` phải chỉ thấy `127.0.0.1` hoặc không thấy gì. Xem từ xa thì đi qua đường hầm SSH (`ssh -L 9428:127.0.0.1:9428 <máy chủ>`); cần mở cho nhiều người thì đặt sau APISIX với `openid-connect` (Keycloak) hoặc `vmauth` (Apache-2.0) chứ không mở thẳng cổng.
+- Vector cần socket Docker (gắn chỉ đọc) và nhờ đó thấy mọi container trên máy, nên chỉ bật trên máy chủ do đội vận hành quản lý.
+- Nhật ký thô của Docker trên đĩa (`/var/lib/docker/containers`, chỉ root đọc) chưa được che. Giới hạn kích thước bằng `/etc/docker/daemon.json`: `{"log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}` rồi khởi động lại Docker.
+
+Giới hạn (shortcut): một máy, một Vector, một VictoriaLogs.
+
+## Truy vết phân tán OpenTelemetry (Jaeger)
+
+```bash
+# .env: OTEL_SAMPLER=always_on và OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile logs up -d
+# Mở http://127.0.0.1:16686 (qua đường hầm SSH nếu ở xa), hoặc lấy một chuỗi bằng API:
+curl http://127.0.0.1:16686/api/v3/traces/<trace_id trong tiêu đề traceparent của phản hồi>
+```
+
+Mỗi yêu cầu qua cổng là một **chuỗi truy vết (trace)** gồm nhiều **span** (một chặng, có thời điểm bắt đầu, thời lượng, kết quả):
+
+- APISIX (plugin `opentelemetry`) mở span gốc rồi gửi tiêu đề W3C `traceparent` xuống dịch vụ phía sau.
+- workflow-bridge (`services/workflow-bridge/trace.js`, tự viết để không thêm gói npm) nối tiếp chuỗi đó: một span cho yêu cầu, một span con cho mỗi câu SQL và mỗi lần gọi Hasura, Flowable, SeaweedFS, Meilisearch, và mang `traceparent` sang các dịch vụ đó. Sự kiện Hasura (duyệt hồ sơ xong thì bridge đổi bước) là một chuỗi riêng mang tên người bấm.
+- Jaeger 2.22 (Apache-2.0, khoảng 20 MB RAM) nhận span qua OTLP/HTTP trong mạng nội bộ, lưu trên đĩa (Badger) trong `TRACE_RETENTION` (mặc định 7 ngày). Trước khi lưu, Jaeger bỏ chuỗi truy vấn khỏi đường dẫn và bỏ User-Agent; bridge không ghi thân yêu cầu, tiêu đề hay câu SQL vào span.
+- Phản hồi mang `traceparent`, nhật ký truy cập (VictoriaLogs) và `audit_log` mang `trace_id`, nên đi được cả ba chiều: từ một dòng nhật ký lỗi, từ một lần sửa dữ liệu, hay từ phản hồi người dùng gửi lại.
+
+Mặc định `OTEL_SAMPLER=always_off`: không gửi span (máy không bật Jaeger không phát sinh lỗi), mã truy vết vẫn được tạo để ghép nhật ký và `audit_log`. Ca kiểm thử TRACE-06 đến TRACE-08.
+
+Giới hạn: Hasura bản cộng đồng không xuất span (tính năng của bản trả phí), nên thời gian ở Hasura được đo từ span của cổng và của bridge; Keycloak, Flowable, PostgreSQL chưa gửi span riêng (Flowable có thể gắn OpenTelemetry Java agent, Keycloak 26 có tùy chọn `tracing-enabled` ở dạng thử nghiệm). Lấy mẫu toàn bộ (`always_on`) hợp với một máy; tải lớn thì dùng `parent_base` hoặc `trace_id_ratio`. Giao diện Jaeger không có đăng nhập nên chỉ mở trên 127.0.0.1.
+
+## Nhật ký thay đổi dữ liệu và dòng đời hồ sơ
+
+Trả lời ba câu: **ai sửa gì, lúc nào**, **dữ liệu đi đâu**, **có ai sửa lén không**.
+
+- `audit_log` (`infra/postgres/init/11-audit.sql`): trigger trên 11 bảng còn sửa được (quy trình, đề xuất thay đổi, góp ý, hồ sơ, tệp đính kèm, nấc tự chủ AI, ý kiến AI, cảm biến, tổ chức, khóa PKI, thuê bao NGSI-LD) ghi mỗi lần thêm, sửa, xóa: người làm (từ token qua Hasura, hoặc người bấm mà bridge làm thay), vai trò, đường đi (`hasura`, `bridge`, `admin`), cột nào đổi từ gì sang gì, `trace_id`. Bảng vốn đã chỉ thêm (nhật ký duyệt, số đo, sổ cái kho lạnh, chữ ký) không ghi lại lần nữa. Sửa mà không đổi giá trị, hoặc chỉ đổi cột do hệ thống cập nhật liên tục (số đo cuối của cảm biến, số lần gửi thông báo) thì không sinh dòng.
+- Không chép dữ liệu cá nhân vào chỗ không xóa được: cột dữ liệu hồ sơ, tên người, nội dung tự do, khóa chỉ ghi `{"changed": true}`; giá trị thật nằm ở bảng gốc, nơi xóa theo Luật Bảo vệ dữ liệu cá nhân vẫn làm được.
+- Chống sửa lén: bảng chỉ thêm (trigger chặn UPDATE, DELETE, TRUNCATE kể cả chủ sở hữu CSDL) và nối chuỗi băm SHA-256 như sổ cái kho lạnh. Ai có quyền siêu quản trị tắt trigger để sửa hay xóa một dòng thì `GET /audit/verify` chỉ ra đúng dòng đó (ca AUDIT-03). Giới hạn: xóa dòng cuối cùng của chuỗi, hoặc tắt trigger trước khi sửa dữ liệu, thì chuỗi không tự biết; muốn chặn cả việc đó cần chép chuỗi băm ra nơi khác (ví dụ ký định kỳ bằng PKI và gửi ra kho ngoài).
+
+API (qua cổng, chỉ giám đốc, chỉ trong tổ chức của mình):
+
+```bash
+GET /lineage/submission/<mã hồ sơ>   # dòng đời: tạo, sửa, duyệt (có chữ ký), phát NATS, xuống kho lạnh ở tệp nào, ảnh chụp Iceberg nào, đã xóa theo yêu cầu chưa, các trace_id
+GET /audit?table=app&key=<mã>         # lịch sử thay đổi của một dòng
+GET /audit/verify                     # kiểm chuỗi băm của audit_log
+```
+
+`lake.sh sync | compact | expire | forget` ghi thêm vào bảng `lake_event` (chỉ thêm) để biết tệp kho lạnh nào nằm ở ảnh chụp Iceberg nào; `forget` chỉ lưu mã băm của mã hồ sơ. Ca kiểm thử AUDIT-01 đến AUDIT-04, LINEAGE-01, LINEAGE-02 (`tests/audit.test.js`), LAKE-08.
+
+Giới hạn: người dùng gọi thẳng GraphQL thì dòng `audit_log` không có `trace_id` (Hasura bản cộng đồng không đưa `traceparent` vào phiên CSDL); chuỗi truy vết của yêu cầu đó vẫn có ở cổng, tìm theo thời điểm và người làm. Chuỗi băm là một chuỗi chung, ghi tuần tự bằng khóa tư vấn: đủ cho một máy, tải ghi rất lớn thì cần chia theo bảng hoặc tổ chức.
+
+## Trục sự kiện (NATS JetStream)
+
+```bash
+NATS_URL=nats://nats:4222 docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile stream up -d
+```
+
+Mỗi lần duyệt, từ chối hay xác nhận hồ sơ (bảng `submission_event`) được phát lên chủ đề `dx.<tổ chức>.submission.<approve|reject|done>` của stream `DX` (lưu đĩa, giữ 30 ngày). Mẫu outbox:
+
+- Dòng `submission_event` chính là lệnh duyệt (cùng một lệnh ghi, cùng giao dịch), nên đã duyệt là chắc chắn có sự kiện cần phát.
+- Bridge đọc các sự kiện chưa có dòng trong `stream_published`, phát kèm `Nats-Msg-Id` = `submission_event:<id>`, JetStream xác nhận (ack) thì đánh dấu đúng sự kiện đó. Đánh dấu từng dòng, không dùng một mốc "id cuối": giao dịch commit trễ có id nhỏ hơn sự kiện đã phát vẫn được phát (ca STREAM-04).
+- Giao hàng ít nhất một lần: bridge chết giữa lúc phát và lúc đánh dấu thì tin được phát lại cùng mã. JetStream bỏ tin trùng trong cửa sổ 1 giờ; ngoài cửa sổ đó, **bên nghe phải tự bỏ trùng theo `event_id`**. Thứ tự gần đúng theo `event_id`, bên nghe cần thứ tự chặt thì sắp lại theo trường này.
+- Chạy nhiều bản bridge thì chỉ bản giữ hợp đồng thuê (lease 30 giây trong `stream_cursor`) được phát; bản đó chết thì bản khác nhận sau tối đa 30 giây.
+- NATS tắt thì việc duyệt vẫn chạy và tin được phát bù khi NATS sống lại.
+ Tin không chứa dữ liệu biểu mẫu hay tên người. Dịch vụ khác nghe bằng bất kỳ thư viện NATS nào với `NATS_TOKEN`, qua cổng `127.0.0.1:4222`. Máy đang chạy cần áp `infra/postgres/init/10-stream.sql`. Giới hạn (shortcut): một token cho cả hệ thống (chưa tách quyền theo tổ chức), chưa TLS tới NATS (cùng mạng nội bộ Docker); cần giao thức Kafka thì thay bộ phát, không đổi thiết kế outbox.
 
 ## Giám sát (Prometheus)
 

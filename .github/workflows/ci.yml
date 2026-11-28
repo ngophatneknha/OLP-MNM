@@ -46,8 +46,14 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile tls --profile monitoring --profile search --profile waf --profile vault up -d --build
           node tests/wait-ready.js 300
           OPS_OPTIONAL=1 SEARCH_OPTIONAL=1 WAF_OPTIONAL=1 VAULT_OPTIONAL=1 node --test --test-reporter=spec tests/ops.test.js tests/search.test.js tests/hpdi.test.js
-      - name: SQL trên kho lạnh bằng DuckDB (dựng ảnh nặng nên chạy riêng)
+      - name: SQL trên kho lạnh bằng DuckDB và bảng Iceberg (dựng ảnh nặng nên chạy riêng)
         run: LAKE_OPTIONAL=1 node --test --test-reporter=spec tests/lakehouse.test.js
+      - name: Nhật ký tập trung, truy vết OpenTelemetry và trục sự kiện NATS (thành phần tùy chọn)
+        run: |
+          export OTEL_SAMPLER=always_on OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318 NATS_URL=nats://nats:4222
+          docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile logs --profile stream up -d
+          node tests/wait-ready.js 300
+          LOGS_OPTIONAL=1 OTEL_OPTIONAL=1 STREAM_OPTIONAL=1 node --test --test-reporter=spec tests/trace.test.js
       - name: Tự phục hồi khi dịch vụ gặp sự cố
         run: RECOVERY_TEST=1 node --test --test-reporter=spec tests/recovery.test.js
       - name: Dữ liệu mẫu cho bản demo cho điểm hợp lý

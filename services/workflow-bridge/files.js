@@ -8,12 +8,13 @@
 // nên không có hai bộ luật phân quyền lệch nhau. Cổng API đã kiểm chữ ký token trước khi tới đây.
 // Kho S3 không mở ra ngoài: không ai tới được tệp mà không qua đây.
 
+import { adminHeaders } from './db.js'
 import { randomUUID } from 'node:crypto'
 import { scan } from './scan.js'
 import { s3fetch } from './s3.js'
 import { notify } from './events.js'
 
-const { HASURA_URL, HASURA_ADMIN_SECRET } = process.env
+const { HASURA_URL } = process.env
 const BUCKET = 'dxlab'
 export const MAX_BYTES = 10 * 1024 * 1024
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -88,7 +89,7 @@ async function upload(req, res) {
     // Không để lại dòng dữ liệu trỏ vào tệp không tồn tại.
     await fetch(`${HASURA_URL}/v1/graphql`, {
       method: 'POST',
-      headers: { 'x-hasura-admin-secret': HASURA_ADMIN_SECRET, 'content-type': 'application/json' },
+      headers: adminHeaders(),
       body: JSON.stringify({ query: 'mutation($id: uuid!) { delete_attachment_by_pk(id: $id) { id } }', variables: { id: row.id } }),
     })
     throw new HttpError(502, 'Chưa lưu được tệp, hãy thử lại')
