@@ -39,6 +39,7 @@ Các thành phần chạy dưới dạng **container độc lập, không sửa 
 | pg8000 (trình điều khiển PostgreSQL thuần Python cho danh mục Iceberg, tùy chọn; chọn thay psycopg2 vì psycopg2 là LGPL) | 1.31.2 | BSD-3-Clause | trường license trên pypi.org/project/pg8000 và `LICENSE` trong github.com/tlocke/pg8000 | ☑ |
 | VictoriaLogs (kho nhật ký tập trung, tùy chọn, profile `logs`; image `victoriametrics/victoria-logs`, bản cộng đồng) | 1.53.0 | Apache-2.0 | `LICENSE` trong github.com/VictoriaMetrics/VictoriaLogs, thẻ v1.53.0 | ☑ |
 | Vector (bộ gom nhật ký, tùy chọn, profile `logs`; image `timberio/vector`) | 0.61.0 | MPL-2.0 | `LICENSE` trong github.com/vectordotdev/vector, thẻ v0.61.0 | ☑ |
+| Jaeger v2 (kho và giao diện truy vết phân tán OpenTelemetry, tùy chọn, profile `logs`; image `jaegertracing/jaeger`) | 2.22.0 | Apache-2.0 | `LICENSE` trong github.com/jaegertracing/jaeger, thẻ v2.22.0 | ☑ |
 | NATS Server có JetStream (trục sự kiện, tùy chọn, profile `stream`; image `nats`) | 2.14.10 | Apache-2.0 | `LICENSE` trong github.com/nats-io/nats-server, thẻ v2.14.10 | ☑ |
 | Natural Earth 1:10m (dữ liệu ranh giới cho nền bản đồ `web/public/basemap-vn.json`, đã rút gọn) | 5.1.2 | Public domain | `LICENSE.md` trong github.com/nvkelso/natural-earth-vector, thẻ v5.1.2 | ☑ |
 | Python (image `python:3.12-slim`, nền của ảnh DuckDB) | 3.12 | PSF-2.0 | `LICENSE` trong github.com/python/cpython | ☑ |

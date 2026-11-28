@@ -184,7 +184,7 @@ Các nhóm: Tầng 1 (`tang1`), ứng dụng H-P-D-I và Zero-Trust (`hpdi`), kh
 Các mục dưới đây khai báo là `todo` trong báo cáo kiểm thử, không tô hồng:
 
 - Bảng Iceberg của kho lạnh (`scripts/lake.sh`): một lệnh ghi tại một thời điểm (khóa `pg_advisory_lock`), `forget` chỉ xóa trong bảng Iceberg, tệp JSONL gốc của kho lạnh xử lý riêng; NGSI-LD là tập con của chuẩn (một kiểu `Device`, chỉ ghi được `value`, `q` đơn giản); nền bản đồ chỉ tới mức tỉnh, chưa có đường phố.
-- Gom nhật ký và trục sự kiện (profile `logs`, `stream`) chạy một máy: ghép nhật ký theo mã `X-Request-Id` (log correlation), chưa phải truy vết phân tán có span OpenTelemetry; NATS dùng một token cho cả hệ thống.
+- Gom nhật ký, truy vết OpenTelemetry và trục sự kiện (profile `logs`, `stream`) chạy một máy: Hasura bản cộng đồng không xuất span, Keycloak và Flowable chưa gửi span riêng; chuỗi băm của `audit_log` không tự phát hiện việc xóa dòng cuối hay tắt trigger từ trước; NATS dùng một token cho cả hệ thống.
 - Tìm ngữ nghĩa là tùy chọn (profile `vector`, mặc định tắt, mô hình nhỏ MiniLM); OCR chỉ 10 trang đầu.
 - Chữ ký số là PKI phần mềm (chứng thư X.509 do CA của từng tổ chức cấp, ký phía máy chủ, khóa mã hóa trong CSDL): **chưa có HSM, CRL/OCSP** và chưa phải chữ ký số có giá trị pháp lý theo luật.
 - Thời gian thực dùng SSE (chưa WebSocket); thiết bị gọi HTTP (chưa MQTT/OPC UA).

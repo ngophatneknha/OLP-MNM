@@ -55,8 +55,8 @@ Giới hạn: không phải ArgoCD/Flux (một máy, không tự hoàn tác); nh
 ### Nâng cấp từ 2.5.0 lên 2.6.0
 
 1. Sao lưu trước (`sh scripts/backup.sh`, xem mục Sao lưu và khôi phục ở đầu tài liệu).
-2. Chạy `sh scripts/gitops.sh apply` (hoặc `git pull`, `docker compose up -d --build`, `sh scripts/migrate.sh`, `docker compose up -d --force-recreate apisix keycloak workflow-bridge hasura-init`). Bảng mới: `ngsi_subscription` (09), `stream_cursor`, `stream_published` (10).
-3. Biến mới trong `.env` đều có giá trị mặc định an toàn nên thiếu cũng chạy: không có `NGSI_NOTIFY_ALLOW` thì không gửi thông báo thuê bao NGSI-LD; không có `NATS_URL` thì không phát sự kiện. Muốn bật thì chép từ `.env.example` các dòng `NGSI_NOTIFY_ALLOW`, `NGSI_NOTIFY_PRIVATE` (để trống khi triển khai thật), `NGSI_MAX_SUBSCRIPTIONS`, `NATS_URL`, `NATS_TOKEN` (đổi khỏi `change-me`), `LAKE_SNAPSHOT_DAYS`.
+2. Chạy `sh scripts/gitops.sh apply` (hoặc `git pull`, `docker compose up -d --build`, `sh scripts/migrate.sh`, `docker compose up -d --force-recreate apisix keycloak workflow-bridge hasura-init`). Bảng mới: `ngsi_subscription` (09), `stream_cursor`, `stream_published` (10), `audit_log`, `lake_event` (11). Dữ liệu cũ không có lịch sử trong `audit_log`: lịch sử bắt đầu từ lúc nâng cấp. Ảnh `lakehouse` cần dựng lại (`--build`) để `lake.sh` ghi `lake_event`.
+3. Biến mới trong `.env` đều có giá trị mặc định an toàn nên thiếu cũng chạy: không có `NGSI_NOTIFY_ALLOW` thì không gửi thông báo thuê bao NGSI-LD; không có `NATS_URL` thì không phát sự kiện. Muốn bật thì chép từ `.env.example` các dòng `NGSI_NOTIFY_ALLOW`, `NGSI_NOTIFY_PRIVATE` (để trống khi triển khai thật), `NGSI_MAX_SUBSCRIPTIONS`, `NATS_URL`, `NATS_TOKEN` (đổi khỏi `change-me`), `LAKE_SNAPSHOT_DAYS`, `OTEL_SAMPLER`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `TRACE_RETENTION`.
 
 Đã thử trên máy chạy 2.5.0 có dữ liệu: số dòng hồ sơ, sự kiện, cảm biến, ứng dụng, tổ chức giữ nguyên sau nâng cấp; bộ kiểm thử chính đạt sau khi thêm biến, trừ hai ca cần mạng ra ngoài (ca `OPS-MIGRATE` trong `tests/ops.test.js` kiểm phần migration).
 
@@ -188,7 +188,7 @@ curl http://127.0.0.1:9428/select/logsql/query -d 'query=request_id:"<mã trong 
 curl http://127.0.0.1:9428/select/logsql/query -d 'query=service:workflow-bridge AND status:500'
 ```
 
-Cổng APISIX gắn mã `X-Request-Id` cho mọi yêu cầu, chuyển xuống workflow-bridge và trả lại trong phản hồi; cả hai ghi nhật ký truy cập JSON một dòng có mã này, không ghi chuỗi truy vấn hay token. Mã do bên gọi gửi chỉ được giữ khi đúng dạng `[A-Za-z0-9._:-]{1,128}`; sai dạng (ký tự lạ, quá dài, gửi hai lần) thì cổng thay bằng UUID mới. Bên gọi vẫn tự chọn được mã, nên mã chỉ dùng để ghép nhật ký, không dùng để xác thực. Đây là **ghép nhật ký theo mã (log correlation)**, chưa phải truy vết phân tán (distributed tracing: span có thời lượng từng chặng, tiêu đề `traceparent` W3C, OpenTelemetry); muốn có thì bật plugin `opentelemetry` của APISIX và thêm SDK OpenTelemetry vào bridge.
+Cổng APISIX gắn mã `X-Request-Id` cho mọi yêu cầu, chuyển xuống workflow-bridge và trả lại trong phản hồi; cả hai ghi nhật ký truy cập JSON một dòng có mã này và `trace_id` của OpenTelemetry (mục dưới), không ghi chuỗi truy vấn hay token. Mã do bên gọi gửi chỉ được giữ khi đúng dạng `[A-Za-z0-9._:-]{1,128}`; sai dạng (ký tự lạ, quá dài, gửi hai lần) thì cổng thay bằng UUID mới. Bên gọi vẫn tự chọn được mã, nên mã chỉ dùng để ghép nhật ký, không dùng để xác thực.
 
 Vector đọc nhật ký mọi container của dự án qua Docker API, che token Bearer, JWT, token Vault/OpenBao, cookie, tham số kiểu `password=`, rồi email, số điện thoại, CCCD, số thẻ, sau đó gửi vào VictoriaLogs (giữ `LOGS_RETENTION`, mặc định 14 ngày). Giao diện tìm kiếm: http://127.0.0.1:9428/select/vmui.
 
@@ -199,6 +199,46 @@ Bảo mật của phần nhật ký:
 - Nhật ký thô của Docker trên đĩa (`/var/lib/docker/containers`, chỉ root đọc) chưa được che. Giới hạn kích thước bằng `/etc/docker/daemon.json`: `{"log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}` rồi khởi động lại Docker.
 
 Giới hạn (shortcut): một máy, một Vector, một VictoriaLogs.
+
+## Truy vết phân tán OpenTelemetry (Jaeger)
+
+```bash
+# .env: OTEL_SAMPLER=always_on và OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+docker compose -f docker-compose.yml -f docker-compose.optional.yml --profile logs up -d
+# Mở http://127.0.0.1:16686 (qua đường hầm SSH nếu ở xa), hoặc lấy một chuỗi bằng API:
+curl http://127.0.0.1:16686/api/v3/traces/<trace_id trong tiêu đề traceparent của phản hồi>
+```
+
+Mỗi yêu cầu qua cổng là một **chuỗi truy vết (trace)** gồm nhiều **span** (một chặng, có thời điểm bắt đầu, thời lượng, kết quả):
+
+- APISIX (plugin `opentelemetry`) mở span gốc rồi gửi tiêu đề W3C `traceparent` xuống dịch vụ phía sau.
+- workflow-bridge (`services/workflow-bridge/trace.js`, tự viết để không thêm gói npm) nối tiếp chuỗi đó: một span cho yêu cầu, một span con cho mỗi câu SQL và mỗi lần gọi Hasura, Flowable, SeaweedFS, Meilisearch, và mang `traceparent` sang các dịch vụ đó. Sự kiện Hasura (duyệt hồ sơ xong thì bridge đổi bước) là một chuỗi riêng mang tên người bấm.
+- Jaeger 2.22 (Apache-2.0, khoảng 20 MB RAM) nhận span qua OTLP/HTTP trong mạng nội bộ, lưu trên đĩa (Badger) trong `TRACE_RETENTION` (mặc định 7 ngày). Trước khi lưu, Jaeger bỏ chuỗi truy vấn khỏi đường dẫn và bỏ User-Agent; bridge không ghi thân yêu cầu, tiêu đề hay câu SQL vào span.
+- Phản hồi mang `traceparent`, nhật ký truy cập (VictoriaLogs) và `audit_log` mang `trace_id`, nên đi được cả ba chiều: từ một dòng nhật ký lỗi, từ một lần sửa dữ liệu, hay từ phản hồi người dùng gửi lại.
+
+Mặc định `OTEL_SAMPLER=always_off`: không gửi span (máy không bật Jaeger không phát sinh lỗi), mã truy vết vẫn được tạo để ghép nhật ký và `audit_log`. Ca kiểm thử TRACE-06 đến TRACE-08.
+
+Giới hạn: Hasura bản cộng đồng không xuất span (tính năng của bản trả phí), nên thời gian ở Hasura được đo từ span của cổng và của bridge; Keycloak, Flowable, PostgreSQL chưa gửi span riêng (Flowable có thể gắn OpenTelemetry Java agent, Keycloak 26 có tùy chọn `tracing-enabled` ở dạng thử nghiệm). Lấy mẫu toàn bộ (`always_on`) hợp với một máy; tải lớn thì dùng `parent_base` hoặc `trace_id_ratio`. Giao diện Jaeger không có đăng nhập nên chỉ mở trên 127.0.0.1.
+
+## Nhật ký thay đổi dữ liệu và dòng đời hồ sơ
+
+Trả lời ba câu: **ai sửa gì, lúc nào**, **dữ liệu đi đâu**, **có ai sửa lén không**.
+
+- `audit_log` (`infra/postgres/init/11-audit.sql`): trigger trên 11 bảng còn sửa được (quy trình, đề xuất thay đổi, góp ý, hồ sơ, tệp đính kèm, nấc tự chủ AI, ý kiến AI, cảm biến, tổ chức, khóa PKI, thuê bao NGSI-LD) ghi mỗi lần thêm, sửa, xóa: người làm (từ token qua Hasura, hoặc người bấm mà bridge làm thay), vai trò, đường đi (`hasura`, `bridge`, `admin`), cột nào đổi từ gì sang gì, `trace_id`. Bảng vốn đã chỉ thêm (nhật ký duyệt, số đo, sổ cái kho lạnh, chữ ký) không ghi lại lần nữa. Sửa mà không đổi giá trị, hoặc chỉ đổi cột do hệ thống cập nhật liên tục (số đo cuối của cảm biến, số lần gửi thông báo) thì không sinh dòng.
+- Không chép dữ liệu cá nhân vào chỗ không xóa được: cột dữ liệu hồ sơ, tên người, nội dung tự do, khóa chỉ ghi `{"changed": true}`; giá trị thật nằm ở bảng gốc, nơi xóa theo Luật Bảo vệ dữ liệu cá nhân vẫn làm được.
+- Chống sửa lén: bảng chỉ thêm (trigger chặn UPDATE, DELETE, TRUNCATE kể cả chủ sở hữu CSDL) và nối chuỗi băm SHA-256 như sổ cái kho lạnh. Ai có quyền siêu quản trị tắt trigger để sửa hay xóa một dòng thì `GET /audit/verify` chỉ ra đúng dòng đó (ca AUDIT-03). Giới hạn: xóa dòng cuối cùng của chuỗi, hoặc tắt trigger trước khi sửa dữ liệu, thì chuỗi không tự biết; muốn chặn cả việc đó cần chép chuỗi băm ra nơi khác (ví dụ ký định kỳ bằng PKI và gửi ra kho ngoài).
+
+API (qua cổng, chỉ giám đốc, chỉ trong tổ chức của mình):
+
+```bash
+GET /lineage/submission/<mã hồ sơ>   # dòng đời: tạo, sửa, duyệt (có chữ ký), phát NATS, xuống kho lạnh ở tệp nào, ảnh chụp Iceberg nào, đã xóa theo yêu cầu chưa, các trace_id
+GET /audit?table=app&key=<mã>         # lịch sử thay đổi của một dòng
+GET /audit/verify                     # kiểm chuỗi băm của audit_log
+```
+
+`lake.sh sync | compact | expire | forget` ghi thêm vào bảng `lake_event` (chỉ thêm) để biết tệp kho lạnh nào nằm ở ảnh chụp Iceberg nào; `forget` chỉ lưu mã băm của mã hồ sơ. Ca kiểm thử AUDIT-01 đến AUDIT-04, LINEAGE-01, LINEAGE-02 (`tests/audit.test.js`), LAKE-08.
+
+Giới hạn: người dùng gọi thẳng GraphQL thì dòng `audit_log` không có `trace_id` (Hasura bản cộng đồng không đưa `traceparent` vào phiên CSDL); chuỗi truy vết của yêu cầu đó vẫn có ở cổng, tìm theo thời điểm và người làm. Chuỗi băm là một chuỗi chung, ghi tuần tự bằng khóa tư vấn: đủ cho một máy, tải ghi rất lớn thì cần chia theo bảng hoặc tổ chức.
 
 ## Trục sự kiện (NATS JetStream)
 

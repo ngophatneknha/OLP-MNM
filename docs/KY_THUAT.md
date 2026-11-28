@@ -54,7 +54,7 @@ RAM đo thật bằng `docker stats` (27/11/2026, máy Linux 4 lõi, 16 GB, hệ
 | workflow-bridge | 30 MB |
 | web (nginx) | 6 MB |
 | **Cộng phần bắt buộc** | **khoảng 2,7 GB** |
-| Profile `logs`: VictoriaLogs + Vector | 105 MB + 43 MB |
+| Profile `logs`: VictoriaLogs + Vector + Jaeger | 105 MB + 43 MB + 21 MB |
 | Profile `stream`: NATS JetStream | 6 MB |
 | `lake.sh` (chạy từng lệnh rồi thoát; bảng 29 hồ sơ, phần lớn là nạp thư viện): `sql` / `compact` | đỉnh 177 MB / 242 MB |
 
